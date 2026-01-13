@@ -4,6 +4,7 @@ import app from "./core/app.js";
 import { connectDB } from "./config/db.js";
 import type { Application } from 'express';
 import registerUserModule from "./modules/user/user.module.js";
+import registerClassModule from "./modules/class/class.module.js";
 
 
 
@@ -12,8 +13,6 @@ const PORT = env.PORT
 const startServer = async () => {
     try {
         
-
-
         console.log("Connecting to database...");
         await connectDB();
         console.log("Database connected successfully.");
@@ -22,6 +21,7 @@ const startServer = async () => {
         const expressApp: Application = app;
 
         registerUserModule(expressApp);
+        registerClassModule(expressApp)
         
 
 
