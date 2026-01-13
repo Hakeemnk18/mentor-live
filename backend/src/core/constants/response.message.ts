@@ -41,4 +41,33 @@ export const ResponseMessages = {
   RESET_LINK_EXPIRED: "Your password reset link has expired",
   RESET_REQUEST_SUCCESS: "Password reset link sent successfully to your email",
   RESET_TOKEN_ALREADY_SENT: "A password reset link has already been sent. Please check your email or try again later.",
+
+
+
+
+  CLASS_CREATED: "Class created successfully",
+  CLASS_UPDATED: "Class updated successfully",
+  CLASS_DELETED: "Class deleted successfully",
+  CLASS_RESTORED: "Class restored successfully",
+  CLASS_NOT_FOUND: "Class not found",
+  CLASS_ALREADY_EXISTS: "Class with this name already exists",
+  CLASS_ALREADY_DELETED: "Class is already deleted",
+  CLASS_NOT_DELETED: "Class is not deleted",
+  CLASS_NAME_INVALID: "Class name must be between 2 and 100 characters",
+  CLASS_CREATION_FAILED: "Failed to create class",
+
+
+  SYLLABUS_CREATED: "Syllabus created successfully",
+  SYLLABUS_UPDATED: "Syllabus updated successfully",
+  SYLLABUS_DELETED: "Syllabus deleted successfully",
+  SYLLABUS_RESTORED: "Syllabus restored successfully",
+
+  SYLLABUS_NOT_FOUND: "Syllabus not found",
+  SYLLABUS_ALREADY_EXISTS: "Syllabus with this name already exists",
+
+  SYLLABUS_ALREADY_DELETED: "Syllabus is already deleted",
+  SYLLABUS_NOT_DELETED: "Syllabus is not deleted",
+
+  SYLLABUS_NAME_INVALID: "Syllabus name must be between 2 and 100 characters",
+  SYLLABUS_CREATION_FAILED: "Failed to create syllabus",
 }
