@@ -5,9 +5,10 @@ import { HttpStatusCode } from "../../../core/constants/http.status.codes.js";
 import { Class } from "../entities/class.entity.js";
 import type { IClassRepository } from "../repositories/class.repository.interface.js";
 import type { CreateClassRequestDto } from "../dtos/class.create.dto.js";
+import type { ICreateClassUseCase } from "./interfaces/create.class.use-case.interface.js";
 
 @injectable()
-export class CreateClassUseCase {
+export class CreateClassUseCase implements ICreateClassUseCase{
   constructor(
     @inject("IClassRepository")
     private readonly _classRepository: IClassRepository
