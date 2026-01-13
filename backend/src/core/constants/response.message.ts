@@ -54,5 +54,20 @@ export const ResponseMessages = {
   CLASS_ALREADY_DELETED: "Class is already deleted",
   CLASS_NOT_DELETED: "Class is not deleted",
   CLASS_NAME_INVALID: "Class name must be between 2 and 100 characters",
-  CLASS_CREATION_FAILED: "Failed to create class"
+  CLASS_CREATION_FAILED: "Failed to create class",
+
+
+  SYLLABUS_CREATED: "Syllabus created successfully",
+  SYLLABUS_UPDATED: "Syllabus updated successfully",
+  SYLLABUS_DELETED: "Syllabus deleted successfully",
+  SYLLABUS_RESTORED: "Syllabus restored successfully",
+
+  SYLLABUS_NOT_FOUND: "Syllabus not found",
+  SYLLABUS_ALREADY_EXISTS: "Syllabus with this name already exists",
+
+  SYLLABUS_ALREADY_DELETED: "Syllabus is already deleted",
+  SYLLABUS_NOT_DELETED: "Syllabus is not deleted",
+
+  SYLLABUS_NAME_INVALID: "Syllabus name must be between 2 and 100 characters",
+  SYLLABUS_CREATION_FAILED: "Failed to create syllabus",
 }

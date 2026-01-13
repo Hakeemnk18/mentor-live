@@ -4,9 +4,10 @@ import { CustomError } from "../../../core/errors/custom.error.js";
 import { ResponseMessages } from "../../../core/constants/response.message.js";
 import { HttpStatusCode } from "../../../core/constants/http.status.codes.js";
 import type { IClassRepository } from "../repositories/class.repository.interface.js";
+import type { IEditClassUseCase } from "./interfaces/edit.class.use-case.interface.js";
 
 @injectable()
-export class EditClassUseCase {
+export class EditClassUseCase implements IEditClassUseCase{
   constructor(
     @inject("IClassRepository")
     private readonly _classRepository: IClassRepository
