@@ -5,6 +5,7 @@ import type { IGetAllDocDB } from "../../../core/shared/interfaces/get.all.doc.i
 import { SubjectVariant } from "../entities/subject.variant.entity.js";
 import { SubjectVariantModel } from "../infrastructure/subject.variant.schema.js";
 import { SubjectVariantMapper } from "../mappers/subject.variant.mapper.js";
+import type { SubjectVariantView } from "../type/subject.variant.type.js";
 import type { ISubjectVariantRepository } from "./subject.variant.repository.interface.js";
 
 export class SubjectVariantRepository implements ISubjectVariantRepository {
@@ -91,7 +92,41 @@ export class SubjectVariantRepository implements ISubjectVariantRepository {
       .filter((v): v is SubjectVariant => v !== null);
   }
 
+  async findAllWithPopulated(
+    query: Record<string, any>
+  ): Promise<SubjectVariantView[] | any[]> {
+    const documents = await SubjectVariantModel.find(query)
+      .populate("class", "_id name")
+      .populate("syllabus", "_id name")
+      .lean();
+
+    return documents.map((item: any) => ({
+      id: item._id.toString(),
+      class: { id: item.class._id, name: item.class.name },
+      syllabus: { id: item.syllabus._id, name: item.syllabus.name },
+    }));
+  }
+
   async countDocument(query: Record<string, any>): Promise<number> {
     return await SubjectVariantModel.countDocuments(query);
+  }
+
+  async delete(subjectId: string, variantId: string): Promise<void> {
+    const result = await SubjectVariantModel.findOneAndDelete({
+      _id: variantId,
+      subject: subjectId,
+    });
+
+    if (!result) {
+      throw new CustomError(
+        ResponseMessages.SUBJECT_VARIANT_NOT_FOUND,
+        HttpStatusCode.NOT_FOUND
+      );
+    }
+  }
+
+  async findOne(query: Record<string, any>): Promise<SubjectVariant | null> {
+    const found = await SubjectVariantModel.findOne(query).lean();
+    return SubjectVariantMapper.toDomain(found);
   }
 }

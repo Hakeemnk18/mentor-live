@@ -7,6 +7,7 @@ import registerUserModule from "./modules/user/user.module.js";
 import registerClassModule from "./modules/class/class.module.js";
 import registerSyllabusModule from "./modules/syllabus/syllabus.module.js";
 import registerSubjectModule from "./modules/subject/subject.module.js";
+import registerSubjectVariantModule from "./modules/subject-variant/subject.variant.module.js";
 
 
 
@@ -26,6 +27,7 @@ const startServer = async () => {
         registerClassModule(expressApp)
         registerSyllabusModule(expressApp)
         registerSubjectModule(expressApp)
+        registerSubjectVariantModule(expressApp)
         
 
 
