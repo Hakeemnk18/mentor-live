@@ -13,8 +13,6 @@ const syllabusSchema = new Schema<ISyllabus>(
       trim: true,
       minlength: 2,
       maxlength: 100,
-      index: true,
-      unique: true,
     },
 
     isDeleted: {
