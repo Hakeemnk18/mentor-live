@@ -84,4 +84,5 @@ export const ResponseMessages = {
   SUBJECT_VARIANT_ALREADY_DELETED: "Subject variant is already deleted",
   SUBJECT_VARIANT_NOT_DELETED: "Subject variant is not deleted",
   SUBJECT_VARIANT_CREATION_FAILED: "Failed to create subject variant",
+  SUBJECT_VARIANT_CANNOT_DELETE_LAST: "At least one subject variant must exist. The last variant cannot be deleted.",
 };

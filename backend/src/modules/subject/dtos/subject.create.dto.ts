@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ObjectIdSchema } from "../../../core/utils/objec.id.validation.js";
+import { ObjectIdSchema } from "../../../core/utils/object.id.validation.js";
 
 
 export const CreateSubjectSchema = z

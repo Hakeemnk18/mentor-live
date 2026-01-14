@@ -18,16 +18,23 @@ router.post(
 );
 
 
-// router.put(
-//   "/:id",
-//   (req, res) => subjectController.editSyllabus(req, res)
-// );
+router.put(
+  "/:id",
+  (req, res) => subjectController.editSubjectName(req, res)
+);
 
 
-// router.get(
-//   "/",
-//   (req, res) => subjectController.getSyllabusesForAdmin(req, res)
-// );
+router.get(
+  "/",
+  (req, res) => subjectController.getAllSubjectForAdmin(req, res)
+);
+
+
+router.get(
+  "/:id",
+  (req, res) => subjectController.getSubjectDetails(req, res)
+);
+
 
 // router.get(
 //   '/list',
