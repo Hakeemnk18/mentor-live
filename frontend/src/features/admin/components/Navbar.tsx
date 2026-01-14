@@ -68,7 +68,7 @@ const AdminNavbar: React.FC = () => {
 
           <button
             onClick={handleLogout}
-            className="text-[#DB313E] hover:underline"
+            className="text-[#DB313E] cursor-pointer"
           >
             Logout
           </button>
@@ -101,27 +101,38 @@ const AdminNavbar: React.FC = () => {
       </div>
 
       {/* Mobile Menu */}
-      {open && (
-        <div className="md:hidden border-t border-gray-200 bg-white px-4 py-4 space-y-3 text-sm">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              onClick={() => setOpen(false)}
-              className={linkClasses}
-            >
-              {item.label}
-            </NavLink>
-          ))}
+      {/* Mobile Menu */}
+{open && (
+  <div className="md:hidden border-t border-gray-200 bg-white px-4 py-4">
+    <nav className="flex flex-col space-y-4 text-sm">
+      {navItems.map((item) => (
+        <NavLink
+          key={item.path}
+          to={item.path}
+          onClick={() => setOpen(false)}
+          className={({ isActive }) =>
+            `block w-full ${
+              isActive
+                ? "text-[#DB313E] font-semibold"
+                : "text-gray-700 hover:text-[#DB313E]"
+            }`
+          }
+        >
+          {item.label}
+        </NavLink>
+      ))}
 
-          <button
-            onClick={handleLogout}
-            className="block w-full text-left text-[#DB313E] font-medium"
-          >
-            Logout
-          </button>
-        </div>
-      )}
+     <button
+  onClick={handleLogout}
+  className="block w-full text-left text-[#DB313E] font-medium pt-3 border-t border-gray-200 cursor-pointer transition-opacity hover:opacity-80"
+>
+  Logout
+</button>
+
+    </nav>
+  </div>
+)}
+
     </header>
   );
 };

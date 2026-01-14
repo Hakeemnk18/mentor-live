@@ -1,3 +1,8 @@
+import type {
+  GetClassesApiResponse,
+  GetClassesParams,
+  GetClassesResult,
+} from "../shared/types/api.types";
 import axiosInstance from "./axios.instance";
 
 export type CreateClassPayload = {
@@ -5,7 +10,7 @@ export type CreateClassPayload = {
 };
 
 export type ClassResponse = {
-  _id: string;
+  id: string;
   name: string;
   isDeleted: boolean;
 };
@@ -13,7 +18,9 @@ export type ClassResponse = {
 export const createClass = async (
   payload: CreateClassPayload
 ): Promise<ClassResponse> => {
-  const res = await axiosInstance.post("/admin/classes", payload);
+  const res = await axiosInstance.post("/classes", payload);
+  console.log("create classes response ", res);
+
   return res.data;
 };
 
@@ -21,6 +28,30 @@ export const updateClass = async (
   id: string,
   payload: CreateClassPayload
 ): Promise<ClassResponse> => {
-  const res = await axiosInstance.put(`/admin/classes/${id}`, payload);
+  const res = await axiosInstance.put(`/classes/${id}`, payload);
+  console.log("update classes response ", res);
+
   return res.data;
+};
+
+export const getClasses = async (
+  params: GetClassesParams
+): Promise<GetClassesResult> => {
+  const res = await axiosInstance.get<GetClassesApiResponse>("/classes", {
+    params,
+  });
+  console.log("RAW RESPONSE", res);
+
+  const apiData = res.data;
+
+  return {
+    rows: apiData.data.map((cls) => ({
+      _id: cls.id,
+      name: cls.name,
+      isDeleted: cls.isDeleted,
+    })),
+    currentPage: apiData.currentPage,
+    totalPages: apiData.totalPages,
+    total: apiData.total,
+  };
 };

@@ -3,8 +3,7 @@ import React from "react";
 export type Column<T> = {
   key: string;
   label: string;
-  sortable?: boolean;
-  render?: (row: T) => React.ReactNode;
+  render: (row: T) => React.ReactNode;
 };
 
 export type TableAction<T> = {

@@ -1,7 +1,7 @@
 import { Toaster } from "react-hot-toast"
 import { Outlet } from "react-router-dom"
 import { useAuthUser } from "./features/auth/hooks/useAuthUser";
-import TopLoader from "./features/admin/components/TopLoader";
+import TopLoader from "./shared/components/TopLoader";
 
 function App() {
   const { isLoading} = useAuthUser();
