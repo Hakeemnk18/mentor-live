@@ -12,9 +12,7 @@ const classSchema = new Schema<IClass>(
       required: true,
       trim: true,
       minlength: 2,
-      maxlength: 100,
-      index: true,
-      unique: true   
+      maxlength: 100,  
     },
 
     isDeleted: {

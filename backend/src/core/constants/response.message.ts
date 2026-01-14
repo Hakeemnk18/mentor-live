@@ -1,22 +1,21 @@
 export const ResponseMessages = {
-
-  LOGIN_SUCCESS: 'Login successful',
-  LOGOUT_SUCCESS: 'Logout successful',
-  REGISTER_SUCCESS: 'Registration successful',
+  LOGIN_SUCCESS: "Login successful",
+  LOGOUT_SUCCESS: "Logout successful",
+  REGISTER_SUCCESS: "Registration successful",
   OTP_SEND: "OTP sent to email",
   SUCCESS: "Request successful",
   ID_MISSING: "ID parameter is required",
   INVALID_ID: "Invalid ID format.",
 
-  VALIDATION_FAILED: 'Validation failed',
-  INVALID_CREDENTIALS: 'Invalid email or password', 
-  USER_NOT_FOUND: 'User not found',
-  EMAIL_ALREADY_EXISTS: 'Email already exists',
-  FAILED_TO_MAP:'Failed to map newly created user from database',
-  SERVER_ERROR: 'Internal server error',
-  UNAUTHORIZED: 'Unauthorized access',
-  ACCESS_DENIED: 'Access denied',
-  TOO_MANY_REQUESTS:"Too Many Requests",
+  VALIDATION_FAILED: "Validation failed",
+  INVALID_CREDENTIALS: "Invalid email or password",
+  USER_NOT_FOUND: "User not found",
+  EMAIL_ALREADY_EXISTS: "Email already exists",
+  FAILED_TO_MAP: "Failed to map newly created user from database",
+  SERVER_ERROR: "Internal server error",
+  UNAUTHORIZED: "Unauthorized access",
+  ACCESS_DENIED: "Access denied",
+  TOO_MANY_REQUESTS: "Too Many Requests",
   JWT_ENV_NOT_SET: "JWT environment variables are not set!",
   USER_ALREADY_VERIFIED: "User already verified",
   USER_NOT_VERIFIED: "User not verified",
@@ -40,10 +39,8 @@ export const ResponseMessages = {
   TOKEN_ALREADY_USED: "This password reset token has already been used",
   RESET_LINK_EXPIRED: "Your password reset link has expired",
   RESET_REQUEST_SUCCESS: "Password reset link sent successfully to your email",
-  RESET_TOKEN_ALREADY_SENT: "A password reset link has already been sent. Please check your email or try again later.",
-
-
-
+  RESET_TOKEN_ALREADY_SENT:
+    "A password reset link has already been sent. Please check your email or try again later.",
 
   CLASS_CREATED: "Class created successfully",
   CLASS_UPDATED: "Class updated successfully",
@@ -56,18 +53,35 @@ export const ResponseMessages = {
   CLASS_NAME_INVALID: "Class name must be between 2 and 100 characters",
   CLASS_CREATION_FAILED: "Failed to create class",
 
-
   SYLLABUS_CREATED: "Syllabus created successfully",
   SYLLABUS_UPDATED: "Syllabus updated successfully",
   SYLLABUS_DELETED: "Syllabus deleted successfully",
   SYLLABUS_RESTORED: "Syllabus restored successfully",
-
   SYLLABUS_NOT_FOUND: "Syllabus not found",
   SYLLABUS_ALREADY_EXISTS: "Syllabus with this name already exists",
-
   SYLLABUS_ALREADY_DELETED: "Syllabus is already deleted",
   SYLLABUS_NOT_DELETED: "Syllabus is not deleted",
-
   SYLLABUS_NAME_INVALID: "Syllabus name must be between 2 and 100 characters",
   SYLLABUS_CREATION_FAILED: "Failed to create syllabus",
-}
+
+  SUBJECT_CREATED: "Subject created successfully",
+  SUBJECT_UPDATED: "Subject updated successfully",
+  SUBJECT_DELETED: "Subject deleted successfully",
+  SUBJECT_RESTORED: "Subject restored successfully",
+  SUBJECT_NOT_FOUND: "Subject not found",
+  SUBJECT_ALREADY_EXISTS: "Subject with this name already exists",
+  SUBJECT_ALREADY_DELETED: "Subject is already deleted",
+  SUBJECT_NOT_DELETED: "Subject is not deleted",
+  SUBJECT_NAME_INVALID: "Subject name must be between 2 and 100 characters",
+  SUBJECT_CREATION_FAILED: "Failed to create subject",
+
+  SUBJECT_VARIANT_CREATED: "Subject variant created successfully",
+  SUBJECT_VARIANT_UPDATED: "Subject variant updated successfully",
+  SUBJECT_VARIANT_DELETED: "Subject variant deleted successfully",
+  SUBJECT_VARIANT_RESTORED: "Subject variant restored successfully",
+  SUBJECT_VARIANT_NOT_FOUND: "Subject variant not found",
+  SUBJECT_VARIANT_ALREADY_EXISTS: "Subject variant already exists",
+  SUBJECT_VARIANT_ALREADY_DELETED: "Subject variant is already deleted",
+  SUBJECT_VARIANT_NOT_DELETED: "Subject variant is not deleted",
+  SUBJECT_VARIANT_CREATION_FAILED: "Failed to create subject variant",
+};
