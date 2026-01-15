@@ -9,6 +9,8 @@ import type { IGetSubjectsForAdminUseCase } from "../modules/subject/use-cases/i
 import { GetSubjectsForAdminUseCase } from "../modules/subject/use-cases/get.all.subject.for.admin.use-case.js";
 import type { IGetSubjectDetailsUseCase } from "../modules/subject/use-cases/interfaces/get.subject.details.use-case.interface.js";
 import { GetSubjectDetailsUseCase } from "../modules/subject/use-cases/get.subject.details.use-case.js";
+import type { IGetAllSubjectForUserUseCase } from "../modules/subject/use-cases/interfaces/get.all.subject.for.user.use-case.interface.js";
+import { GetAllSubjectForUserUseCase } from "../modules/subject/use-cases/get.all.subject.for.user.use-case.js";
 
 export const registerSubjectDependencies = () => {
   container.register<ISubjectRepository>("ISubjectRepository", {
@@ -29,5 +31,9 @@ export const registerSubjectDependencies = () => {
 
   container.register<IGetSubjectDetailsUseCase>("IGetSubjectDetailsUseCase", {
     useClass: GetSubjectDetailsUseCase,
+  });
+
+  container.register<IGetAllSubjectForUserUseCase>("IGetAllSubjectForUserUseCase", {
+    useClass: GetAllSubjectForUserUseCase,
   });
 };

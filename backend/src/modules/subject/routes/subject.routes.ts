@@ -23,6 +23,10 @@ router.put(
   (req, res) => subjectController.editSubjectName(req, res)
 );
 
+router.get(
+  '/list',
+  (req,res) => subjectController.getAllSubjectForUser(req,res)
+)
 
 router.get(
   "/",
@@ -36,9 +40,6 @@ router.get(
 );
 
 
-// router.get(
-//   '/list',
-//   (req,res) => subjectController.getSyllabusesForUser(req,res)
-// )
+
 
 export default router;
