@@ -9,8 +9,11 @@ import { validateObjectId } from "../../../core/utils/validate.object-id.helper.
 import type { IAddSubjectVariantUseCase } from "../use-cases/interfaces/add.subject.variant.use-case.interface.js";
 import type { IDeleteSubjectVariantUseCase } from "../use-cases/interfaces/delete.subject.variant.use-case.interface.js";
 import type { ISubjectVariantController } from "./interfaces/subject.variant.controller.interface.js";
-import { EditSubjectSchema, type EditSubjectRequestDto } from "../../subject/dtos/edit.subject.dto.js";
-import { AddSubjectVariantSchema, type AddSubjectVariantRequestDto } from "../dtos/add.subject.variant.dto.js";
+
+import {
+  AddSubjectVariantSchema,
+  type AddSubjectVariantRequestDto,
+} from "../dtos/add.subject.variant.dto.js";
 
 @injectable()
 export class SubjectVariantController implements ISubjectVariantController {
@@ -25,14 +28,13 @@ export class SubjectVariantController implements ISubjectVariantController {
   async addSubjectVariant(req: Request, res: Response): Promise<void> {
     try {
       const { subjectId } = req.params;
-       
-      validateObjectId(subjectId);
-      const dto: AddSubjectVariantRequestDto = AddSubjectVariantSchema.parse(req.body)
 
-      await this._addSubjectVariantUseCase.execute(
-        subjectId!,
-        dto
+      validateObjectId(subjectId);
+      const dto: AddSubjectVariantRequestDto = AddSubjectVariantSchema.parse(
+        req.body
       );
+
+      await this._addSubjectVariantUseCase.execute(subjectId!, dto);
 
       res.status(HttpStatusCode.CREATED).json({
         success: true,

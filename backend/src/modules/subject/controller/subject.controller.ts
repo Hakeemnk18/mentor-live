@@ -19,6 +19,7 @@ import { GetAllQuerySchema } from "../../../core/shared/dtos/get.all.doc.dto.js"
 import { parseReq } from "../../../core/utils/parse.query.helper.js";
 import type { IGetSubjectsForAdminUseCase } from "../use-cases/interfaces/get.all.subject.for.admin.use-case.interface.js";
 import type { IGetSubjectDetailsUseCase } from "../use-cases/interfaces/get.subject.details.use-case.interface.js";
+import type { IGetAllSubjectForUserUseCase } from "../use-cases/interfaces/get.all.subject.for.user.use-case.interface.js";
 
 @injectable()
 export class SubjectController implements ISubjectController {
@@ -33,7 +34,10 @@ export class SubjectController implements ISubjectController {
     private readonly _getSubjectsForAdminUseCase: IGetSubjectsForAdminUseCase,
 
     @inject("IGetSubjectDetailsUseCase")
-    private readonly _getSubjectDetailsUseCase: IGetSubjectDetailsUseCase
+    private readonly _getSubjectDetailsUseCase: IGetSubjectDetailsUseCase,
+
+    @inject("IGetAllSubjectForUserUseCase")
+    private readonly _getAllSubjectForUserUseCase: IGetAllSubjectForUserUseCase
   ) {}
 
   async createSubject(req: Request, res: Response): Promise<void> {
@@ -101,6 +105,20 @@ export class SubjectController implements ISubjectController {
       });
     } catch (error) {
     console.log("Error in get subject details for admin", error);
+      handleError(res, error);
+    }
+  }
+
+  async getAllSubjectForUser(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this._getAllSubjectForUserUseCase.execute();
+      res.status(HttpStatusCode.OK).json({
+        success: true,
+        message: ResponseMessages.SUCCESS,
+        data: data,
+      });
+    } catch (error) {
+      console.log("Error in get subject for user", error);
       handleError(res, error);
     }
   }
