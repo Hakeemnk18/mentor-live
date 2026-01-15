@@ -69,6 +69,7 @@ export default function SubjectPage() {
       setSubjects(res.rows);
       setTotalPages(res.totalPages);
     } catch (err: any) {
+      console.log("error fetching subjects ",err)
       toast.error(err?.response?.data?.message || "Failed to load subjects");
     } finally {
       setLoading(false);
