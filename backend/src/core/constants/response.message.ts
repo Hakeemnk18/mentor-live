@@ -84,4 +84,21 @@ export const ResponseMessages = {
   SUBJECT_VARIANT_ALREADY_DELETED: "Subject variant is already deleted",
   SUBJECT_VARIANT_NOT_DELETED: "Subject variant is not deleted",
   SUBJECT_VARIANT_CREATION_FAILED: "Failed to create subject variant",
+  SUBJECT_VARIANT_CANNOT_DELETE_LAST:
+    "At least one subject variant must exist. The last variant cannot be deleted.",
+
+  CHAPTER_CREATED: "Chapter created successfully",
+  CHAPTER_UPDATED: "Chapter updated successfully",
+  CHAPTER_DELETED: "Chapter deleted successfully",
+  CHAPTER_RESTORED: "Chapter restored successfully",
+  CHAPTER_NOT_FOUND: "Chapter not found",
+  CHAPTER_ALREADY_EXISTS: "Chapter already exists",
+  CHAPTER_ALREADY_DELETED: "Chapter is already deleted",
+  CHAPTER_NOT_DELETED: "Chapter is not deleted",
+  CHAPTER_NAME_INVALID: "Chapter name must be between 2 and 100 characters",
+  CHAPTER_PRICE_INVALID: "Chapter price must be a non-negative number",
+  CHAPTER_CREATION_FAILED: "Failed to create chapter",
+  CHAPTER_UPDATE_FAILED: "Failed to update chapter",
+  CHAPTER_DELETE_FAILED: "Failed to delete chapter",
+  CHAPTER_RESTORE_FAILED: "Failed to restore chapter",
 };
