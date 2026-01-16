@@ -10,7 +10,8 @@ import type { CreateSubjectRequestDto } from "../dtos/subject.create.dto.js";
 import type { ICreateSubjectUseCase } from "./interfaces/create.subject.use-case.interface.js";
 import type { ISubjectVariantRepository } from "../../subject-variant/repositories/subject.variant.repository.interface.js";
 import { SubjectVariant } from "../../subject-variant/entities/subject.variant.entity.js";
-
+import type { IClassRepository } from "../../class/repositories/class.repository.interface.js";
+import type { ISyllabusRepository } from "../../syllabus/repositories/syllabus.repository.interface.js";
 
 @injectable()
 export class CreateSubjectUseCase implements ICreateSubjectUseCase {
@@ -19,15 +20,21 @@ export class CreateSubjectUseCase implements ICreateSubjectUseCase {
     private readonly _subjectRepository: ISubjectRepository,
 
     @inject("ISubjectVariantRepository")
-    private readonly _subjectVariantRepository: ISubjectVariantRepository
+    private readonly _subjectVariantRepository: ISubjectVariantRepository,
+
+    @inject("IClassRepository")
+    private readonly _classRepository: IClassRepository,
+
+    @inject("ISyllabusRepository")
+    private readonly _syllabusRepository: ISyllabusRepository
   ) {}
 
   async execute(dto: CreateSubjectRequestDto): Promise<void> {
+    // Normalize subject name to enforce case/whitespace–insensitive uniqueness
     const normalizedName = dto.name.trim();
 
-    // 1️⃣ Check duplicate subject name
+    // Ensure subject with same name does not already exist
     const existing = await this._subjectRepository.findByName(normalizedName);
-
     if (existing && !existing.isDeleted) {
       throw new CustomError(
         ResponseMessages.SUBJECT_ALREADY_EXISTS,
@@ -35,34 +42,58 @@ export class CreateSubjectUseCase implements ICreateSubjectUseCase {
       );
     }
 
-    // 2️⃣ If subject exists but deleted → restore
-    let subject: Subject;
+    
 
-    if (existing && existing.isDeleted) {
-      const restored = existing.restore();
-      subject = await this._subjectRepository.save(restored);
-    } else {
-      // 3️⃣ Create new subject
-      const subjectEntity = new Subject({
-        id: null,
-        name: normalizedName,
-        isDeleted: false,
-      });
-
-      subject = await this._subjectRepository.create(subjectEntity);
-
-      if (!subject) {
+    /**
+     * Validation phase (read-only):
+     * - ensure all referenced syllabuses exist
+     * - ensure all referenced classes exist
+     * No database mutations should occur in this phase.
+     */
+    for (const item of dto.syllabusAndClass) {
+      if (!(await this._syllabusRepository.findById(item.syllabus))) {
         throw new CustomError(
-          ResponseMessages.SUBJECT_CREATION_FAILED,
-          HttpStatusCode.INTERNAL_SERVER_ERROR
+          ResponseMessages.SYLLABUS_NOT_FOUND,
+          HttpStatusCode.NOT_FOUND
         );
+      }
+
+      for (const classId of item.classes) {
+        if (!(await this._classRepository.findById(classId))) {
+          throw new CustomError(
+            ResponseMessages.CLASS_NOT_FOUND,
+            HttpStatusCode.NOT_FOUND
+          );
+        }
       }
     }
 
-    // 4️⃣ Create SubjectVariants
+    /**
+     * Create subject first.
+     * Variants depend on subject ID, so subject must exist before validation
+     * of subject-variant combinations.
+     */
+    const subjectEntity = new Subject({
+      id: null,
+      name: normalizedName,
+      isDeleted: false,
+    });
+
+    const subject = await this._subjectRepository.create(subjectEntity);
+    if (!subject) {
+      throw new CustomError(
+        ResponseMessages.SUBJECT_CREATION_FAILED,
+        HttpStatusCode.INTERNAL_SERVER_ERROR
+      );
+    }
+
+    /**
+     * Mutation phase:
+     * All validations have passed, safe to create subject variants.
+     * Existing variants are skipped to keep operation idempotent.
+     */
     for (const item of dto.syllabusAndClass) {
       for (const classId of item.classes) {
-        // Prevent duplicate combination (DB also enforces this)
         const existingVariant =
           await this._subjectVariantRepository.findByCombination(
             subject.id!,
@@ -71,12 +102,6 @@ export class CreateSubjectUseCase implements ICreateSubjectUseCase {
           );
 
         if (existingVariant && !existingVariant.isDeleted) {
-          continue; // already exists → skip
-        }
-
-        if (existingVariant && existingVariant.isDeleted) {
-          const restored = existingVariant.restore();
-          await this._subjectVariantRepository.save(restored);
           continue;
         }
 
