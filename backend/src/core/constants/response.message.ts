@@ -102,4 +102,26 @@ export const ResponseMessages = {
   CHAPTER_UPDATE_FAILED: "Failed to update chapter",
   CHAPTER_DELETE_FAILED: "Failed to delete chapter",
   CHAPTER_RESTORE_FAILED: "Failed to restore chapter",
+
+  FACULTY_CREATED: "Faculty created successfully",
+FACULTY_UPDATED: "Faculty updated successfully",
+FACULTY_DELETED: "Faculty deleted successfully",
+FACULTY_RESTORED: "Faculty restored successfully",
+
+FACULTY_NOT_FOUND: "Faculty not found",
+FACULTY_ALREADY_EXISTS: "Faculty already exists",
+FACULTY_ALREADY_DELETED: "Faculty is already deleted",
+FACULTY_NOT_DELETED: "Faculty is not deleted",
+
+FACULTY_NAME_INVALID: "Faculty name must be between 2 and 100 characters",
+FACULTY_PRICE_INVALID: "Faculty price must be a non-negative number",
+FACULTY_DESCRIPTION_INVALID: "Faculty description is invalid",
+FACULTY_DEMO_CLASS_INVALID: "Faculty demo class link is invalid",
+FACULTY_IMAGE_INVALID: "Faculty image URL is invalid",
+
+FACULTY_CREATION_FAILED: "Failed to create faculty",
+FACULTY_UPDATE_FAILED: "Failed to update faculty",
+FACULTY_DELETE_FAILED: "Failed to delete faculty",
+FACULTY_RESTORE_FAILED: "Failed to restore faculty",
+
 };
