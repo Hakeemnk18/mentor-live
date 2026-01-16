@@ -5,7 +5,7 @@ import type { IGetAllDocDB } from "../../../core/shared/interfaces/get.all.doc.i
 import { SubjectVariant } from "../entities/subject.variant.entity.js";
 import { SubjectVariantModel } from "../infrastructure/subject.variant.schema.js";
 import { SubjectVariantMapper } from "../mappers/subject.variant.mapper.js";
-import type { SubjectVariantView, SubjectVariantWithSubjectView } from "../type/subject.variant.type.js";
+import type { SubjectVariantView, SubjectVariantViewOnlyWithSubject, SubjectVariantWithSubjectView } from "../type/subject.variant.type.js";
 import type { ISubjectVariantRepository } from "./subject.variant.repository.interface.js";
 
 export class SubjectVariantRepository implements ISubjectVariantRepository {
@@ -141,6 +141,16 @@ export class SubjectVariantRepository implements ISubjectVariantRepository {
       id: item._id.toString(),
       class: { id: item.class._id, name: item.class.name },
       syllabus: { id: item.syllabus._id, name: item.syllabus.name },
+      subject: { id: item.subject._id, name: item.subject.name },
+    }));
+  }
+
+  async findAllWithSubject(query: Record<string, any>): Promise<SubjectVariantViewOnlyWithSubject[]> {
+    const documents = await SubjectVariantModel.find(query)
+      .populate("subject", "_id name")
+      .lean();  
+    return documents.map((item: any) => ({
+      id: item._id.toString(),
       subject: { id: item.subject._id, name: item.subject.name },
     }));
   }

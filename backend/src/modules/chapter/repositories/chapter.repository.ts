@@ -1,12 +1,15 @@
 import { HttpStatusCode } from "../../../core/constants/http.status.codes.js";
 import { ResponseMessages } from "../../../core/constants/response.message.js";
 import { CustomError } from "../../../core/errors/custom.error.js";
+import { Types } from "mongoose";
 import type { IGetAllDocDB } from "../../../core/shared/interfaces/get.all.doc.interface.js";
-
 import { Chapter } from "../entities/chapter.entity.js";
 import { ChapterModel } from "../infrastructure/chapter.schema.js";
 import { ChapterMapper } from "../mapper/chapter.mapper.js";
 import type { IChapterRepository } from "./chapter.repository.interface.js";
+import type { GetChaptersForUserFilter } from "../type/chapter.type.js";
+
+const { ObjectId } = Types;
 
 export class ChapterRepository implements IChapterRepository {
   async create(chapterEntity: Chapter): Promise<Chapter> {
@@ -91,22 +94,48 @@ export class ChapterRepository implements IChapterRepository {
       .filter((c): c is Chapter => c !== null);
   }
 
+  
+
   async findAllForUser(
-    allDoc: IGetAllDocDB
+    allDoc: GetChaptersForUserFilter
   ): Promise<{ id: string; name: string; price: number; icon: string }[]> {
-    const { query, page, limit, sort } = allDoc;
+    const { page, limit, classId, syllabusId, subjectId, search, sort } =
+      allDoc;
     const skip = (page - 1) * limit;
 
-    const documents = await ChapterModel.find({
-      ...query,
-      isDeleted: false,
-    })
-      .select({ _id: 1, name: 1, price: 1, icon: 1 })
-      .sort({ name: 1 })
-      .collation({ locale: "en", strength: 1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    const documents = await ChapterModel.aggregate([
+      {
+        $lookup: {
+          from: "subjectvariants",
+          localField: "subjectVariant",
+          foreignField: "_id",
+          as: "sv",
+        },
+      },
+      { $unwind: "$sv" },
+
+      {
+        $match: {
+          "sv.class": new ObjectId(classId),
+          "sv.syllabus": new ObjectId(syllabusId),
+          ...(subjectId && { "sv.subject": new ObjectId(subjectId) }),
+          ...(search && { name: { $regex: `^${search}`, $options: "i" } }),
+          isDeleted: false,
+        },
+      },
+
+      { $sort: sort },
+      { $skip: skip },
+      { $limit: limit },
+
+      {
+        $project: {
+          name: 1,
+          price: 1,
+          icon: 1,
+        },
+      },
+    ]);
 
     return documents.map((doc) => ({
       id: doc._id.toString(),

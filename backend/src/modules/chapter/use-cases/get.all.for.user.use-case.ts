@@ -19,29 +19,11 @@ export class GetChaptersForUserUseCase implements IGetChaptersForUserUseCase {
     dto: GetChaptersForUserQueryDto
   ): Promise<{ id: string; name: string; price: number; icon: string }[]> {
     const { syllabusId, classId, subjectId, sortValue, limit, search } = dto;
-    let page = 1
-    const query: Record<string, any> = {};
-    const match: Record<string, any> = {
-      class: classId,
-      syllabus: syllabusId,
-    };
+    let page = 1;
 
     let sort: Record<string, any> = {
       createdAt: 1,
     };
-
-    if (subjectId) {
-      match.subject = subjectId;
-    }
-    const subjectVariantIds = await this._subjectVariantRepository.findAllIds(
-      match
-    );
-
-    if (search && search.trim() !== "") {
-      query.name = { $regex: `^${search.trim()}`, $options: "i" };
-    }
-    
-    query.subjectVariant = { $in: subjectVariantIds };
 
     if (sortValue === "price_asc") {
       sort = { price: 1, createdAt: 1 };
@@ -49,15 +31,15 @@ export class GetChaptersForUserUseCase implements IGetChaptersForUserUseCase {
       sort = { price: -1, createdAt: 1 };
     }
 
-    
-
-    const allDoc: IGetAllDocDB = {
+    const data = await this._chapterRepository.findAllForUser({
       page,
       limit,
-      query,
+      search,
+      subjectId,
+      classId,
+      syllabusId,
       sort,
-    };
-
-    return await this._chapterRepository.findAllForUser(allDoc);
+    });
+    return data;
   }
 }
