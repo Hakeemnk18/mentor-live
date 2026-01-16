@@ -100,7 +100,7 @@ export class SubjectController implements ISubjectController {
 
       res.status(HttpStatusCode.CREATED).json({
         success: true,
-        message: ResponseMessages.SUBJECT_UPDATED,
+        message: ResponseMessages.SUCCESS,
         data: data
       });
     } catch (error) {
