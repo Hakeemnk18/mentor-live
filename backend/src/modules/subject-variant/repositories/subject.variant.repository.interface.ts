@@ -1,6 +1,6 @@
 import type { IGetAllDocDB } from "../../../core/shared/interfaces/get.all.doc.interface.js";
 import { SubjectVariant } from "../entities/subject.variant.entity.js";
-import type { SubjectVariantView, SubjectVariantWithSubjectView } from "../type/subject.variant.type.js";
+import type { SubjectVariantView, SubjectVariantViewOnlyWithSubject, SubjectVariantWithSubjectView } from "../type/subject.variant.type.js";
 
 export interface ISubjectVariantRepository {
   create(subjectVariant: SubjectVariant): Promise<SubjectVariant>;
@@ -17,5 +17,6 @@ export interface ISubjectVariantRepository {
   delete(subjectId: string, variantId: string): Promise<void>
   findAllIds(query: Record<string, any>): Promise<string[]>
   findAllWithPopulated(query: Record<string, any>):Promise<SubjectVariantView[]>
+  findAllWithSubject(query : Record<string, any>): Promise<SubjectVariantViewOnlyWithSubject[]>
   findAllWithPopulatedSUbject(query : Record<string, any>): Promise<SubjectVariantWithSubjectView[]>
 }

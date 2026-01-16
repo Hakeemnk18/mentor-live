@@ -7,3 +7,8 @@ export type SubjectVariantView = {
 export type SubjectVariantWithSubjectView = SubjectVariantView & {
   subject: { id: string; name: string };
 };
+
+export type SubjectVariantViewOnlyWithSubject = {
+  id: string;
+  subject: { id: string; name: string };
+}

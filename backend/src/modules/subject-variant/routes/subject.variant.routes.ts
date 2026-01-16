@@ -13,15 +13,9 @@ const authenticate = container.resolve(Authenticate);
 const subjectVariantController = container.resolve(SubjectVariantController);
 
 
-router.post(
-  "/",
-  (req, res) => subjectVariantController.addSubjectVariant(req, res)
-);
 
-
-router.delete(
-  "/:id",
-  (req, res) => subjectVariantController.removeSubjectVariant(req, res)
-);
+router.get('/subjects',
+  (req,res) => subjectVariantController.findAllSubjectVariantWithSubject(req,res)
+)
 
 export default router;
