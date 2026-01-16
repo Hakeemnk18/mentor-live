@@ -79,6 +79,7 @@ export const ResponseMessages = {
   SUBJECT_VARIANT_UPDATED: "Subject variant updated successfully",
   SUBJECT_VARIANT_DELETED: "Subject variant deleted successfully",
   SUBJECT_VARIANT_RESTORED: "Subject variant restored successfully",
+  DUPLICATE_SUBJECT_VARIANT_IN_REQUEST: "Duplicate class and syllabus combination in request.",
   SUBJECT_VARIANT_NOT_FOUND: "Subject variant not found",
   SUBJECT_VARIANT_ALREADY_EXISTS: "Subject variant already exists",
   SUBJECT_VARIANT_ALREADY_DELETED: "Subject variant is already deleted",
