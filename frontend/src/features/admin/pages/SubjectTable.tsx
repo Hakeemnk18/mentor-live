@@ -5,25 +5,42 @@ import {
   createSubject,
   updateSubject,
   getSubjects,
+  getSubjectById,
 } from "../../../api/subject.api";
 import toast from "react-hot-toast";
 import TopLoader from "../../../shared/components/TopLoader";
 import type { Column } from "../components/AdminTable";
-import NameFormModal from "../components/NameFormModal/NameFormModal";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
+import { getSyllabus } from "../../../api/syllabus.api";
+import { getClasses } from "../../../api/class.api";
+import SubjectFormModal from "../components/SubjectFormModal";
+import type { CreateSubjectPayload } from "../../../shared/types/api.types";
 
 type SubjectRow = {
   _id: string;
   name: string;
   isDeleted: boolean;
 };
+type SubjectVariantForm = {
+  syllabusId: string;
+  classId: string;
+};
+const getErrorMessage = (err: any, fallback: string) =>
+  err?.response?.data?.message || fallback;
 
 export default function SubjectPage() {
   const [subjects, setSubjects] = useState<SubjectRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState<"create" | "edit">("create");
-  const [editingSubject, setEditingSubject] = useState<SubjectRow | undefined>();
+  const [editingSubject, setEditingSubject] = useState<
+    | {
+        _id?: string;
+        name: string;
+        variants: SubjectVariantForm[];
+      }
+    | undefined
+  >();
   const [submitting, setSubmitting] = useState(false);
 
   const [page, setPage] = useState(1);
@@ -31,6 +48,10 @@ export default function SubjectPage() {
   const [search, setSearch] = useState("");
   const [isDeleted, setIsDeleted] = useState<boolean | undefined>(undefined);
   const [totalPages, setTotalPages] = useState(1);
+  const [syllabuses, setSyllabuses] = useState<{ _id: string; name: string }[]>(
+    []
+  );
+  const [classes, setClasses] = useState<{ _id: string; name: string }[]>([]);
 
   const columns: Column<SubjectRow>[] = [
     {
@@ -69,7 +90,7 @@ export default function SubjectPage() {
       setSubjects(res.rows);
       setTotalPages(res.totalPages);
     } catch (err: any) {
-      console.log("error fetching subjects ",err)
+      console.log("error fetching subjects ", err);
       toast.error(err?.response?.data?.message || "Failed to load subjects");
     } finally {
       setLoading(false);
@@ -79,6 +100,23 @@ export default function SubjectPage() {
   useEffect(() => {
     fetchSubjects();
   }, [page, limit, search, isDeleted]);
+  useEffect(() => {
+    const fetchMeta = async () => {
+      try {
+        const [syllabusRes, classRes] = await Promise.all([
+          getSyllabus({ page: 1, limit: 100 }),
+          getClasses({ page: 1, limit: 100 }),
+        ]);
+
+        setSyllabuses(syllabusRes.rows);
+        setClasses(classRes.rows);
+      } catch {
+        toast.error("Failed to load syllabus / classes");
+      }
+    };
+
+    fetchMeta();
+  }, []);
 
   const handleCreate = () => {
     setMode("create");
@@ -86,33 +124,83 @@ export default function SubjectPage() {
     setModalOpen(true);
   };
 
-  const handleEdit = (subject: SubjectRow) => {
-    setMode("edit");
-    setEditingSubject(subject);
-    setModalOpen(true);
+  const handleEdit = async (subject: SubjectRow) => {
+    try {
+      setMode("edit");
+
+      const fullSubject = await getSubjectById(subject._id);
+
+      setEditingSubject({
+        _id: fullSubject._id,
+        name: fullSubject.name,
+        variants: fullSubject.variants.map((v) => ({
+          syllabusId: v.syllabusId,
+          classId: v.classId,
+        })),
+      });
+
+      setModalOpen(true);
+    } catch {
+      toast.error("Failed to load subject details");
+    }
   };
 
-  const handleSubmit = async (data: { _id?: string; name: string }) => {
+ const handleCreateSubject = async (data: CreateSubjectPayload) => {
+  try {
+    setSubmitting(true);
+
+    await createSubject({
+      name: data.name,
+      syllabusAndClass: data.syllabusAndClass,
+    });
+
+    toast.success("Subject created successfully");
+
+    setModalOpen(false);
+    setEditingSubject(undefined);
+    setMode("create");
+
+    await fetchSubjects();
+  } catch (err: any) {
+    toast.error(getErrorMessage(err, "Failed to create subject"));
+  } finally {
+    setSubmitting(false);
+  }
+};
+
+
+  const handleUpdateSubjectName = async (data: {
+    _id: string;
+    name: string;
+  }) => {
     try {
       setSubmitting(true);
 
-      if (mode === "create") {
-        await createSubject({ name: data.name });
-        toast.success("Subject created successfully");
-      }
+      await updateSubject(data._id, { name: data.name });
 
-      if (mode === "edit" && data._id) {
-        await updateSubject(data._id, { name: data.name });
-        toast.success("Subject updated successfully");
-      }
-
-      setModalOpen(false);
-      setEditingSubject(undefined);
-      setMode("create");
+      toast.success("Subject name updated");
 
       await fetchSubjects();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Something went wrong");
+      toast.error(getErrorMessage(err, "Failed to update subject name"));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  const handleAddSubjectVariants = async (data: {
+    _id: string;
+    variants: SubjectVariantForm[];
+  }) => {
+    try {
+      setSubmitting(true);
+
+      // await addSubjectVariants(data._id, data.variants);
+
+      toast.success("Variants added successfully");
+
+      await fetchSubjects();
+    } catch (err: any) {
+      toast.error(getErrorMessage(err, "Failed to add variants"));
     } finally {
       setSubmitting(false);
     }
@@ -236,15 +324,17 @@ export default function SubjectPage() {
       </div>
 
       {/* Modal */}
-      <NameFormModal
+      <SubjectFormModal
         open={modalOpen}
         mode={mode}
         initialData={editingSubject}
-        onClose={() => setModalOpen(false)}
-        onSubmit={handleSubmit}
         loading={submitting}
-        title="Subject"
-        label="Subject Name"
+        onClose={() => setModalOpen(false)}
+        onCreate={handleCreateSubject}
+        onUpdateName={handleUpdateSubjectName}
+        onAddVariants={handleAddSubjectVariants}
+        syllabuses={syllabuses}
+        classes={classes}
       />
     </AdminPageContainer>
   );

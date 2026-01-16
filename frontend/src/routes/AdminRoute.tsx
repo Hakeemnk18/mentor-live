@@ -1,4 +1,5 @@
 import AdminBootstrap from "../features/admin/components/AdminBootstrap"
+import ChapterPage from "../features/admin/pages/ChapterTable"
 import ClassPage from "../features/admin/pages/ClassTable"
 import FacultyPage from "../features/admin/pages/FacultyTable"
 import Home from "../features/admin/pages/Home"
@@ -63,6 +64,16 @@ const adminRoutes = [
         element:(
         <AdminBootstrap>
             <SubjectPage/>
+        </AdminBootstrap>
+         
+            
+        )
+    },
+    {
+        path:"chapters",
+        element:(
+        <AdminBootstrap>
+            <ChapterPage/>
         </AdminBootstrap>
          
             

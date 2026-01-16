@@ -121,3 +121,111 @@ export type GetSubjectsResult = {
   totalPages: number;
   total: number;
 };
+
+export type SubjectFormVariant = {
+  syllabusId: string;
+  classId: string;
+};
+
+export type SubjectFormData = {
+  _id?: string;
+  name: string;
+  variants: SubjectFormVariant[];
+};
+export type SubjectVariantApi = {
+  syllabus: { id: string };
+  class: { id: string };
+};
+
+export type GetSubjectByIdApiResponse = {
+  success: boolean;
+  message: string;
+  data: {
+    subject: {
+      id: string;
+      name: string;
+    };
+    variants: SubjectVariantApi[];
+  };
+};
+
+export type SyllabusAndClassPayload = {
+  syllabus: string;
+  classes: string[];
+};
+
+export type CreateSubjectPayload = {
+  name: string;
+  syllabusAndClass: SyllabusAndClassPayload[];
+};
+
+
+export type EditSubjectNamePayload
+= {
+  name:string
+}
+
+
+//CHAPTER
+
+export type GetChaptersParams = {
+  page: number;
+  limit: number;
+  search?: string;
+  classId?: string;
+  syllabusId?: string;
+  subjectId?: string;
+  isDeleted?: boolean;
+};
+
+export type ChapterRow = {
+  _id: string;
+  name: string;
+  price: number;
+  icon?: string;
+  isDeleted: boolean;
+  className: string;
+  syllabusName: string;
+  subjectName: string;
+};
+
+export type GetChaptersResult = {
+  rows: ChapterRow[];
+  currentPage: number;
+  totalPages: number;
+  total: number;
+};
+
+export type SubjectVariantOption = {
+  _id: string;
+  subjectName: string;
+};
+
+export type CreateChapterForm = {
+  name: string;
+  price: number;
+  syllabusId: string;
+  classId: string;
+  subjectVariantId: string;
+  icon: string;
+};
+
+export type CreateChapterPayload = {
+  name: string;
+  price: number;
+  subjectVariant: string;
+  icon: string;
+};
+export type SubjectVariantsForChapterApi = {
+  id: string;
+  subject: {
+    id: string;
+    name: string;
+  };
+};
+
+export type GetSubjectVariantsParams = {
+  classId: string;
+  syllabusId: string;
+};
+

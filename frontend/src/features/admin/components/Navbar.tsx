@@ -9,6 +9,7 @@ const navItems = [
   { label: "Classes", path: "/admin/class" },
   { label: "Syllabus", path: "/admin/syllabus" },
   { label: "Subjects", path: "/admin/subjects" },
+  { label: "Chapters", path: "/admin/chapters" },
   { label: "Bookings", path: "/admin/bookings" },
   { label: "Students", path: "/admin/students" },
 ];
