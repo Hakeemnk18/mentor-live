@@ -1,6 +1,8 @@
+import type { ImageValue } from "../type/chapter.type.js";
+
 export interface ChapterProps {
   id: string | null;
-  icon: string;
+  icon: ImageValue;
   name: string;
   price: number;
   subjectVariant: string;   // ObjectId as string in domain
@@ -9,7 +11,7 @@ export interface ChapterProps {
 
 export class Chapter {
   public readonly id: string | null;
-  public readonly icon: string;
+  public readonly icon: ImageValue;
   public readonly name: string;
   public readonly price: number;
   public readonly subjectVariant: string;
@@ -32,6 +34,10 @@ export class Chapter {
 
     if (!props.subjectVariant) {
       throw new Error("Chapter must belong to a subject variant");
+    }
+
+    if (!props.icon?.url || !props.icon.publicId) {
+      throw new Error("Chapter icon must have url and publicId");
     }
 
     this.id = props.id;

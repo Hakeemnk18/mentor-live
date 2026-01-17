@@ -16,7 +16,10 @@ export class ChapterMapper {
 
     return new Chapter({
       id: idString,
-      icon: chapterModelData.icon,
+      icon: {
+        url: chapterModelData.icon.url,
+        publicId: chapterModelData.icon.publicId,
+      },
       name: chapterModelData.name,
       price: chapterModelData.price,
       subjectVariant:
@@ -28,7 +31,10 @@ export class ChapterMapper {
 
   static toPersistence(chapterEntity: Chapter): any {
     return {
-      icon: chapterEntity.icon,
+      icon: {
+        url: chapterEntity.icon.url,
+        publicId: chapterEntity.icon.publicId,
+      },
       name: chapterEntity.name,
       price: chapterEntity.price,
       subjectVariant: chapterEntity.subjectVariant,
