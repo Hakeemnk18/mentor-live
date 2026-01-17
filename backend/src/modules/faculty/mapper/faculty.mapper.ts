@@ -1,4 +1,5 @@
 import { Faculty } from "../entities/faculty.entity.js"; 
+import type { FacultyView } from "../types/faculty.type.js";
 
 export class FacultyMapper {
   static toDomain(facultyModelData: any): Faculty | null {
@@ -75,6 +76,19 @@ export class FacultyMapper {
         poolLimit: slot.poolLimit,
       })),
       isDeleted: facultyEntity.isDeleted,
+    };
+  }
+
+  static toView(raw: any): FacultyView {
+    return {
+      id: raw._id?.toString() ?? null,
+      name: raw.name,
+      qualifications: raw.qualifications ?? [],
+      description: raw.description,
+      demoClass: raw.demoClass,
+      image: raw.image,
+      price: raw.price,
+      isDeleted: raw.isDeleted ?? false,
     };
   }
 }

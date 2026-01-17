@@ -18,4 +18,8 @@ router.post('/',
   (req,res) => facultyController.createFaculty(req, res)
 )
 
+router.get('/',
+  (req, res)=> facultyController.GetAllFacultyForAdmin(req, res)
+)
+
 export default router;

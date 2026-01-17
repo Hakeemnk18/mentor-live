@@ -2,11 +2,12 @@ import { Types } from "mongoose";
 import { HttpStatusCode } from "../../../core/constants/http.status.codes.js";
 import { ResponseMessages } from "../../../core/constants/response.message.js";
 import { CustomError } from "../../../core/errors/custom.error.js";
-import type { findAllWithFilters } from "../../../core/shared/type/find.all.with.filters.js";
+import type { AcademicListFiltersBase } from "../../../core/shared/type/find.all.with.filters.js";
 import { Faculty } from "../entities/faculty.entity.js";
 import { FacultyModel } from "../infrastructure/faculty.schema.js";
 import { FacultyMapper } from "../mapper/faculty.mapper.js";
 import type { IFacultyRepository } from "./faculty.repository.interface.js";
+import type { FacultyView } from "../types/faculty.type.js";
 
 const { ObjectId } = Types;
 
@@ -71,20 +72,32 @@ export class FacultyRepository implements IFacultyRepository {
     return domainFaculty;
   }
 
-  async findAllFacultyForAdmin(allDoc: findAllWithFilters): Promise<Faculty[]> {
+  async findAllFacultyForAdmin(
+    allDoc: AcademicListFiltersBase
+  ): Promise<{ data: FacultyView[], total: number}> {
     const { page, limit, classId, syllabusId, subjectId, search, sort } =
       allDoc;
     const skip = (page - 1) * limit;
 
     const documents = await FacultyModel.aggregate([
       {
+        $match: {
+          isDeleted: false,
+          ...(search && {
+            name: { $regex: search, $options: "i" },
+          }),
+        },
+      },
+      { $unwind: "$subjectOffering" },
+      {
         $lookup: {
           from: "subjectvariants",
-          localField: "subjectVariant",
+          localField: "subjectOffering",
           foreignField: "_id",
           as: "sv",
         },
       },
+
       { $unwind: "$sv" },
 
       {
@@ -92,24 +105,39 @@ export class FacultyRepository implements IFacultyRepository {
           ...(classId && { "sv.subject": new ObjectId(classId) }),
           ...(syllabusId && { "sv.subject": new ObjectId(syllabusId) }),
           ...(subjectId && { "sv.subject": new ObjectId(subjectId) }),
-          ...(search && { name: { $regex: `^${search}`, $options: "i" } }),
-          isDeleted: false,
         },
       },
-
-      { $sort: sort },
-      { $skip: skip },
-      { $limit: limit },
-
       {
-        $project: {
-          name: 1,
-          price: 1,
-          icon: 1,
+        $facet: {
+          data: [
+            { $sort: sort },
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $project: {
+                name: 1,
+                price: 1,
+                image: 1,
+                qualifications: 1,
+                demoClass: 1,
+                description: 1,
+                createdAt: 1,
+              },
+            },
+          ],
+          totalCount: [{ $count: "count" }],
         },
       },
     ]);
 
-    return [];
+    const data = documents[0]?.data ?? [];
+    const total = documents[0]?.totalCount[0]?.count ?? 0;
+
+    const faculties = data.map(FacultyMapper.toView);
+
+    return {
+      data: faculties,
+      total,
+    };
   }
 }
