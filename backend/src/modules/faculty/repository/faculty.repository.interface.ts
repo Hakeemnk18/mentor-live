@@ -1,3 +1,4 @@
+import type { findAllWithFilters } from "../../../core/shared/type/find.all.with.filters.js";
 import { Faculty } from "../entities/faculty.entity.js"; 
 
 export interface IFacultyRepository {
@@ -5,4 +6,6 @@ export interface IFacultyRepository {
   findById(id: string): Promise<Faculty | null>;
   findByName(name: string): Promise<Faculty | null>;
   save(facultyEntity: Faculty): Promise<Faculty>;
+ findAllFacultyForAdmin(allDoc: findAllWithFilters): Promise<Faculty[]>;
+  
 }
