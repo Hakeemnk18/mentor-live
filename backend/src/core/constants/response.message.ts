@@ -124,4 +124,6 @@ FACULTY_UPDATE_FAILED: "Failed to update faculty",
 FACULTY_DELETE_FAILED: "Failed to delete faculty",
 FACULTY_RESTORE_FAILED: "Failed to restore faculty",
 
+SLOT_TIME_NOT_VALID: "Slot times are not valid"
+
 };
