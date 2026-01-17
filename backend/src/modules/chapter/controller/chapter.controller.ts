@@ -19,7 +19,9 @@ import { validateObjectId } from "../../../core/utils/validate.object-id.helper.
 import { GetAllQuerySchema } from "../../../core/shared/dtos/get.all.doc.dto.js";
 import { parseReq } from "../../../core/utils/parse.query.helper.js";
 import { CreateChapterSchema, type CreateChapterRequestDto } from "../dtos/create.chapter.dto.js";
-import { GetChaptersForUserQuerySchema } from "../dtos/get.chapters.user.dto.js";
+import { FindByClassSyllabusQuerySchema } from "../../../core/shared/dtos/get.by.class.and.subject.dto.js";
+import { parseListQuery } from "../../../core/utils/parse.list.query.helper.js";
+import { ChapterListQuerySchema } from "../dtos/get.chapter.dto.js";
 
 @injectable()
 export class ChapterController implements IChapterController {
@@ -83,14 +85,9 @@ export class ChapterController implements IChapterController {
   /** 👤 User: get chapters for a subject variant */
   async getChaptersForUser(req: Request, res: Response): Promise<void> {
     try {
-    const  classId =  req.query.classId as any
-    const  syllabusId =  req.query.syllabusId as any
-    const  subjectId = req.query.subjectId as any
-    const search =  req.query.search as any
-    const limit = req.query.limit as any
-    const sortValue = req.query.sort as any
+   
 
-    const dto = GetChaptersForUserQuerySchema.parse({classId, syllabusId, subjectId,search, sortValue, limit});
+    const dto = ChapterListQuerySchema.parse(parseListQuery(req));
 
       const chapters =
         await this._getChaptersForUserUseCase.execute(dto);

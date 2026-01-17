@@ -27,3 +27,15 @@ export interface FacultyProps {
   chapterSlots: ChapterSlotProps[];
   isDeleted: boolean;
 }
+
+export interface FacultyView {
+  id: string | null;
+  name: string;
+  qualifications: string[];
+  description: string;
+  demoClass: string;
+  image: string;
+  price: number;
+  isDeleted: boolean;
+  
+}

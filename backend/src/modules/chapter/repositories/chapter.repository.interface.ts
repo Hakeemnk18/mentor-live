@@ -1,6 +1,6 @@
 import type { IGetAllDocDB } from "../../../core/shared/interfaces/get.all.doc.interface.js";
-import type { findAllWithFilters } from "../../../core/shared/type/find.all.with.filters.js";
 import { Chapter } from "../entities/chapter.entity.js";
+import type { ChapterListFilters } from "../type/chapter.type.js";
 
 export interface IChapterRepository {
   create(chapterEntity: Chapter): Promise<Chapter>;
@@ -8,6 +8,6 @@ export interface IChapterRepository {
   findByNameAndVariant(name: string, subjectVariant: string): Promise<Chapter | null>;
   save(chapterEntity: Chapter): Promise<Chapter>;
   findAllForAdmin(allDoc: IGetAllDocDB): Promise<Chapter[]>;
-  findAllForUser(allDoc: findAllWithFilters): Promise<{ id: string; name: string; price: number; icon: string }[]>;
+  findAllForUser(allDoc: ChapterListFilters): Promise<{ id: string; name: string; price: number; icon: string }[]>;
   countDocument(query: Record<string, any>): Promise<number>;
 }
