@@ -124,6 +124,9 @@ FACULTY_UPDATE_FAILED: "Failed to update faculty",
 FACULTY_DELETE_FAILED: "Failed to delete faculty",
 FACULTY_RESTORE_FAILED: "Failed to restore faculty",
 
-SLOT_TIME_NOT_VALID: "Slot times are not valid"
+SLOT_TIME_NOT_VALID: "Slot times are not valid",
+
+INVALID_CLOUDINARY_PUBLIC_ID:"publicId is required to delete image",
+DELETE_CLOUDINARY_IMAGE_FAILED:"Failed to delete image from Cloudinary"
 
 };
