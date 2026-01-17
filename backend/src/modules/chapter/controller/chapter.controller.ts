@@ -69,7 +69,7 @@ export class ChapterController implements IChapterController {
       validateObjectId(id);
 
       const dto: CreateChapterRequestDto = CreateChapterSchema.parse(req.body);
-
+      console.log("DTO in editChapter:", dto);
       await this._editChapterUseCase.execute(id!, dto);
 
       res.status(HttpStatusCode.OK).json({
