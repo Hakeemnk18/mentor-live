@@ -1,7 +1,10 @@
 import { Schema, model, Document, Types } from "mongoose";
 
 export interface IChapter extends Document {
-  icon: string;
+  icon: {
+    url: string,
+    publicId: string
+  };
   name: string;
   price: number;
   subjectVariant: Types.ObjectId;
@@ -11,9 +14,15 @@ export interface IChapter extends Document {
 const chapterSchema = new Schema<IChapter>(
   {
     icon: {
-      type: String,
-      required: true,
-      trim: true,
+      url: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+      publicId: {
+        type: String,
+        required: false, // important for backward compatibility
+      },
     },
 
     name: {
@@ -47,6 +56,5 @@ const chapterSchema = new Schema<IChapter>(
     timestamps: true,
   }
 );
-
 
 export const ChapterModel = model<IChapter>("Chapter", chapterSchema);

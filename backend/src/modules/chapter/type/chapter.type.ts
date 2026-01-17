@@ -1,18 +1,20 @@
 import { type ChapterProps } from "../entities/chapter.entity.js";
-import type { SubjectVariantWithSubjectView } from "../../subject-variant/type/subject.variant.type.js"; 
+import type { SubjectVariantWithSubjectView } from "../../subject-variant/type/subject.variant.type.js";
+import type { AcademicListFiltersBase } from "../../../core/shared/type/find.all.with.filters.js";
 
-export type ChapterWithSubjectVariantView =
-  Omit<ChapterProps, "subjectVariant"> & {
-    subjectVariant: SubjectVariantWithSubjectView;
-  };
+export type ChapterWithSubjectVariantView = Omit<
+  ChapterProps,
+  "subjectVariant"
+> & {
+  subjectVariant: SubjectVariantWithSubjectView;
+};
 
-
-export type GetChaptersForUserFilter = {
+export type ChapterListFilters = AcademicListFiltersBase & {
   classId: string;
   syllabusId: string;
-  subjectId: string | undefined;
-  sort: Record<string, 1 | -1>;
-  limit: number;
-  search?: string;
-  page: number;
+};
+
+export type ImageValue = {
+  url: string;
+  publicId: string;
 };

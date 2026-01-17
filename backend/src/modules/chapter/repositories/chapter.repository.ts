@@ -7,7 +7,8 @@ import { Chapter } from "../entities/chapter.entity.js";
 import { ChapterModel } from "../infrastructure/chapter.schema.js";
 import { ChapterMapper } from "../mapper/chapter.mapper.js";
 import type { IChapterRepository } from "./chapter.repository.interface.js";
-import type { GetChaptersForUserFilter } from "../type/chapter.type.js";
+import type { ChapterListQueryDto } from "../dtos/get.chapter.dto.js";
+import type { ChapterListFilters } from "../type/chapter.type.js";
 
 const { ObjectId } = Types;
 
@@ -97,7 +98,7 @@ export class ChapterRepository implements IChapterRepository {
   
 
   async findAllForUser(
-    allDoc: GetChaptersForUserFilter
+    allDoc: ChapterListFilters
   ): Promise<{ id: string; name: string; price: number; icon: string }[]> {
     const { page, limit, classId, syllabusId, subjectId, search, sort } =
       allDoc;

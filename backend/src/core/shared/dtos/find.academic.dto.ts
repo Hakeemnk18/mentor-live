@@ -1,15 +1,12 @@
 import { z } from "zod";
 import { ObjectIdSchema } from "../../../core/utils/object.id.validation.js";
 
-export const GetChaptersForUserQuerySchema = z.object({
-  classId: ObjectIdSchema,
-  syllabusId: ObjectIdSchema,
+export const BaseAcademicListQuerySchema = z.object({
+  classId: ObjectIdSchema.optional(),
+  syllabusId: ObjectIdSchema.optional(),
   subjectId: ObjectIdSchema.optional(),
+  page: z.coerce.number().default(1),
   search: z.string().optional().default(""),
   limit: z.coerce.number().default(100),
   sortValue: z.string().optional().default("createdAt"),
 });
-
-export type GetChaptersForUserQueryDto = z.infer<
-  typeof GetChaptersForUserQuerySchema
->;

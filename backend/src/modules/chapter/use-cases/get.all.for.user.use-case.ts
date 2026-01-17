@@ -1,9 +1,8 @@
 import { inject, injectable } from "tsyringe";
 import type { IChapterRepository } from "../repositories/chapter.repository.interface.js";
 import type { IGetChaptersForUserUseCase } from "./interfaces/get.all.for.user.use-case.interface.js";
-import type { GetChaptersForUserQueryDto } from "../dtos/get.chapters.user.dto.js";
 import type { ISubjectVariantRepository } from "../../subject-variant/repositories/subject.variant.repository.interface.js";
-import type { IGetAllDocDB } from "../../../core/shared/interfaces/get.all.doc.interface.js";
+import type { ChapterListQueryDto } from "../dtos/get.chapter.dto.js";
 
 @injectable()
 export class GetChaptersForUserUseCase implements IGetChaptersForUserUseCase {
@@ -16,7 +15,7 @@ export class GetChaptersForUserUseCase implements IGetChaptersForUserUseCase {
   ) {}
 
   async execute(
-    dto: GetChaptersForUserQueryDto
+    dto: ChapterListQueryDto
   ): Promise<{ id: string; name: string; price: number; icon: string }[]> {
     const { syllabusId, classId, subjectId, sortValue, limit, search } = dto;
     let page = 1;

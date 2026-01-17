@@ -2,10 +2,16 @@ import { z } from "zod";
 import { ObjectIdSchema } from "../../../core/utils/object.id.validation.js";
 
 export const CreateChapterSchema = z.object({
-  icon: z
-    .string()
-    .trim()
-    .min(1, "Icon is required"),
+  icon: z.object({
+    url: z
+      .string()
+      .trim()
+      .min(1, "Icon URL is required"),
+    publicId: z
+      .string()
+      .trim()
+      .min(1, "Icon publicId is required"),
+  }),
 
   name: z
     .string()
