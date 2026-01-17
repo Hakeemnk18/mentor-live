@@ -5,11 +5,12 @@ import { HttpStatusCode } from "../../../core/constants/http.status.codes.js";
 
 import { Faculty } from "../entities/faculty.entity.js";
 
-import type { IFacultyRepository } from "../repository/faculty.repository.interface.js"; 
-import type { CreateFacultyRequestDto } from "../dtos/create.faculty.dto.js"; 
+import type { IFacultyRepository } from "../repository/faculty.repository.interface.js";
+import type { CreateFacultyRequestDto } from "../dtos/create.faculty.dto.js";
 import type { ICreateFacultyUseCase } from "./interfaces/create.faculty.use-case.interface.js";
 import type { ISubjectVariantRepository } from "../../subject-variant/repositories/subject.variant.repository.interface.js";
 import type { IChapterRepository } from "../../chapter/repositories/chapter.repository.interface.js";
+import { toMinutes, validateOnCreate } from "../../../core/utils/validate.time.slot.js";
 
 @injectable()
 export class CreateFacultyUseCase implements ICreateFacultyUseCase {
@@ -43,8 +44,9 @@ export class CreateFacultyUseCase implements ICreateFacultyUseCase {
      * - validate chapters (if provided)
      */
     for (const subjectVariantId of dto.subjects) {
-      const variant =
-        await this._subjectVariantRepository.findById(subjectVariantId);
+      const variant = await this._subjectVariantRepository.findById(
+        subjectVariantId
+      );
 
       if (!variant || variant.isDeleted) {
         throw new CustomError(
@@ -66,9 +68,20 @@ export class CreateFacultyUseCase implements ICreateFacultyUseCase {
       }
     }
 
+    if (!validateOnCreate(dto.slots)) {
+      throw new CustomError(
+        ResponseMessages.SLOT_TIME_NOT_VALID,
+        HttpStatusCode.BAD_REQUEST
+      );
+    }
+
     /**
      * Create Faculty entity
      */
+    const sortedSlots = [...dto.slots].sort(
+      (a, b) => toMinutes(a.time) - toMinutes(b.time)
+    );
+
     const facultyEntity = new Faculty({
       id: null,
       name: normalizedName,
@@ -78,13 +91,13 @@ export class CreateFacultyUseCase implements ICreateFacultyUseCase {
       image: dto.image,
       price: dto.price,
       subjectOffering: dto.subjects,
-      slots: dto.slots.map(slot => ({
+      slots: sortedSlots.map((slot) => ({
         time: slot.time,
         isAvailable: true,
         pool: [],
         poolLimit: 5,
       })),
-      chapterSlots: (dto.chapterSlots ?? []).map(slot => ({
+      chapterSlots: (dto.chapterSlots ?? []).map((slot) => ({
         chapterId: slot.chapter,
         isAvailable: true,
         pool: [],
