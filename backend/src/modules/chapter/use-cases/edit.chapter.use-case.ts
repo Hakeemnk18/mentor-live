@@ -8,6 +8,7 @@ import type { IChapterRepository } from "../repositories/chapter.repository.inte
 import type { CreateChapterRequestDto } from "../dtos/create.chapter.dto.js";
 import type { IEditChapterUseCase } from "./interfaces/edit.chapter.use-case.interface.js";
 import type { ISubjectVariantRepository } from "../../subject-variant/repositories/subject.variant.repository.interface.js";
+import { deleteCloudinaryImage } from "../../../core/utils/delete.cloudinary.image.js";
 
 @injectable()
 export class EditChapterUseCase implements IEditChapterUseCase {
@@ -16,7 +17,7 @@ export class EditChapterUseCase implements IEditChapterUseCase {
     private readonly _chapterRepository: IChapterRepository,
 
     @inject("ISubjectVariantRepository")
-        private readonly _subjectVariantRepository: ISubjectVariantRepository
+    private readonly _subjectVariantRepository: ISubjectVariantRepository
   ) {}
 
   async execute(id: string, dto: CreateChapterRequestDto): Promise<void> {
@@ -59,6 +60,11 @@ export class EditChapterUseCase implements IEditChapterUseCase {
         ResponseMessages.SUBJECT_VARIANT_NOT_FOUND,
         HttpStatusCode.NOT_FOUND
       );
+    }
+
+    // delete image if image changed
+    if (dto.icon?.publicId && existing.icon.publicId !== dto.icon.publicId) {
+      await deleteCloudinaryImage(existing.icon.publicId);
     }
 
     //  Rebuild domain entity (immutable update)
