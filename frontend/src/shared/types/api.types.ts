@@ -201,21 +201,29 @@ export type SubjectVariantOption = {
   subjectName: string;
 };
 
+export type ChapterIcon = {
+  url: string;
+  publicId: string;
+};
+
 export type CreateChapterForm = {
   name: string;
   price: number;
   syllabusId: string;
   classId: string;
   subjectVariantId: string;
-  icon: string;
+  icon: ChapterIcon;
 };
-
 export type CreateChapterPayload = {
   name: string;
   price: number;
   subjectVariant: string;
-  icon: string;
+  icon: {
+    url: string;
+    publicId: string;
+  };
 };
+
 export type SubjectVariantsForChapterApi = {
   id: string;
   subject: {

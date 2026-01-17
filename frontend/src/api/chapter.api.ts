@@ -34,12 +34,7 @@ export const createChapter = async (
 
 export const updateChapter = async (
   id: string,
-  payload: {
-    name: string;
-    price: number;
-    subjectVariant: string;
-    icon: string | null;
-  }
+  payload: CreateChapterPayload
 ) => {
   const res = await axiosInstance.put(`/chapters/${id}`, payload);
   return res.data;

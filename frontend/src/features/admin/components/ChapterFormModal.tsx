@@ -10,6 +10,11 @@ type SubjectVariant = {
   subjectName: string;
 };
 
+type IconPayload = {
+  url: string;
+  publicId: string;
+};
+
 type ChapterInitialData = {
   _id: string;
   name: string;
@@ -17,7 +22,12 @@ type ChapterInitialData = {
   syllabusId: string;
   classId: string;
   subjectVariantId: string;
-  icon?: string | null;
+  icon?: IconPayload | null;
+};
+
+type CloudinaryUploadResult = {
+  url: string;
+  publicId: string;
 };
 
 type Props = {
@@ -35,7 +45,7 @@ type Props = {
     name: string;
     price: number;
     subjectVariant: string;
-    icon: string;
+    icon: IconPayload;
   }) => Promise<void>;
 
   onUpdate: (
@@ -44,7 +54,7 @@ type Props = {
       name: string;
       price: number;
       subjectVariant: string;
-      icon: string | null;
+      icon: IconPayload;
     }
   ) => Promise<void>;
 };
@@ -75,47 +85,50 @@ export default function ChapterFormModal({
 
   /* ---------------- IMAGE STATE ---------------- */
 
+  const [icon, setIcon] = useState<IconPayload | null>(null);
   const [iconPreview, setIconPreview] = useState<string | null>(null);
   const [iconFile, setIconFile] = useState<File | null>(null);
+
   const [cropOpen, setCropOpen] = useState(false);
   const [isNewImage, setIsNewImage] = useState(false);
 
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   /* ---------------- INIT ---------------- */
 
   useEffect(() => {
-  if (!open) return;
+    if (!open) return;
 
-  if (mode === "edit" && initialData) {
-    // Prefill only non-dependent fields
-    setName(initialData.name);
-    setPrice(initialData.price);
+    if (mode === "edit" && initialData) {
+      setName(initialData.name);
+      setPrice(initialData.price);
 
-    // ⛔ Force re-selection order
-    setSyllabusId("");
-    setClassId("");
-    setSubjectVariantId("");
-    setSubjectVariants([]);
+      // ⛔ dropdowns intentionally reset
+      setSyllabusId("");
+      setClassId("");
+      setSubjectVariantId("");
 
-    // Image can be shown
-    setIconPreview(initialData.icon ?? null);
-    setIconFile(null);
-    setIsNewImage(false);
-  } else {
-    // Create mode reset
-    setName("");
-    setPrice(0);
-    setSyllabusId("");
-    setClassId("");
-    setSubjectVariantId("");
-    setSubjectVariants([]);
-    setIconPreview(null);
-    setIconFile(null);
-    setIsNewImage(false);
-  }
-}, [open, mode, initialData]);
+      setIcon(initialData.icon ?? null);
+      setIconPreview(initialData.icon?.url ?? null);
+
+      setIconFile(null);
+      setIsNewImage(false);
+    } else {
+      setName("");
+      setPrice(0);
+      setSyllabusId("");
+      setClassId("");
+      setSubjectVariantId("");
+
+      setIcon(null);
+      setIconPreview(null);
+      setIconFile(null);
+      setIsNewImage(false);
+    }
+  }, [open, mode, initialData]);
 
   /* ---------------- SUBJECT VARIANTS ---------------- */
 
@@ -145,11 +158,13 @@ export default function ChapterFormModal({
   const handleImageSelect = (file: File) => {
     setIconPreview(URL.createObjectURL(file));
     setIconFile(file);
-    setIsNewImage(true); // 👈 THIS IS KEY
+    setIsNewImage(true);
     setCropOpen(true);
   };
 
-  const uploadToCloudinary = (file: File): Promise<string> => {
+  const uploadToCloudinary = (
+    file: File
+  ): Promise<CloudinaryUploadResult> => {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       const formData = new FormData();
@@ -178,8 +193,10 @@ export default function ChapterFormModal({
 
         if (xhr.status >= 200 && xhr.status < 300) {
           const res = JSON.parse(xhr.responseText);
-          console.log("Cloudinary response:", res);
-          resolve(res.secure_url);
+          resolve({
+            url: res.secure_url,
+            publicId: res.public_id,
+          });
         } else {
           reject(new Error("Upload failed"));
         }
@@ -206,33 +223,37 @@ export default function ChapterFormModal({
 
   const handleSubmit = async () => {
     try {
-      let iconUrl = iconPreview;
+      let finalIcon: IconPayload;
 
       if (iconFile) {
-        iconUrl = await uploadToCloudinary(iconFile);
+        finalIcon = await uploadToCloudinary(iconFile);
+      } else if (icon) {
+        finalIcon = icon;
+      } else {
+        throw new Error("Icon required");
       }
 
+      const payload = {
+        name: name.trim(),
+        price,
+        subjectVariant: subjectVariantId,
+        icon: finalIcon,
+      };
+
       if (mode === "create") {
-        await onCreate({
-          name: name.trim(),
-          price,
-          subjectVariant: subjectVariantId,
-          icon: iconUrl!,
-        });
+        await onCreate(payload);
       }
 
       if (mode === "edit" && initialData) {
-        await onUpdate(initialData._id, {
-          name: name.trim(),
-          price,
-          subjectVariant: subjectVariantId,
-          icon: iconUrl ?? null,
-        });
+        await onUpdate(initialData._id, payload);
       }
 
-      toast.success(mode === "create" ? "Chapter created" : "Chapter updated");
+      toast.success(
+        mode === "create" ? "Chapter created" : "Chapter updated"
+      );
       onClose();
-    } catch {
+    } catch (err) {
+      console.error(err);
       toast.error("Operation failed");
     }
   };
@@ -253,7 +274,6 @@ export default function ChapterFormModal({
           </h2>
 
           <div className="space-y-4">
-            {/* Name */}
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -261,7 +281,6 @@ export default function ChapterFormModal({
               className="w-full px-3 py-2 text-sm border rounded"
             />
 
-            {/* Price */}
             <input
               type="number"
               value={price}
@@ -270,7 +289,6 @@ export default function ChapterFormModal({
               className="w-full px-3 py-2 text-sm border rounded"
             />
 
-            {/* Syllabus */}
             <select
               value={syllabusId}
               onChange={(e) => setSyllabusId(e.target.value)}
@@ -284,7 +302,6 @@ export default function ChapterFormModal({
               ))}
             </select>
 
-            {/* Class */}
             <select
               value={classId}
               onChange={(e) => setClassId(e.target.value)}
@@ -298,7 +315,6 @@ export default function ChapterFormModal({
               ))}
             </select>
 
-            {/* Subject Variant */}
             <select
               value={subjectVariantId}
               onChange={(e) => setSubjectVariantId(e.target.value)}
@@ -313,7 +329,8 @@ export default function ChapterFormModal({
               ))}
             </select>
           </div>
-          {/* ---------------- IMAGE SECTION ---------------- */}
+
+          {/* IMAGE */}
           <div className="mt-6 space-y-2">
             <label className="text-xs font-medium text-gray-600">
               Chapter Icon
@@ -321,62 +338,32 @@ export default function ChapterFormModal({
 
             {iconPreview ? (
               <div className="flex items-start gap-4">
-                {/* Image Preview */}
                 <div className="w-24 h-24 rounded border overflow-hidden bg-gray-50">
                   <img
                     src={iconPreview}
-                    alt="Chapter icon"
                     className="w-full h-full object-cover"
                   />
                 </div>
 
-                {/* Actions */}
-                <div className="flex flex-col gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // UI only – no Cloudinary action
-                      setIconPreview(null);
-                      setIconFile(null);
-                      setIsNewImage(false);
-
-                      // Open file picker
-                      requestAnimationFrame(() => {
-                        fileInputRef.current?.click();
-                      });
-                    }}
-                    className="
-            px-3 py-1.5
-            text-xs
-            rounded
-            border border-gray-300
-            text-gray-700
-            hover:bg-gray-100
-            transition
-          "
-                  >
-                    Change image
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIcon(null);
+                    setIconPreview(null);
+                    setIconFile(null);
+                    setIsNewImage(false);
+                    requestAnimationFrame(() => {
+                      fileInputRef.current?.click();
+                    });
+                  }}
+                  className="px-3 py-1.5 text-xs rounded border border-gray-300"
+                >
+                  Change image
+                </button>
               </div>
             ) : (
-              <label
-                className="
-        inline-flex items-center gap-2
-        px-4 py-2
-        text-sm
-        border border-dashed border-gray-300
-        rounded
-        cursor-pointer
-        text-gray-600
-        hover:bg-gray-50
-        hover:border-gray-400
-        transition
-      "
-              >
-                <span className="text-lg">📷</span>
-                <span>Choose image</span>
-
+              <label className="inline-flex items-center gap-2 px-4 py-2 text-sm border border-dashed rounded cursor-pointer">
+                📷 Choose image
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -403,17 +390,14 @@ export default function ChapterFormModal({
           )}
 
           <div className="mt-6 flex justify-end gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm border rounded"
-            >
+            <button onClick={onClose} className="px-4 py-2 text-sm border rounded">
               Cancel
             </button>
 
             <button
               disabled={!canSubmit || uploading}
               onClick={handleSubmit}
-              className="px-4 py-2 text-sm bg-[#DB313E] text-white rounded disabled:opacity-50"
+              className="px-4 py-2 text-sm bg-[#DB313E] text-white rounded"
             >
               {mode === "create" ? "Create" : "Update"}
             </button>
