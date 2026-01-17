@@ -1,5 +1,6 @@
 import Cropper from "react-easy-crop";
 import { useCallback, useState } from "react";
+import { getCroppedImage } from "./cropImage";
 
 type Props = {
   open: boolean;

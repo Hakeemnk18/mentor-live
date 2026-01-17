@@ -30,6 +30,21 @@ export const createChapter = async (
   const res = await axiosInstance.post("/chapters", payload);
   return res.data;
 };
+// api/chapter.api.ts
+
+export const updateChapter = async (
+  id: string,
+  payload: {
+    name: string;
+    price: number;
+    subjectVariant: string;
+    icon: string | null;
+  }
+) => {
+  const res = await axiosInstance.put(`/chapters/${id}`, payload);
+  return res.data;
+};
+
 export const getSubjectVariants = async (
   params: GetSubjectVariantsParams
 ): Promise<SubjectVariantsForChapterApi[]> => {
