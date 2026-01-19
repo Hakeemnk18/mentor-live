@@ -7,7 +7,7 @@ import { Faculty } from "../entities/faculty.entity.js";
 import { FacultyModel } from "../infrastructure/faculty.schema.js";
 import { FacultyMapper } from "../mapper/faculty.mapper.js";
 import type { IFacultyRepository } from "./faculty.repository.interface.js";
-import type { FacultyView } from "../types/faculty.type.js";
+import type { FacultyFullAdminView, FacultyPopulatedLean, FacultyView } from "../types/faculty.type.js";
 
 const { ObjectId } = Types;
 
@@ -21,7 +21,7 @@ export class FacultyRepository implements IFacultyRepository {
     if (!domainFaculty) {
       throw new CustomError(
         ResponseMessages.FAILED_TO_MAP,
-        HttpStatusCode.INTERNAL_SERVER_ERROR
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
       );
     }
 
@@ -42,7 +42,7 @@ export class FacultyRepository implements IFacultyRepository {
     if (!facultyEntity.id) {
       throw new CustomError(
         ResponseMessages.ID_MISSING,
-        HttpStatusCode.INTERNAL_SERVER_ERROR
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
       );
     }
 
@@ -51,13 +51,13 @@ export class FacultyRepository implements IFacultyRepository {
     const updatedDocument = await FacultyModel.findByIdAndUpdate(
       facultyEntity.id,
       { $set: persistenceData },
-      { new: true }
+      { new: true },
     ).lean();
 
     if (!updatedDocument) {
       throw new CustomError(
         ResponseMessages.FACULTY_NOT_FOUND,
-        HttpStatusCode.NOT_FOUND
+        HttpStatusCode.NOT_FOUND,
       );
     }
 
@@ -65,7 +65,7 @@ export class FacultyRepository implements IFacultyRepository {
     if (!domainFaculty) {
       throw new CustomError(
         ResponseMessages.FAILED_TO_MAP,
-        HttpStatusCode.INTERNAL_SERVER_ERROR
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
       );
     }
 
@@ -73,8 +73,8 @@ export class FacultyRepository implements IFacultyRepository {
   }
 
   async findAllFacultyForAdmin(
-    allDoc: AcademicListFiltersBase
-  ): Promise<{ data: FacultyView[], total: number}> {
+    allDoc: AcademicListFiltersBase,
+  ): Promise<{ data: FacultyView[]; total: number }> {
     const { page, limit, classId, syllabusId, subjectId, search, sort } =
       allDoc;
     const skip = (page - 1) * limit;
@@ -138,6 +138,86 @@ export class FacultyRepository implements IFacultyRepository {
     return {
       data: faculties,
       total,
+    };
+  }
+
+  async findFacultyFullByIdForAdmin(
+    id: string,
+  ): Promise<FacultyFullAdminView | null> {
+    if (!Types.ObjectId.isValid(id)) return null;
+
+    const doc = await FacultyModel.findOne({
+      _id: new Types.ObjectId(id),
+      isDeleted: false,
+    })
+      .populate({
+        path: "subjectOffering",
+        populate: [
+          { path: "class", select: "name" },
+          { path: "syllabus", select: "name" },
+          { path: "subject", select: "name" },
+        ],
+      })
+      .populate({
+        path: "chapterSlots.chapter",
+        select: "name",
+      })
+      .populate({
+        path: "slots.pool",
+        select: "_id",
+      })
+      .populate({
+        path: "chapterSlots.pool",
+        select: "_id",
+      })
+      .lean<FacultyPopulatedLean>();
+
+    if (!doc) return null;
+
+    return {
+      id: doc._id.toString(),
+      name: doc.name,
+      qualifications: doc.qualifications,
+      description: doc.description,
+      demoClass: doc.demoClass,
+      image: doc.image.url,
+      price: doc.price,
+      isDeleted: doc.isDeleted,
+
+      slots: doc.slots.map((s) => ({
+        id: s._id.toString(),
+        time: s.time.toISOString().slice(11, 16), 
+        isAvailable: s.isAvailable,
+        pool: s.pool.map((u: any) => ({ id: u._id.toString() })),
+        poolLimit: s.poolLimit
+      })),
+
+      chapterSlots: doc.chapterSlots.map((c) => ({
+        id: c._id.toString(),
+        isAvailable: c.isAvailable,
+        chapter: {
+          id: c.chapter._id.toString(),
+          name: c.chapter.name,
+        },
+        pool: c.pool.map((u: any) => ({ id: u._id.toString() })),
+        poolLimit: c.poolLimit
+      })),
+
+      subjectOffering: doc.subjectOffering.map((so: any) => ({
+        id: so._id.toString(),
+        class: {
+          id: so.class._id.toString(),
+          name: so.class.name,
+        },
+        syllabus: {
+          id: so.syllabus._id.toString(),
+          name: so.syllabus.name,
+        },
+        subject: {
+          id: so.subject._id.toString(),
+          name: so.subject.name,
+        },
+      })),
     };
   }
 }

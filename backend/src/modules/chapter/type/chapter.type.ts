@@ -14,7 +14,3 @@ export type ChapterListFilters = AcademicListFiltersBase & {
   syllabusId: string;
 };
 
-export type ImageValue = {
-  url: string;
-  publicId: string;
-};

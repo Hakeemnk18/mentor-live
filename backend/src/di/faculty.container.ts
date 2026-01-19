@@ -5,6 +5,12 @@ import type { ICreateFacultyUseCase } from "../modules/faculty/use-cases/interfa
 import { CreateFacultyUseCase } from "../modules/faculty/use-cases/create.faculty.use-case.js";
 import type { IGetAllFacultyForAdminUseCase } from "../modules/faculty/use-cases/interfaces/get.all.faculty.for.admin.use-case.interface.js";
 import { GetAllFacultyForAdminUseCase } from "../modules/faculty/use-cases/get.all.faculty.for.admin.use-case.js";
+import type { IGetFacultyDetailsUseCase } from "../modules/faculty/use-cases/interfaces/get.faculty.details.use-case.interface.js";
+import { GetFacultyDetailsUseCase } from "../modules/faculty/use-cases/get.faculty.details.use-case.js";
+import type { IEditFacultyUseCase } from "../modules/faculty/use-cases/interfaces/edit.faculty.use-case.interface.js";
+import { EditFacultyUseCase } from "../modules/faculty/use-cases/edit.faculty.use-case.js";
+import type { IFacultyAddSlotUseCase } from "../modules/faculty/use-cases/interfaces/faculty.add.slot.use-case.interface.js";
+import { FacultyAddSlotUseCase } from "../modules/faculty/use-cases/faculty.add.slot.use-case.interface.js";
 
 export const registerFacultyDependencies = () => {
   container.register<IFacultyRepository>("IFacultyRepository", {
@@ -19,6 +25,15 @@ export const registerFacultyDependencies = () => {
     useClass: GetAllFacultyForAdminUseCase,
   });
 
-  
+  container.register<IGetFacultyDetailsUseCase>("IGetFacultyDetailsUseCase", {
+    useClass: GetFacultyDetailsUseCase,
+  });
 
+  container.register<IEditFacultyUseCase>("IEditFacultyUseCase", {
+    useClass: EditFacultyUseCase,
+  });
+
+  container.register<IFacultyAddSlotUseCase>("IFacultyAddSlotUseCase", {
+    useClass: FacultyAddSlotUseCase,
+  });
 };
