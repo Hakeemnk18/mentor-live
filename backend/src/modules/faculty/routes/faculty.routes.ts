@@ -22,4 +22,16 @@ router.get('/',
   (req, res)=> facultyController.GetAllFacultyForAdmin(req, res)
 )
 
+router.get('/:id',
+  (req, res) => facultyController.getFacultyDetailsForAdmin(req, res)
+)
+
+router.put('/:id',
+  (req, res)=> facultyController.editFaculty(req, res)
+)
+
+router.post('/:id/slots',
+  (req, res) => facultyController.facultyAddSlots(req, res)
+);
+
 export default router;

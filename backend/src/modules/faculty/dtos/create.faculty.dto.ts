@@ -11,7 +11,10 @@ export const CreateFacultySchema = z
 
     demoClass: z.string().url(),
 
-    image: z.string().url(),
+    image: z.object({
+      url: z.string().trim().min(1, "Icon URL is required"),
+      publicId: z.string().trim().min(1, "Icon publicId is required"),
+    }),
 
     price: z.number().min(0),
 
@@ -22,8 +25,8 @@ export const CreateFacultySchema = z
     slots: z
       .array(
         z.object({
-          time: z.coerce.date(), 
-        })
+          time: z.coerce.date(),
+        }),
       )
       .min(1, "At least one slot is required"),
 
@@ -31,7 +34,7 @@ export const CreateFacultySchema = z
       .array(
         z.object({
           chapter: ObjectIdSchema,
-        })
+        }),
       )
       .optional(),
   })

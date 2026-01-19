@@ -25,7 +25,10 @@ export class FacultyMapper {
       qualifications: facultyModelData.qualifications ?? [],
       description: facultyModelData.description,
       demoClass: facultyModelData.demoClass,
-      image: facultyModelData.image,
+      image: {
+        url: facultyModelData.image.url,
+        publicId: facultyModelData.image.publicId,
+      },
       price: facultyModelData.price,
       subjectOffering: (facultyModelData.subjectOffering ?? []).map(
         (id: any) => id.toString()
@@ -60,7 +63,10 @@ export class FacultyMapper {
       qualifications: facultyEntity.qualifications,
       description: facultyEntity.description,
       demoClass: facultyEntity.demoClass,
-      image: facultyEntity.image,
+      image: {
+        url: facultyEntity.image.url,
+        publicId: facultyEntity.image.publicId,
+      },
       price: facultyEntity.price,
       subjectOffering: facultyEntity.subjectOffering,
       slots: facultyEntity.slots.map(slot => ({
@@ -86,7 +92,7 @@ export class FacultyMapper {
       qualifications: raw.qualifications ?? [],
       description: raw.description,
       demoClass: raw.demoClass,
-      image: raw.image,
+      image: raw.image?.url,
       price: raw.price,
       isDeleted: raw.isDeleted ?? false,
     };
