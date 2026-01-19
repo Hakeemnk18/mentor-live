@@ -19,6 +19,8 @@ import type { IEditFacultyUseCase } from "../use-cases/interfaces/edit.faculty.u
 import { EditFacultySchema } from "../dtos/edit.faculty.dto.js";
 import type { IFacultyAddSlotUseCase } from "../use-cases/interfaces/faculty.add.slot.use-case.interface.js";
 import { AddSlotSchema } from "../dtos/add.slot.dto.js";
+import type { IFacultyAddChapterSlotUseCase } from "../use-cases/interfaces/faculty.add.chapter.slot.use-case.interface.js";
+import { AddChapterSlotSchema } from "../dtos/add.chapter.dto.js";
 
 @injectable()
 export class FacultyController implements IFacultyController {
@@ -36,7 +38,10 @@ export class FacultyController implements IFacultyController {
     private readonly _editFacultyUseCase: IEditFacultyUseCase,
 
     @inject("IFacultyAddSlotUseCase")
-    private readonly _facultyAddSlotUseCase: IFacultyAddSlotUseCase
+    private readonly _facultyAddSlotUseCase: IFacultyAddSlotUseCase,
+
+    @inject("IFacultyAddChapterSlotUseCase")
+    private readonly _facultyAddChapterSlotUseCase: IFacultyAddChapterSlotUseCase
   ) {}
 
   async createFaculty(req: Request, res: Response): Promise<void> {
@@ -124,6 +129,23 @@ export class FacultyController implements IFacultyController {
 
     } catch (error) {
       console.log("Error in  add faculty slot", error);
+      handleError(res, error);
+    }
+  }
+
+  async facultyAddChapterSlots(req: Request, res: Response): Promise<void> {
+    try {
+      const facultyId = req.params.id;
+      validateObjectId(facultyId);
+      const dto = AddChapterSlotSchema.parse(req.body)
+      await this._facultyAddChapterSlotUseCase.execute(facultyId!, dto)
+      res.status(HttpStatusCode.OK).json({
+        message: ResponseMessages.SLOT_ADDED_SUCCESS,
+        success: true,
+      });
+
+    } catch (error) {
+      console.log("Error in  add faculty chapter slot", error);
       handleError(res, error);
     }
   }

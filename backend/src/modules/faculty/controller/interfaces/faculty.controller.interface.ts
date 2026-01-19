@@ -6,4 +6,5 @@ export interface IFacultyController {
   getFacultyDetailsForAdmin(req: Request, res: Response): Promise<void>;
   editFaculty(req: Request, res: Response): Promise<void>;
   facultyAddSlots(req: Request, res: Response): Promise<void>
+  facultyAddChapterSlots(req: Request, res: Response): Promise<void>
 }

@@ -34,4 +34,8 @@ router.post('/:id/slots',
   (req, res) => facultyController.facultyAddSlots(req, res)
 );
 
+router.post('/:id/chapterSlots',
+  (req, res) => facultyController.facultyAddChapterSlots(req, res)
+);
+
 export default router;
