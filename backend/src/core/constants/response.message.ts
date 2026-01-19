@@ -126,6 +126,9 @@ FACULTY_RESTORE_FAILED: "Failed to restore faculty",
 
 SLOT_TIME_NOT_VALID: "Slot times are not valid",
 SLOT_ADDED_SUCCESS: "Slot added successfully",
+CHAPTER_SLOT_ADDED_SUCCESS: "Chapter slot added successfully",
+CHAPTER_SLOT_ALREADY_EXIST: "Chapter slot already exist",
+SLOT_ALREADY_EXIST: "Slot time already exist",
 
 INVALID_CLOUDINARY_PUBLIC_ID:"publicId is required to delete image",
 DELETE_CLOUDINARY_IMAGE_FAILED:"Failed to delete image from Cloudinary",

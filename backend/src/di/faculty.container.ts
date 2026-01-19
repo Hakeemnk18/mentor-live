@@ -11,6 +11,8 @@ import type { IEditFacultyUseCase } from "../modules/faculty/use-cases/interface
 import { EditFacultyUseCase } from "../modules/faculty/use-cases/edit.faculty.use-case.js";
 import type { IFacultyAddSlotUseCase } from "../modules/faculty/use-cases/interfaces/faculty.add.slot.use-case.interface.js";
 import { FacultyAddSlotUseCase } from "../modules/faculty/use-cases/faculty.add.slot.use-case.interface.js";
+import type { IFacultyAddChapterSlotUseCase } from "../modules/faculty/use-cases/interfaces/faculty.add.chapter.slot.use-case.interface.js";
+import { FacultyAddChapterSlotUseCase } from "../modules/faculty/use-cases/faculty.add.chapter.slot.use-case.js";
 
 export const registerFacultyDependencies = () => {
   container.register<IFacultyRepository>("IFacultyRepository", {
@@ -35,5 +37,9 @@ export const registerFacultyDependencies = () => {
 
   container.register<IFacultyAddSlotUseCase>("IFacultyAddSlotUseCase", {
     useClass: FacultyAddSlotUseCase,
+  });
+
+  container.register<IFacultyAddChapterSlotUseCase>("IFacultyAddChapterSlotUseCase", {
+    useClass: FacultyAddChapterSlotUseCase,
   });
 };
