@@ -3,6 +3,7 @@ import type { IFacultyRepository } from "../repository/faculty.repository.interf
 import type { IGetAllFacultyForAdminUseCase } from "./interfaces/get.all.faculty.for.admin.use-case.interface.js";
 import type { FindByClassSyllabusQueryDto } from "../../../core/shared/dtos/get.by.class.and.subject.dto.js";
 import type { FacultyView } from "../types/faculty.type.js";
+import { buildFacultySort } from "../utils/faculty-sort.util.js";
 
 @injectable()
 export class GetAllFacultyForAdminUseCase
@@ -18,15 +19,7 @@ export class GetAllFacultyForAdminUseCase
     const { syllabusId, classId, subjectId, sortValue, limit, search, page } = dto;
     
 
-    let sort: Record<string, any> = {
-      createdAt: 1,
-    };
-
-    if (sortValue === "price_asc") {
-      sort = { price: 1, createdAt: 1 };
-    } else if (sortValue === "price_desc") {
-      sort = { price: -1, createdAt: 1 };
-    }
+    const sort = buildFacultySort(sortValue)
 
     const {data , total }= await this._facultyRepository.findAllFacultyForAdmin({
       page,

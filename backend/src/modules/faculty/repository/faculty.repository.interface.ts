@@ -1,8 +1,11 @@
 import type { AcademicListFiltersBase } from "../../../core/shared/type/find.all.with.filters.js";
 import { Faculty } from "../entities/faculty.entity.js";
 import type {
+  FacultyChapterSearchFilters,
+  FacultyClassAndSyllabusSearchFilters,
   FacultyFullAdminView,
   FacultyView,
+  FacultyViewForUser,
 } from "../types/faculty.type.js";
 
 export interface IFacultyRepository {
@@ -14,4 +17,6 @@ export interface IFacultyRepository {
     allDoc: AcademicListFiltersBase,
   ): Promise<{ data: FacultyView[]; total: number }>;
   findFacultyFullByIdForAdmin(id: string): Promise<FacultyFullAdminView | null>;
+  findFacultyByChapter(dto: FacultyChapterSearchFilters): Promise<FacultyViewForUser[]>;
+  findFacultyByClassAndSyllabus(dto: FacultyClassAndSyllabusSearchFilters): Promise<FacultyViewForUser[]>
 }

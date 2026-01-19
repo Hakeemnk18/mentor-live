@@ -22,6 +22,10 @@ router.get('/',
   (req, res)=> facultyController.GetAllFacultyForAdmin(req, res)
 )
 
+router.get('/list',
+  (req, res) => facultyController.findAllFacultyForUser(req, res)
+)
+
 router.get('/:id',
   (req, res) => facultyController.getFacultyDetailsForAdmin(req, res)
 )
@@ -37,5 +41,7 @@ router.post('/:id/slots',
 router.post('/:id/chapterSlots',
   (req, res) => facultyController.facultyAddChapterSlots(req, res)
 );
+
+
 
 export default router;

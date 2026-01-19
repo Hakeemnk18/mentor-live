@@ -5,7 +5,7 @@ import type { IFacultyController } from "./interfaces/faculty.controller.interfa
 import type { ICreateFacultyUseCase } from "../use-cases/interfaces/create.faculty.use-case.interface.js";
 import { HttpStatusCode } from "../../../core/constants/http.status.codes.js";
 import { ResponseMessages } from "../../../core/constants/response.message.js";
-import { handleError } from "../../../core/errors/custom.error.js";
+import { CustomError, handleError } from "../../../core/errors/custom.error.js";
 import {
   CreateFacultySchema,
   type CreateFacultyRequestDto,
@@ -21,6 +21,12 @@ import type { IFacultyAddSlotUseCase } from "../use-cases/interfaces/faculty.add
 import { AddSlotSchema } from "../dtos/add.slot.dto.js";
 import type { IFacultyAddChapterSlotUseCase } from "../use-cases/interfaces/faculty.add.chapter.slot.use-case.interface.js";
 import { AddChapterSlotSchema } from "../dtos/add.chapter.dto.js";
+import { FindFacultyByChapterUseCase } from "../use-cases/find.faculty.by.chapter.use-case.js";
+import { GetAllFacultyBYClassAndSyllabusSchema } from "../dtos/find.by.class.and.syllbus.dto.js";
+import type { IFindFacultyByChapterUseCase } from "../use-cases/interfaces/find.faculty.by.chapter.use-case.interface.js";
+import type { IFindFacultyByClassAndSyllabusUseCaseUseCase } from "../use-cases/interfaces/find.faculty.by.class.and.syllabus.use-case.interface.js";
+import { GetAllFacultyBYChapterSchema } from "../dtos/find.by.chapter.dto.js";
+import { parseChapterQuery } from "../utils/parse.chapter.request.qury.js";
 
 @injectable()
 export class FacultyController implements IFacultyController {
@@ -41,7 +47,13 @@ export class FacultyController implements IFacultyController {
     private readonly _facultyAddSlotUseCase: IFacultyAddSlotUseCase,
 
     @inject("IFacultyAddChapterSlotUseCase")
-    private readonly _facultyAddChapterSlotUseCase: IFacultyAddChapterSlotUseCase
+    private readonly _facultyAddChapterSlotUseCase: IFacultyAddChapterSlotUseCase,
+
+    @inject("IFindFacultyByChapterUseCase")
+    private readonly _findFacultyByChapterUseCase: IFindFacultyByChapterUseCase,
+
+    @inject("IFindFacultyByClassAndSyllabusUseCaseUseCase")
+    private readonly _findFacultyByClassAndSyllabusUseCaseUseCase: IFindFacultyByClassAndSyllabusUseCaseUseCase,
   ) {}
 
   async createFaculty(req: Request, res: Response): Promise<void> {
@@ -64,9 +76,8 @@ export class FacultyController implements IFacultyController {
     try {
       const dto = FindByClassSyllabusQuerySchema.parse(parseListQuery(req));
 
-      const { data, total } = await this._getAllFacultyForAdminUseCase.execute(
-        dto
-      );
+      const { data, total } =
+        await this._getAllFacultyForAdminUseCase.execute(dto);
 
       res.status(HttpStatusCode.OK).json({
         message: ResponseMessages.SUCCESS,
@@ -103,8 +114,8 @@ export class FacultyController implements IFacultyController {
       const facultyId = req.params.id;
       validateObjectId(facultyId);
 
-      const dto = EditFacultySchema.parse(req.body)
-      await this._editFacultyUseCase.execute(facultyId!, dto)
+      const dto = EditFacultySchema.parse(req.body);
+      await this._editFacultyUseCase.execute(facultyId!, dto);
 
       res.status(HttpStatusCode.OK).json({
         message: ResponseMessages.FACULTY_UPDATED,
@@ -120,13 +131,12 @@ export class FacultyController implements IFacultyController {
     try {
       const facultyId = req.params.id;
       validateObjectId(facultyId);
-      const dto = AddSlotSchema.parse(req.body)
-      await this._facultyAddSlotUseCase.execute(facultyId!, dto)
+      const dto = AddSlotSchema.parse(req.body);
+      await this._facultyAddSlotUseCase.execute(facultyId!, dto);
       res.status(HttpStatusCode.OK).json({
         message: ResponseMessages.SLOT_ADDED_SUCCESS,
         success: true,
       });
-
     } catch (error) {
       console.log("Error in  add faculty slot", error);
       handleError(res, error);
@@ -137,15 +147,46 @@ export class FacultyController implements IFacultyController {
     try {
       const facultyId = req.params.id;
       validateObjectId(facultyId);
-      const dto = AddChapterSlotSchema.parse(req.body)
-      await this._facultyAddChapterSlotUseCase.execute(facultyId!, dto)
+      const dto = AddChapterSlotSchema.parse(req.body);
+      await this._facultyAddChapterSlotUseCase.execute(facultyId!, dto);
       res.status(HttpStatusCode.OK).json({
         message: ResponseMessages.SLOT_ADDED_SUCCESS,
         success: true,
       });
-
     } catch (error) {
       console.log("Error in  add faculty chapter slot", error);
+      handleError(res, error);
+    }
+  }
+
+  async findAllFacultyForUser(req: Request, res: Response): Promise<void> {
+    try {
+      const type = req.query.type;
+      if (type !== "class" && type !== "chapter") {
+        throw new CustomError(
+          ResponseMessages.INVALID_FACULTY_LIST_TYPE,
+          HttpStatusCode.BAD_REQUEST
+        )
+      }
+      let data;
+      if (type === "class") {
+        const dto = GetAllFacultyBYClassAndSyllabusSchema.parse(
+          parseListQuery(req),
+        );
+        data =
+          await this._findFacultyByClassAndSyllabusUseCaseUseCase.execute(dto);
+      } else if (type === "chapter") {
+        const dto = GetAllFacultyBYChapterSchema.parse(parseChapterQuery(req));
+        data = await this._findFacultyByChapterUseCase.execute(dto);
+      }
+
+      res.status(HttpStatusCode.OK).json({
+        message: ResponseMessages.SUCCESS,
+        success: true,
+        data: data,
+      });
+    } catch (error) {
+      console.log("Error in  find faculty for user", error);
       handleError(res, error);
     }
   }

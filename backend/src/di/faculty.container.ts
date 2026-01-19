@@ -13,6 +13,10 @@ import type { IFacultyAddSlotUseCase } from "../modules/faculty/use-cases/interf
 import { FacultyAddSlotUseCase } from "../modules/faculty/use-cases/faculty.add.slot.use-case.interface.js";
 import type { IFacultyAddChapterSlotUseCase } from "../modules/faculty/use-cases/interfaces/faculty.add.chapter.slot.use-case.interface.js";
 import { FacultyAddChapterSlotUseCase } from "../modules/faculty/use-cases/faculty.add.chapter.slot.use-case.js";
+import type { IFindFacultyByChapterUseCase } from "../modules/faculty/use-cases/interfaces/find.faculty.by.chapter.use-case.interface.js";
+import { FindFacultyByChapterUseCase } from "../modules/faculty/use-cases/find.faculty.by.chapter.use-case.js";
+import type { IFindFacultyByClassAndSyllabusUseCaseUseCase } from "../modules/faculty/use-cases/interfaces/find.faculty.by.class.and.syllabus.use-case.interface.js";
+import { FindFacultyByClassAndSyllabusUseCaseUseCase } from "../modules/faculty/use-cases/find.faculty.by.class.and.syllabus.use-case.js";
 
 export const registerFacultyDependencies = () => {
   container.register<IFacultyRepository>("IFacultyRepository", {
@@ -41,5 +45,13 @@ export const registerFacultyDependencies = () => {
 
   container.register<IFacultyAddChapterSlotUseCase>("IFacultyAddChapterSlotUseCase", {
     useClass: FacultyAddChapterSlotUseCase,
+  });
+
+  container.register<IFindFacultyByChapterUseCase>("IFindFacultyByChapterUseCase", {
+    useClass: FindFacultyByChapterUseCase,
+  });
+
+  container.register<IFindFacultyByClassAndSyllabusUseCaseUseCase>("IFindFacultyByClassAndSyllabusUseCaseUseCase", {
+    useClass: FindFacultyByClassAndSyllabusUseCaseUseCase,
   });
 };

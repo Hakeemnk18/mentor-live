@@ -123,6 +123,7 @@ FACULTY_CREATION_FAILED: "Failed to create faculty",
 FACULTY_UPDATE_FAILED: "Failed to update faculty",
 FACULTY_DELETE_FAILED: "Failed to delete faculty",
 FACULTY_RESTORE_FAILED: "Failed to restore faculty",
+INVALID_FACULTY_LIST_TYPE: "Invalid faculty list type",
 
 SLOT_TIME_NOT_VALID: "Slot times are not valid",
 SLOT_ADDED_SUCCESS: "Slot added successfully",

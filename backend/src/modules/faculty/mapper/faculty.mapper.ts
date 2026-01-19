@@ -97,4 +97,14 @@ export class FacultyMapper {
       isDeleted: raw.isDeleted ?? false,
     };
   }
+
+  static toFacultyUserView(doc: any) {
+  return {
+    id: doc._id.toString(),
+    name: doc.name,
+    qualifications: doc.qualifications,
+    description: doc.description,
+    price: doc.price,
+  };
+}
 }
