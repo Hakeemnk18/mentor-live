@@ -7,7 +7,14 @@ import { Faculty } from "../entities/faculty.entity.js";
 import { FacultyModel } from "../infrastructure/faculty.schema.js";
 import { FacultyMapper } from "../mapper/faculty.mapper.js";
 import type { IFacultyRepository } from "./faculty.repository.interface.js";
-import type { FacultyFullAdminView, FacultyPopulatedLean, FacultyView } from "../types/faculty.type.js";
+import type {
+  FacultyChapterSearchFilters,
+  FacultyClassAndSyllabusSearchFilters,
+  FacultyFullAdminView,
+  FacultyPopulatedLean,
+  FacultyView,
+  FacultyViewForUser,
+} from "../types/faculty.type.js";
 
 const { ObjectId } = Types;
 
@@ -186,10 +193,10 @@ export class FacultyRepository implements IFacultyRepository {
 
       slots: doc.slots.map((s) => ({
         id: s._id.toString(),
-        time: s.time.toISOString().slice(11, 16), 
+        time: s.time.toISOString().slice(11, 16),
         isAvailable: s.isAvailable,
         pool: s.pool.map((u: any) => ({ id: u._id.toString() })),
-        poolLimit: s.poolLimit
+        poolLimit: s.poolLimit,
       })),
 
       chapterSlots: doc.chapterSlots.map((c) => ({
@@ -200,7 +207,7 @@ export class FacultyRepository implements IFacultyRepository {
           name: c.chapter.name,
         },
         pool: c.pool.map((u: any) => ({ id: u._id.toString() })),
-        poolLimit: c.poolLimit
+        poolLimit: c.poolLimit,
       })),
 
       subjectOffering: doc.subjectOffering.map((so: any) => ({
@@ -219,5 +226,95 @@ export class FacultyRepository implements IFacultyRepository {
         },
       })),
     };
+  }
+
+  async findFacultyByChapter(
+    dto: FacultyChapterSearchFilters,
+  ): Promise<FacultyViewForUser[]> {
+    const { chapterId, page, limit, search, sort } = dto;
+
+    const skip = (page - 1) * limit;
+    const filter: Record<string, any> = {
+      isDeleted: false,
+    };
+
+    if (search) {
+      filter.name = { $regex: search, $options: "i" };
+    }
+
+    if (chapterId) {
+      filter["chapterSlots.chapter"] = chapterId;
+    }
+
+    const documents = await FacultyModel.find(filter)
+      .sort(sort)
+      .collation({ locale: "en", strength: 1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    return documents.map(FacultyMapper.toFacultyUserView);
+  }
+
+  async findFacultyByClassAndSyllabus(
+    dto: FacultyClassAndSyllabusSearchFilters,
+  ): Promise<FacultyViewForUser[]> {
+    const { subjectVariantIds, page, limit, search, sort, subjectId } = dto;
+    const skip = (page - 1) * limit;
+
+    const variantObjectIds = subjectVariantIds.map(
+      (id) => new Types.ObjectId(id),
+    );
+
+    const documents = await FacultyModel.aggregate([
+      {
+        $match: {
+          isDeleted: false,
+          ...(search && {
+            name: { $regex: search, $options: "i" },
+          }),
+          subjectOffering: { $in: variantObjectIds },
+        },
+      },
+      { $unwind: "$subjectOffering" },
+      {
+        $match: {
+          subjectOffering: { $in: subjectVariantIds },
+        },
+      },
+      {
+        $lookup: {
+          from: "subjectvariants",
+          localField: "subjectOffering",
+          foreignField: "_id",
+          as: "sv",
+        },
+      },
+
+      { $unwind: "$sv" },
+
+      {
+        $match: {
+          ...(subjectId && { "sv.subject": new ObjectId(subjectId) }),
+        },
+      },
+      { $sort: sort },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $project: {
+          name: 1,
+          price: 1,
+          image: 1,
+          qualifications: 1,
+          description: 1,
+          createdAt: 1,
+        },
+      },
+    ]);
+
+    
+
+    return documents.map(FacultyMapper.toFacultyUserView);
   }
 }

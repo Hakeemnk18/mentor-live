@@ -17,7 +17,7 @@ export function parseListQuery(req: Request): IListQueryParseResult {
     search: (req.query.search as string) ?? "",
     sortValue: (req.query.sort as string) ?? "createdAt",
     classId: req.query.classId as string,
-    syllabusId:req.query.syllabusId as any,
-    subjectId: req.query.subjectId as any
+    syllabusId:req.query.syllabusId as string,
+    subjectId: req.query.subjectId as string
   };
 }

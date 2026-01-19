@@ -7,4 +7,5 @@ export interface IFacultyController {
   editFaculty(req: Request, res: Response): Promise<void>;
   facultyAddSlots(req: Request, res: Response): Promise<void>
   facultyAddChapterSlots(req: Request, res: Response): Promise<void>
+  findAllFacultyForUser(req: Request, res: Response): Promise<void>
 }

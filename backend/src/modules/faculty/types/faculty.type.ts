@@ -6,6 +6,7 @@ import type {
 import type { ImageValue } from "../../../core/shared/type/image.type.js";
 import type { SubjectVariantWithSubjectView } from "../../subject-variant/type/subject.variant.type.js";
 import type { IFaculty } from "../infrastructure/faculty.schema.js";
+import type { AllFiltersBase } from "../../../core/shared/type/find.all.with.filters.js";
 
 export interface SlotProps {
   id?: string;
@@ -107,3 +108,21 @@ export type FacultyPopulatedLean = Omit<IFaculty,
     poolLimit: number;
   }[];
 };
+
+export type FacultyChapterSearchFilters = {
+  chapterId: string | undefined;
+} & AllFiltersBase;
+
+export type FacultyClassAndSyllabusSearchFilters = {
+  subjectVariantIds: string[];
+  subjectId: string | undefined;
+} & AllFiltersBase;
+
+export type FacultyViewForUser = Pick<
+  FacultyProps,
+  | "id"
+  | "name"
+  | "qualifications"
+  | "description"
+  | "price"
+> 
