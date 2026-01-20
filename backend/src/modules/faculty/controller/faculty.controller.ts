@@ -27,6 +27,10 @@ import type { IFindFacultyByChapterUseCase } from "../use-cases/interfaces/find.
 import type { IFindFacultyByClassAndSyllabusUseCaseUseCase } from "../use-cases/interfaces/find.faculty.by.class.and.syllabus.use-case.interface.js";
 import { GetAllFacultyBYChapterSchema } from "../dtos/find.by.chapter.dto.js";
 import { parseChapterQuery } from "../utils/parse.chapter.request.qury.js";
+import type { IGetFacultyDetailsByChapterUseCase } from "../use-cases/interfaces/get.faculty.details.by.chapter.use-case.interface.js";
+import z from "zod";
+import { ObjectIdSchema } from "../../../core/utils/object.id.validation.js";
+import type { IGetFacultyDetailsBySlotUseCase } from "../use-cases/interfaces/get.faculty.details.by.slot.use-case.interface.js";
 
 @injectable()
 export class FacultyController implements IFacultyController {
@@ -54,6 +58,12 @@ export class FacultyController implements IFacultyController {
 
     @inject("IFindFacultyByClassAndSyllabusUseCaseUseCase")
     private readonly _findFacultyByClassAndSyllabusUseCaseUseCase: IFindFacultyByClassAndSyllabusUseCaseUseCase,
+
+    @inject("IGetFacultyDetailsByChapterUseCase")
+    private readonly _getFacultyDetailsByChapterUseCase: IGetFacultyDetailsByChapterUseCase,
+
+    @inject("IGetFacultyDetailsBySlotUseCase")
+    private readonly _getFacultyDetailsBySlotUseCase: IGetFacultyDetailsBySlotUseCase,
   ) {}
 
   async createFaculty(req: Request, res: Response): Promise<void> {
@@ -187,6 +197,48 @@ export class FacultyController implements IFacultyController {
       });
     } catch (error) {
       console.log("Error in  find faculty for user", error);
+      handleError(res, error);
+    }
+  }
+
+  async getFacultyDetailsByChapter(req: Request, res: Response): Promise<void> {
+    try {
+      validateObjectId(req.params.id)
+      
+      const facultyId = req.params.id
+      const chapterId = ObjectIdSchema.parse(req.query.chapterId);
+      const data = await this._getFacultyDetailsByChapterUseCase.execute(facultyId!, chapterId)
+      res.status(HttpStatusCode.OK).json({
+        message: ResponseMessages.SUCCESS,
+        success: true,
+        data: data
+      });
+      
+    } catch (error) {
+       console.log("Error in  get faculty details by chapter", error);
+      handleError(res, error);
+    }
+  }
+
+  async getFacultyDetailsBySlot(req: Request, res: Response): Promise<void> {
+    try {
+      validateObjectId(req.params.id)
+      
+      const facultyId = req.params.id
+      let slotId
+      if(req.query.slotId){
+        slotId = ObjectIdSchema.parse(req.query.slotId);
+      }
+      
+      const data = await this._getFacultyDetailsBySlotUseCase.execute(facultyId!, slotId)
+      res.status(HttpStatusCode.OK).json({
+        message: ResponseMessages.SUCCESS,
+        success: true,
+        data: data
+      });
+      
+    } catch (error) {
+       console.log("Error in  get faculty details by slot", error);
       handleError(res, error);
     }
   }

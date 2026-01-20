@@ -41,7 +41,7 @@ export class FindFacultyByClassAndSyllabusUseCaseUseCase implements IFindFaculty
       subjectId,
       sort,
     });
-
+    //console.log(data)
     return data;
   }
 }

@@ -10,6 +10,7 @@ import type { IFacultyRepository } from "./faculty.repository.interface.js";
 import type {
   FacultyChapterSearchFilters,
   FacultyClassAndSyllabusSearchFilters,
+  FacultyDetailsViewForUser,
   FacultyFullAdminView,
   FacultyPopulatedLean,
   FacultyView,
@@ -279,7 +280,7 @@ export class FacultyRepository implements IFacultyRepository {
       { $unwind: "$subjectOffering" },
       {
         $match: {
-          subjectOffering: { $in: subjectVariantIds },
+          subjectOffering: { $in: variantObjectIds },
         },
       },
       {
@@ -313,8 +314,141 @@ export class FacultyRepository implements IFacultyRepository {
       },
     ]);
 
+    return documents.map(FacultyMapper.toFacultyUserView);
+  }
+
+  async findFacultyFullByIdAndChapter(
+    facultyId: string,
+    chapterId: string,
+  ): Promise<FacultyDetailsViewForUser | null> {
+    const documents = await FacultyModel.aggregate([
+      {
+        $match: {
+          isDeleted: false,
+          _id: new ObjectId(facultyId),
+        },
+      },
+      { $unwind: "$chapterSlots" },
+      {
+        $match: {
+          "chapterSlots.chapter": new ObjectId(chapterId),
+        },
+      },
+      {
+        $lookup: {
+          from: "chapters",
+          localField: "chapterSlots.chapter",
+          foreignField: "_id",
+          as: "chapter",
+        },
+      },
+
+      { $unwind: "$chapter" },
+      {
+        $project: {
+          name: 1,
+          price: 1,
+          image: 1,
+          qualifications: 1,
+          demoClass: 1,
+          description: 1,
+          createdAt: 1,
+          chapterSlots: 1,
+          "chapter.name": 1,
+          "chapter.price": 1,
+        },
+      },
+    ]);
+
+    const doc = documents?.[0];
+    if (!doc) return null;
+
+    return {
+      id: doc._id.toString(),
+      name: doc.name,
+      qualifications: doc.qualifications,
+      description: doc.description,
+      demoClass: doc.demoClass,
+      image: doc.image.url,
+      price: doc.chapter.price,
+      slot: {
+        id: doc.chapterSlots._id.toString(),
+        isAvailable: doc.chapterSlots.isAvailable,
+        chapter: { id: doc.chapterSlots.chapter, name: doc.chapter.name },
+        pool: doc.chapterSlots.pool,
+        poolLimit: doc.chapterSlots.poolLimit,
+      },
+    };
+  }
+
+  async findFacultyFullByIdAndSlot(
+    facultyId: string,
+    slotId: string,
+  ): Promise<FacultyDetailsViewForUser | null> {
+    const documents = await FacultyModel.aggregate([
+      {
+        $match: {
+          isDeleted: false,
+          _id: new ObjectId(facultyId),
+        },
+      },
+      { $unwind: "$slots" },
+      {
+        $match: {
+          "slots._id": new ObjectId(slotId),
+        },
+      },
+      {
+        $project: {
+          name: 1,
+          price: 1,
+          image: 1,
+          qualifications: 1,
+          demoClass: 1,
+          description: 1,
+          createdAt: 1,
+          slots: 1,
+        },
+      },
+    ]);
+    console.log(documents);
+
+    const doc = documents?.[0];
+    if (!doc) return null;
+
+    return FacultyMapper.toFacultyWithSlotToUserView(doc);
+  }
+
+  async findFacultyByIdWithFirstSlot(
+    facultyId: string,
+  ): Promise<FacultyDetailsViewForUser | null> {
+    const documents = await FacultyModel.aggregate([
+      {
+        $match: {
+          isDeleted: false,
+          _id: new ObjectId(facultyId),
+        },
+      },
+      { $unwind: "$slots" },
+      {
+        $project: {
+          name: 1,
+          price: 1,
+          image: 1,
+          qualifications: 1,
+          demoClass: 1,
+          description: 1,
+          createdAt: 1,
+          slots: 1,
+        },
+      },
+      { $limit: 1 },
+    ]);
     
 
-    return documents.map(FacultyMapper.toFacultyUserView);
+    const doc = documents?.[0];
+    if (!doc) return null;
+
+    return FacultyMapper.toFacultyWithSlotToUserView(doc);
   }
 }

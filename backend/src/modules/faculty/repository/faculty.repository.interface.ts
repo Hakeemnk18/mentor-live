@@ -3,6 +3,7 @@ import { Faculty } from "../entities/faculty.entity.js";
 import type {
   FacultyChapterSearchFilters,
   FacultyClassAndSyllabusSearchFilters,
+  FacultyDetailsViewForUser,
   FacultyFullAdminView,
   FacultyView,
   FacultyViewForUser,
@@ -19,4 +20,7 @@ export interface IFacultyRepository {
   findFacultyFullByIdForAdmin(id: string): Promise<FacultyFullAdminView | null>;
   findFacultyByChapter(dto: FacultyChapterSearchFilters): Promise<FacultyViewForUser[]>;
   findFacultyByClassAndSyllabus(dto: FacultyClassAndSyllabusSearchFilters): Promise<FacultyViewForUser[]>
+  findFacultyFullByIdAndChapter(facultyId: string, chapterId: string): Promise<FacultyDetailsViewForUser | null >
+  findFacultyFullByIdAndSlot(facultyId: string, slotId: string): Promise<FacultyDetailsViewForUser | null >
+  findFacultyByIdWithFirstSlot(facultyId: string): Promise<FacultyDetailsViewForUser | null >
 }

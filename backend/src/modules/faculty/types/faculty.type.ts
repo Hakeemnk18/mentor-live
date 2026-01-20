@@ -125,4 +125,11 @@ export type FacultyViewForUser = Pick<
   | "qualifications"
   | "description"
   | "price"
-> 
+> & {
+  image: string;
+};
+
+export type FacultyDetailsViewForUser = FacultyViewForUser & {
+  demoClass: string,
+  slot: FacultySlotView | FacultyChapterSlotView
+};
