@@ -8,4 +8,6 @@ export interface IFacultyController {
   facultyAddSlots(req: Request, res: Response): Promise<void>
   facultyAddChapterSlots(req: Request, res: Response): Promise<void>
   findAllFacultyForUser(req: Request, res: Response): Promise<void>
+  getFacultyDetailsByChapter(req: Request, res: Response): Promise<void>
+  getFacultyDetailsBySlot(req: Request, res: Response): Promise<void>
 }
