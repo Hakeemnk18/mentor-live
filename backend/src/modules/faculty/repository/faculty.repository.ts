@@ -8,6 +8,7 @@ import { FacultyModel } from "../infrastructure/faculty.schema.js";
 import { FacultyMapper } from "../mapper/faculty.mapper.js";
 import type { IFacultyRepository } from "./faculty.repository.interface.js";
 import type {
+  ChapterSlotProps,
   FacultyChapterSearchFilters,
   FacultyClassAndSyllabusSearchFilters,
   FacultyDetailsViewForUser,
@@ -15,7 +16,9 @@ import type {
   FacultyPopulatedLean,
   FacultyView,
   FacultyViewForUser,
+  SlotProps,
 } from "../types/faculty.type.js";
+import { _null } from "zod/v4/core";
 
 const { ObjectId } = Types;
 
@@ -38,6 +41,13 @@ export class FacultyRepository implements IFacultyRepository {
 
   async findById(id: string): Promise<Faculty | null> {
     const foundDocument = await FacultyModel.findOne({ _id: id }).lean();
+    return FacultyMapper.toDomain(foundDocument);
+  }
+
+  async findFacultyByQuery(
+    query: Record<string, any>,
+  ): Promise<Faculty | null> {
+    const foundDocument = await FacultyModel.findOne(query).lean();
     return FacultyMapper.toDomain(foundDocument);
   }
 
@@ -444,11 +454,209 @@ export class FacultyRepository implements IFacultyRepository {
       },
       { $limit: 1 },
     ]);
-    
 
     const doc = documents?.[0];
     if (!doc) return null;
 
     return FacultyMapper.toFacultyWithSlotToUserView(doc);
+  }
+
+  async getSlot(facultyId: string, slotId: string): Promise<SlotProps | null> {
+    const faculty = await FacultyModel.findOne(
+      { _id: facultyId, isDeleted: false },
+      { slots: { $elemMatch: { _id: new Types.ObjectId(slotId) } } },
+    ).lean();
+
+    if (!faculty || !faculty.slots || faculty.slots.length === 0) {
+      return null;
+    }
+
+    const slot = faculty.slots[0] as {
+      _id: any;
+      time: Date;
+      isAvailable: boolean;
+      pool: any[];
+      poolLimit: number;
+    };
+
+    return {
+      id: slot._id.toString(),
+      time: slot.time,
+      isAvailable: slot.isAvailable,
+      pool: slot.pool.map((u) => u.toString()),
+      poolLimit: slot.poolLimit,
+    };
+  }
+
+  async getChapterSlot(
+    facultyId: string,
+    chapterId: string,
+  ): Promise<ChapterSlotProps | null> {
+    const faculty = await FacultyModel.findOne(
+      { _id: facultyId, isDeleted: false },
+      {
+        chapterSlots: {
+          $elemMatch: {
+            chapter: new Types.ObjectId(chapterId),
+            isAvailable: true,
+          },
+        },
+      },
+    ).lean();
+
+    if (
+      !faculty ||
+      !faculty.chapterSlots ||
+      faculty.chapterSlots.length === 0
+    ) {
+      return null;
+    }
+
+    const slot = faculty.chapterSlots[0] as {
+      _id: any;
+      chapter: any;
+      isAvailable: boolean;
+      pool: any[];
+      poolLimit: number;
+    };
+
+    return {
+      id: slot._id.toString(),
+      chapterId: slot.chapter,
+      isAvailable: slot.isAvailable,
+      pool: slot.pool.map((u) => u.toString()),
+      poolLimit: slot.poolLimit,
+    };
+  }
+
+  async addToSlotPool(
+    facultyId: string,
+    slotId: string,
+    studentId: string,
+  ): Promise<void> {
+    const result = await FacultyModel.updateOne(
+      {
+        _id: facultyId,
+        isDeleted: false,
+        "slots._id": new Types.ObjectId(slotId),
+        "slots.isAvailable": true,
+      },
+      [
+        {
+          $set: {
+            slots: {
+              $map: {
+                input: "$slots",
+                as: "slot",
+                in: {
+                  $cond: [
+                    {
+                      $and: [
+                        {
+                          $eq: ["$$slot._id", new Types.ObjectId(slotId)],
+                        },
+                        {
+                          $lt: [{ $size: "$$slot.pool" }, "$$slot.poolLimit"],
+                        },
+                      ],
+                    },
+                    {
+                      $mergeObjects: [
+                        "$$slot",
+                        {
+                          pool: {
+                            $setUnion: [
+                              "$$slot.pool",
+                              [new Types.ObjectId(studentId)],
+                            ],
+                          },
+                        },
+                      ],
+                    },
+                    "$$slot",
+                  ],
+                },
+              },
+            },
+          },
+        },
+      ],
+      {
+        updatePipeline: true,
+      },
+    );
+
+    if (result.matchedCount === 0) {
+      throw new CustomError(
+        ResponseMessages.SLOT_NOT_FOUND,
+        HttpStatusCode.BAD_REQUEST,
+      );
+    }
+  }
+
+  async addToChapterSlotPool(
+    facultyId: string,
+    chapterSlotId: string,
+    studentId: string,
+  ): Promise<void> {
+    const result = await FacultyModel.updateOne(
+      {
+        _id: facultyId,
+        isDeleted: false,
+        "chapterSlots._id": chapterSlotId,
+        "chapterSlots.isAvailable": true,
+      },
+      [
+        {
+          $set: {
+            chapterSlots: {
+              $map: {
+                input: "$chapterSlots",
+                as: "slot",
+                in: {
+                  $cond: [
+                    {
+                      $and: [
+                        {
+                          $eq: [
+                            "$$slot._id",
+                            new Types.ObjectId(chapterSlotId),
+                          ],
+                        },
+                        { $lt: [{ $size: "$$slot.pool" }, "$$slot.poolLimit"] },
+                      ],
+                    },
+                    {
+                      $mergeObjects: [
+                        "$$slot",
+                        {
+                          pool: {
+                            $setUnion: [
+                              "$$slot.pool",
+                              [new Types.ObjectId(studentId)],
+                            ],
+                          },
+                        },
+                      ],
+                    },
+                    "$$slot",
+                  ],
+                },
+              },
+            },
+          },
+        },
+      ],
+      {
+        updatePipeline: true,
+      },
+    );
+
+    if (result.matchedCount === 0) {
+      throw new CustomError(
+        ResponseMessages.SLOT_NOT_FOUND,
+        HttpStatusCode.BAD_REQUEST,
+      );
+    }
   }
 }

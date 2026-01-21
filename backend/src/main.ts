@@ -11,6 +11,7 @@ import registerSubjectVariantModule from "./modules/subject-variant/subject.vari
 import registerChapterModule from "./modules/chapter/chapter.module.js";
 import registerFacultyModule from "./modules/faculty/faculty.module.js";
 import registerMediaModule from "./modules/media/media.module.js";
+import registerBookingModule from "./modules/booking/booking.module.js";
 
 
 
@@ -34,6 +35,7 @@ const startServer = async () => {
         registerSubjectVariantModule(expressApp)
         registerChapterModule(expressApp)
         registerFacultyModule(expressApp)
+        registerBookingModule(expressApp)
         
 
 
