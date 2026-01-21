@@ -54,7 +54,7 @@ export class GetChaptersForAdminUseCase implements IGetChaptersForAdminUseCase {
       if (match && Object.keys(match).length > 0) {
         filteredSubjectVariantIds =
           await this._subjectVariantRepository.findAllIds(match);
-          
+         
       }
     }
 

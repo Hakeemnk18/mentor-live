@@ -157,7 +157,7 @@ export class SubjectVariantRepository implements ISubjectVariantRepository {
 
   async findAllIds(query: Record<string, any>): Promise<string[]> {
     const document = await SubjectVariantModel.find(query,{ _id: 1})
-
+    
     return document.map((item)=> item._id.toString())
   }
 }

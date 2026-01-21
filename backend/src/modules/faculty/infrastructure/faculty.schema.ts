@@ -95,7 +95,7 @@ const facultySchema = new Schema<IFaculty>(
         pool: [
           {
             type: Schema.Types.ObjectId,
-            ref: "User",
+            ref: "Student",
           },
         ],
         poolLimit: {
@@ -124,7 +124,7 @@ const facultySchema = new Schema<IFaculty>(
         pool: [
           {
             type: Schema.Types.ObjectId,
-            ref: "User",
+            ref: "Student",
           },
         ],
         poolLimit: {
