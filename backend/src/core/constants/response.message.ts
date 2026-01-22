@@ -175,6 +175,25 @@ INVALID_BOOKING_LIST_TYPE: "Invalid booking list type",
 BOOKING_STATUS_CHANGED: "Booking status updated successfully",
 BOOKING_CONTACT_STATUS_UPDATED: "Booking contact status updated successfully",
 
+PHONE_VERIFICATION_NOT_FOUND: "Phone verification record not found",
+PHONE_ALREADY_VERIFIED: "Phone number already verified",
+PHONE_NOT_VERIFIED: "Phone number is not verified",
+
+OTP_SENT_SUCCESS: "OTP sent successfully",
+OTP_SEND_FAILED: "Failed to send OTP",
+
+OTP_INVALID: "Invalid OTP",
+OTP_EXPIRED: "OTP has expired",
+OTP_VERIFICATION_FAILED: "OTP verification failed",
+OTP_VERIFICATION_SUCCESS: "OTP verified successfully",
+
+OTP_MAX_ATTEMPTS_REACHED: "Maximum OTP attempts reached",
+OTP_ALREADY_USED: "OTP already used",
+
+
+PHONE_VERIFICATION_CREATE_FAILED: "Failed to create phone verification",
+PHONE_VERIFICATION_UPDATE_FAILED: "Failed to update phone verification",
+
 
 
 };

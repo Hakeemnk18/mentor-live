@@ -16,6 +16,7 @@ import { validateSlotForBooking } from "../utils/slot.pool.invariant.js";
 import { validateChapterSlotForBooking } from "../utils/chapter.slot.pool.invariant.js";
 import type { ISubjectVariantRepository } from "../../subject-variant/repositories/subject.variant.repository.interface.js";
 import type { ChapterSlotProps } from "../../faculty/types/faculty.type.js";
+import type { IPhoneVerificationRepository } from "../../phone-verification/repository/phone.verification.repository.interface.js";
 const { ObjectId } = Types
 
 @injectable()
@@ -34,12 +35,26 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
     private readonly _studentRepository: IStudentRepository,
 
     @inject("ISubjectVariantRepository")
-    private readonly _subjectVariantRepository: ISubjectVariantRepository
+    private readonly _subjectVariantRepository: ISubjectVariantRepository,
+
+    @inject("IPhoneVerificationRepository")
+    private readonly _phoneVerificationRepo: IPhoneVerificationRepository
   ) {}
 
   async execute(dto: CreateBookingRequestDto): Promise<void> {
     const { user, booking } = dto;
     let currentChapterSlot : ChapterSlotProps | null = null
+
+    //phone number verification
+
+    const verification = await this._phoneVerificationRepo.findByPhoneNumber(user.phoneNumber)
+
+    if(!verification || !verification.isVerified){
+      throw new CustomError(
+        ResponseMessages.PHONE_NOT_VERIFIED,
+        HttpStatusCode.BAD_REQUEST
+      )
+    }
 
     /* ─────────────────────────────────────────────
      *  USER → STUDENT CREATION (idempotent)
