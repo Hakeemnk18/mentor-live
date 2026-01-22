@@ -7,6 +7,8 @@ import { IOtpService } from "../core/ports/otp.service.interface.js";
 import { OtpService } from "../infrastructure/services/otp.service.js";
 import type { IPhoneVerificationRepository } from "../modules/phone-verification/repository/phone.verification.repository.interface.js";
 import { PhoneVerificationRepository } from "../modules/phone-verification/repository/phone.verification.repository.js";
+import type { INotificationService } from "../core/ports/notification.service.interface.js";
+import { WhatsAppNotificationService } from "../infrastructure/services/notification.service.js";
 
 
 
@@ -24,6 +26,10 @@ container.register<IOtpService>("IOtpService", {
 
 container.register<IPhoneVerificationRepository>("IPhoneVerificationRepository", {
     useClass: PhoneVerificationRepository
+})
+
+container.register<INotificationService>("INotificationService", {
+    useClass: WhatsAppNotificationService
 })
 
 // container.register<IRandomTokenService>("IRandomTokenService", {
