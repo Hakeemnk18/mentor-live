@@ -17,7 +17,8 @@ import { validateChapterSlotForBooking } from "../utils/chapter.slot.pool.invari
 import type { ISubjectVariantRepository } from "../../subject-variant/repositories/subject.variant.repository.interface.js";
 import type { ChapterSlotProps } from "../../faculty/types/faculty.type.js";
 import type { IPhoneVerificationRepository } from "../../phone-verification/repository/phone.verification.repository.interface.js";
-const { ObjectId } = Types
+import type { INotificationService } from "../../../core/ports/notification.service.interface.js";
+const { ObjectId } = Types;
 
 @injectable()
 export class CreateBookingUseCase implements ICreateBookingUseCase {
@@ -38,22 +39,27 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
     private readonly _subjectVariantRepository: ISubjectVariantRepository,
 
     @inject("IPhoneVerificationRepository")
-    private readonly _phoneVerificationRepo: IPhoneVerificationRepository
+    private readonly _phoneVerificationRepo: IPhoneVerificationRepository,
+
+    @inject("INotificationService")
+    private readonly _notificationService: INotificationService,
   ) {}
 
   async execute(dto: CreateBookingRequestDto): Promise<void> {
     const { user, booking } = dto;
-    let currentChapterSlot : ChapterSlotProps | null = null
+    let currentChapterSlot: ChapterSlotProps | null = null;
 
     //phone number verification
 
-    const verification = await this._phoneVerificationRepo.findByPhoneNumber(user.phoneNumber)
+    const verification = await this._phoneVerificationRepo.findByPhoneNumber(
+      user.phoneNumber,
+    );
 
-    if(!verification || !verification.isVerified){
+    if (!verification || !verification.isVerified) {
       throw new CustomError(
         ResponseMessages.PHONE_NOT_VERIFIED,
-        HttpStatusCode.BAD_REQUEST
-      )
+        HttpStatusCode.BAD_REQUEST,
+      );
     }
 
     /* ─────────────────────────────────────────────
@@ -92,7 +98,6 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
     });
 
     if (alreadyBooked) {
-      
       throw new CustomError(
         ResponseMessages.BOOKING_ALREADY_EXISTS,
         HttpStatusCode.BAD_REQUEST,
@@ -113,18 +118,17 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
     // Faculty must exist
     let faculty;
     if (booking.mode === "slot") {
-      
-        const subjectVariantIds = await this._subjectVariantRepository.findAllIds(
-            {
-                class: student.class,
-                syllabus: student.syllabus
-            }
-        )
-        console.log("subject variant ",subjectVariantIds)
+      const subjectVariantIds = await this._subjectVariantRepository.findAllIds(
+        {
+          class: student.class,
+          syllabus: student.syllabus,
+        },
+      );
+      console.log("subject variant ", subjectVariantIds);
       faculty = await this._facultyRepository.findFacultyByQuery({
-        subjectOffering: { $in: subjectVariantIds},
+        subjectOffering: { $in: subjectVariantIds },
         _id: booking.facultyId,
-        isDeleted: false
+        isDeleted: false,
       });
       if (!faculty || faculty.isDeleted) {
         throw new CustomError(
@@ -134,11 +138,11 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
       }
     }
 
-    if(booking.mode === "chapter"){
-        faculty = await this._facultyRepository.findFacultyByQuery({
+    if (booking.mode === "chapter") {
+      faculty = await this._facultyRepository.findFacultyByQuery({
         "chapterSlots.chapter": booking.chapterId,
         _id: booking.facultyId,
-        isDeleted: false
+        isDeleted: false,
       });
       if (!faculty || faculty.isDeleted) {
         throw new CustomError(
@@ -176,7 +180,7 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
         booking.facultyId,
         booking.chapterId!,
       );
-      
+
       validateChapterSlotForBooking(
         currentChapterSlot,
         booking.type,
@@ -217,7 +221,6 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
         HttpStatusCode.INTERNAL_SERVER_ERROR,
       );
     }
-    
 
     // add to pooling if only booking is success
     try {
@@ -241,5 +244,10 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
       await this._bookingRepository.deleteById(created.id!); // soft delete
       throw err;
     }
+   console.log("booking completed")
+    await this._notificationService.sendBookingConfirmation(
+      student.phoneNumber,
+      created.id!,
+    );
   }
 }
