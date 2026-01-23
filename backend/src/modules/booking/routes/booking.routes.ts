@@ -18,4 +18,8 @@ router.post('/',
   (req,res) => bookingController.createBooking(req, res)
 )
 
+router.get('/one-to-one',
+  (req,res)=> bookingController.getAllOneToOneBooking(req, res)
+)
+
 export default router;

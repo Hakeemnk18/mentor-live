@@ -1,12 +1,12 @@
 import type { IGetAllDocDB } from "../../../core/shared/interfaces/get.all.doc.interface.js";
+import type { GetAllOneToOneBookingDto } from "../dto/get.all.one.to.one.dto.js";
 import { Booking } from "../entities/booking.entity.js";
-import type { ExistingBookingProps } from "../type/booking.type.js";
+import type { AdminBookingView, ExistingBookingProps } from "../type/booking.type.js";
 
 export interface IBookingRepository {
   create(bookingEntity: Booking): Promise<Booking>;
   findById(id: string): Promise<Booking | null>;
   save(bookingEntity: Booking): Promise<Booking>;
-  findAllForAdmin(allDoc: IGetAllDocDB): Promise<Booking[]>;
   findAllForUser(): Promise<
     { id: string; status: string }[]
   >;
@@ -15,4 +15,5 @@ export interface IBookingRepository {
     props: ExistingBookingProps
   ): Promise<boolean>;
  deleteById(id: string): Promise<void>
+ findAllOneToOneBooking(dto: GetAllOneToOneBookingDto):Promise<{data: AdminBookingView[], total: number}>
 }

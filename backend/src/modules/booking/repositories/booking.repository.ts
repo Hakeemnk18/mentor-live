@@ -2,11 +2,17 @@ import { HttpStatusCode } from "../../../core/constants/http.status.codes.js";
 import { ResponseMessages } from "../../../core/constants/response.message.js";
 import { CustomError } from "../../../core/errors/custom.error.js";
 import type { IGetAllDocDB } from "../../../core/shared/interfaces/get.all.doc.interface.js";
+import type { GetAllOneToOneBookingDto } from "../dto/get.all.one.to.one.dto.js";
 import { Booking } from "../entities/booking.entity.js";
 import { BookingModel } from "../infrastructure/booking.schema.js";
 import { BookingMapper } from "../mapper/booking.mapper.js";
-import type { ExistingBookingProps } from "../type/booking.type.js";
+import { Types } from "mongoose";
+import type {
+  AdminBookingView,
+  ExistingBookingProps,
+} from "../type/booking.type.js";
 import type { IBookingRepository } from "./booking.repository.interface.js";
+const { ObjectId } = Types
 
 export class BookingRepository implements IBookingRepository {
   async create(bookingEntity: Booking): Promise<Booking> {
@@ -94,7 +100,8 @@ export class BookingRepository implements IBookingRepository {
   }
 
   async findExistingBooking(props: ExistingBookingProps): Promise<boolean> {
-    const { studentId, facultyId, type, mode, chapterId, slotId, isDeleted } = props;
+    const { studentId, facultyId, type, mode, chapterId, slotId, isDeleted } =
+      props;
 
     const baseQuery: any = {
       userId: studentId,
@@ -123,4 +130,223 @@ export class BookingRepository implements IBookingRepository {
   async deleteById(id: string): Promise<void> {
     await BookingModel.updateOne({ _id: id }, { $set: { isDeleted: true } });
   }
+
+  async findAllOneToOneBooking(
+    dto: GetAllOneToOneBookingDto,
+  ): Promise<{ data: AdminBookingView[]; total: number }> {
+    const {
+      page,
+      limit,
+      search,
+      mode,
+      syllabusId,
+      classId,
+      chapterId,
+      isContacted,
+      status,
+    } = dto;
+    
+    const skip = (page - 1) * limit;
+    
+
+    const pipeline: any[] = [];
+
+    /**
+     * 1️⃣ BASE MATCH (Booking-native fields ONLY)
+     */
+    const baseMatch: any = {
+      isDeleted: false,
+      type: "oneToOne",
+    };
+
+    if (mode) baseMatch.mode = mode;
+    if (status) baseMatch.status = status;
+    if (typeof isContacted === "boolean") {
+      baseMatch.isContacted = isContacted;
+    }
+    if (chapterId) {
+      baseMatch.chapterId = new ObjectId(chapterId);
+    }
+
+    pipeline.push({ $match: baseMatch });
+
+    /**
+     * 2️⃣ LOOKUP USER (student)
+     */
+    pipeline.push(
+      {
+        $lookup: {
+          from: "students",
+          localField: "userId",
+          foreignField: "_id",
+          as: "student",
+        },
+      },
+      { $unwind: "$student" },
+    );
+
+    /**
+     * 3️⃣ LOOKUP FACULTY
+     */
+    pipeline.push(
+      {
+        $lookup: {
+          from: "faculties",
+          localField: "facultyId",
+          foreignField: "_id",
+          as: "faculty",
+        },
+      },
+      { $unwind: "$faculty" },
+    );
+
+    /**
+     * 4️⃣ LOOKUP CHAPTER (optional)
+     */
+    pipeline.push(
+      {
+        $lookup: {
+          from: "chapters",
+          localField: "chapterId",
+          foreignField: "_id",
+          as: "chapter",
+        },
+      },
+      {
+        $unwind: {
+          path: "$chapter",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+    );
+
+    /**
+     * 5️⃣ ACADEMIC FILTERS (AFTER LOOKUPS)
+     */
+    const academicMatch: any = {};
+
+    if (classId) academicMatch["student.class"] = classId;
+    if (syllabusId) academicMatch["student.syllabus"] = syllabusId;
+
+    if (Object.keys(academicMatch).length) {
+      pipeline.push({ $match: academicMatch });
+    }
+
+    /**
+     * 6️⃣ SEARCH (student name OR faculty name)
+     */
+    if (search.trim()) {
+      pipeline.push({
+        $match: {
+          $or: [
+            { "student.name": { $regex: search, $options: "i" } },
+            { "faculty.name": { $regex: search, $options: "i" } },
+          ],
+        },
+      });
+    }
+
+    // /**
+    //  * 7️⃣ PROJECT (normalize for admin table)
+    //  */
+    pipeline.push({
+      $project: {
+        id: "$_id",
+
+        student: {
+          id: "$student._id",
+          name: "$student.name",
+          phone: "$student.phoneNumber",
+        },
+
+        faculty: {
+          id: "$faculty._id",
+          name: "$faculty.name",
+        },
+        isContacted:"$isContacted",
+        class: "$student.class",
+        syllabus: "$student.syllabus",
+
+        slot: {
+          $cond: [
+            { $eq: ["$mode", "slot"] },
+            {
+              $let: {
+                vars: {
+                  matchedSlot: {
+                    $arrayElemAt: [
+                      {
+                        $filter: {
+                          input: "$faculty.slots",
+                          as: "slot",
+                          cond: {
+                            $in: [
+                              "$$slot._id",
+                              {
+                                $map: {
+                                  input: "$slotId",
+                                  as: "id",
+                                  in: { $toObjectId: "$$id" },
+                                },
+                              },
+                            ],
+                          },
+                        },
+                      },
+                      0,
+                    ],
+                  },
+                },
+                in: {
+                  id: "$$matchedSlot._id",
+                  time: "$$matchedSlot.time",
+                },
+              },
+            },
+            "$$REMOVE",
+          ],
+        },
+
+        chapter: {
+          $cond: [
+            { $eq: ["$mode", "chapter"] },
+            {
+              id: "$chapter._id",
+              name: "$chapter.name",
+            },
+            "$$REMOVE",
+          ],
+        },
+
+        mode: 1,
+        status: 1,
+        createdAt: 1,
+      },
+    });
+
+    /**
+     * 8️⃣ SORT + PAGINATION
+     */
+    pipeline.push({
+      $facet: {
+        data: [
+          { $sort: { createdAt: -1 } },
+          { $skip: skip },
+          { $limit: limit },
+        ],
+        meta: [{ $count: "total" }],
+      },
+    });
+    
+    const [result] = await BookingModel.aggregate(pipeline);
+    
+    const data = result.data;
+    
+    const total = result.meta[0]?.total ?? 0;
+
+    const bookings = data.map(BookingMapper.mapAdminBookingView);
+    return { data: bookings, total: total };
+  }
+
+  
 }
