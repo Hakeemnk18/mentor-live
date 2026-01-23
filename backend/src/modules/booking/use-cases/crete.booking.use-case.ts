@@ -69,19 +69,22 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
     let student = await this._studentRepository.findByNamePhoneNumber(
       user.phoneNumber,
     );
+    const newStudent = new Student({
+      id: null,
+      name: user.name,
+      class: user.class,
+      place: user.place,
+      phoneNumber: user.phoneNumber,
+      school: user.school,
+      syllabus: user.syllabus,
+      isDeleted: false,
+    });
 
     if (!student) {
-      const newStudent = new Student({
-        id: null,
-        name: user.name,
-        class: user.class,
-        place: user.place,
-        phoneNumber: user.phoneNumber,
-        school: user.school,
-        syllabus: user.syllabus,
-        isDeleted: false,
-      });
       student = await this._studentRepository.create(newStudent);
+    }else if(student){
+      let updatedStudent = student.changeClassAndName(user.class, user.syllabus)
+      student = await this._studentRepository.save(updatedStudent)
     }
 
     const alreadyBooked = await this._bookingRepository.findExistingBooking({
@@ -244,7 +247,7 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
       await this._bookingRepository.deleteById(created.id!); // soft delete
       throw err;
     }
-   console.log("booking completed")
+    console.log("booking completed");
     await this._notificationService.sendBookingConfirmation(
       student.phoneNumber,
       created.id!,

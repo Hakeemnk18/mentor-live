@@ -68,4 +68,12 @@ export class Student {
       name,
     });
   }
+
+  changeClassAndName(classId: string, syllabus: string):Student {
+    return new Student({
+      ...this,
+      class: classId,
+      syllabus
+    });
+  }
 }

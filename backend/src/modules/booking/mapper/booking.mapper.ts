@@ -1,4 +1,5 @@
 import { Booking } from "../entities/booking.entity.js";
+import type { AdminBookingRaw, AdminBookingView } from "../type/booking.type.js";
 
 export class BookingMapper {
   static toDomain(bookingModelData: any): Booking | null {
@@ -62,4 +63,40 @@ export class BookingMapper {
 
     return persistenceData;
   }
+
+  static mapAdminBookingView(
+  raw: AdminBookingRaw
+): AdminBookingView {
+  return {
+    id: String(raw.id),
+
+    student: {
+      id: String(raw.student.id),
+      name: raw.student.name,
+      phone: raw.student.phone,
+    },
+
+    faculty: {
+      id: String(raw.faculty.id),
+      name: raw.faculty.name,
+    },
+
+    class: raw.class,
+    syllabus: raw.syllabus,
+    isContacted: raw.isContacted,
+    slot: raw.mode === "slot" ? raw.slot : undefined,
+
+    chapter:
+      raw.mode === "chapter" && raw.chapter
+        ? {
+            id: String(raw.chapter.id),
+            name: raw.chapter.name,
+          }
+        : undefined,
+
+    mode: raw.mode,
+    status: raw.status,
+    createdAt: raw.createdAt.toISOString(),
+  };
+}
 }

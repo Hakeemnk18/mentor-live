@@ -1,10 +1,10 @@
 import { container } from "tsyringe";
-import type { IStudentRepository } from "../modules/student/repositories/student.repository.interface.js";
-import { StudentRepository } from "../modules/student/repositories/student.repository.js";
 import type { IBookingRepository } from "../modules/booking/repositories/booking.repository.interface.js";
 import { BookingRepository } from "../modules/booking/repositories/booking.repository.js";
 import type { ICreateBookingUseCase } from "../modules/booking/use-cases/interfaces/create.booking.use-case.interface.js";
 import { CreateBookingUseCase } from "../modules/booking/use-cases/crete.booking.use-case.js";
+import type { IGetOneToOneBookingUseCase } from "../modules/booking/use-cases/interfaces/get.one.to.one.booking.use-case.interface.js";
+import { GetOneToOneBookingUseCase } from "../modules/booking/use-cases/get.one.to.one.booking.use-case.js";
 
 export const registerBookingDependencies = () => {
   
@@ -16,4 +16,7 @@ export const registerBookingDependencies = () => {
         useClass: CreateBookingUseCase,
     });
 
+    container.register<IGetOneToOneBookingUseCase>("IGetOneToOneBookingUseCase", {
+        useClass: GetOneToOneBookingUseCase,
+    });
 };

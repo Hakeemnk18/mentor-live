@@ -6,7 +6,7 @@ import type {
 } from "../type/booking.type.js";
 
 export interface IBooking extends Document {
-  userId: string;
+  userId: Types.ObjectId;
   facultyId: Types.ObjectId;
   type: BookingType;
   mode: BookingMode;
@@ -20,7 +20,8 @@ export interface IBooking extends Document {
 const bookingSchema = new Schema<IBooking>(
   {
     userId: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: "Student",
       required: true,
     },
 

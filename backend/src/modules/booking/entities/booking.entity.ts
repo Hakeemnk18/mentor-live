@@ -68,4 +68,6 @@ export class Booking {
       isDeleted: false,
     });
   }
+
+  
 }

@@ -119,6 +119,7 @@ export class AuthController implements IAuthController {
   async verifyOtp(req: Request, res: Response): Promise<void> {
     try {
       const dto = VerifyOtpSchema.parse(req.body)
+      console.log(dto)
       await this._verifyOtpUseCase.execute(dto)
       res.status(HttpStatusCode.OK).json({
         message: ResponseMessages.OTP_VERIFICATION_SUCCESS,
