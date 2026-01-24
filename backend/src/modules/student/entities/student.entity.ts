@@ -22,11 +22,11 @@ export class Student {
   constructor(props: StudentProps) {
     this.id = props.id;
     this.name = props.name.trim();
-    this.class = props.class.trim();
+    this.class = props.class;
     this.place = props.place.trim();
     this.phoneNumber = props.phoneNumber.trim();
     this.school = props.school.trim();
-    this.syllabus = props.syllabus.trim();
+    this.syllabus = props.syllabus;
     this.isDeleted = props.isDeleted ?? false;
   }
 

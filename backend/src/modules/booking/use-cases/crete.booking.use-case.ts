@@ -18,6 +18,8 @@ import type { ISubjectVariantRepository } from "../../subject-variant/repositori
 import type { ChapterSlotProps } from "../../faculty/types/faculty.type.js";
 import type { IPhoneVerificationRepository } from "../../phone-verification/repository/phone.verification.repository.interface.js";
 import type { INotificationService } from "../../../core/ports/notification.service.interface.js";
+import type { IClassRepository } from "../../class/repositories/class.repository.interface.js";
+import type { ISyllabusRepository } from "../../syllabus/repositories/syllabus.repository.interface.js";
 const { ObjectId } = Types;
 
 @injectable()
@@ -43,11 +45,37 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
 
     @inject("INotificationService")
     private readonly _notificationService: INotificationService,
+
+    @inject("IClassRepository")
+    private readonly _classRepository: IClassRepository,
+
+    @inject("ISyllabusRepository")
+    private readonly _syllabusRepository: ISyllabusRepository,
   ) {}
 
   async execute(dto: CreateBookingRequestDto): Promise<void> {
     const { user, booking } = dto;
+    
     let currentChapterSlot: ChapterSlotProps | null = null;
+
+    // class and syllabus validation
+    const classExists = await this._classRepository.findById(user.class);
+    if (!classExists) {
+      throw new CustomError(
+        ResponseMessages.CLASS_NOT_FOUND,
+        HttpStatusCode.NOT_FOUND,
+      );
+    }
+
+    
+
+    const syllabusExists = await this._syllabusRepository.findById(user.syllabus);
+    if (!syllabusExists) {
+      throw new CustomError(
+        ResponseMessages.SYLLABUS_NOT_FOUND,
+        HttpStatusCode.NOT_FOUND,
+      );
+    }
 
     //phone number verification
 
@@ -87,6 +115,9 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
       student = await this._studentRepository.save(updatedStudent)
     }
 
+    
+    
+
     const alreadyBooked = await this._bookingRepository.findExistingBooking({
       studentId: student.id!,
       facultyId: booking.facultyId,
@@ -119,6 +150,7 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
      * ───────────────────────────────────────────── */
 
     // Faculty must exist
+
     let faculty;
     if (booking.mode === "slot") {
       const subjectVariantIds = await this._subjectVariantRepository.findAllIds(
@@ -127,7 +159,7 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
           syllabus: student.syllabus,
         },
       );
-      console.log("subject variant ", subjectVariantIds);
+      
       faculty = await this._facultyRepository.findFacultyByQuery({
         subjectOffering: { $in: subjectVariantIds },
         _id: booking.facultyId,
@@ -140,6 +172,8 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
         );
       }
     }
+
+    
 
     if (booking.mode === "chapter") {
       faculty = await this._facultyRepository.findFacultyByQuery({
@@ -195,12 +229,16 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
      *  MUTATION PHASE — CREATE BOOKING
      * ───────────────────────────────────────────── */
 
+    
+
     const bookingProps: BookingProps = {
       id: null,
       userId: student.id!,
       facultyId: booking.facultyId,
       type: booking.type,
       mode: booking.mode,
+      class: user.class,
+      syllabus: user.syllabus,
       status: "interested",
       isContacted: false,
       isDeleted: false,
@@ -247,7 +285,7 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
       await this._bookingRepository.deleteById(created.id!); // soft delete
       throw err;
     }
-    console.log("booking completed");
+    
     await this._notificationService.sendBookingConfirmation(
       student.phoneNumber,
       created.id!,

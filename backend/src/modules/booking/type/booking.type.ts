@@ -21,18 +21,12 @@ export type AdminBookingRaw = {
     name: string;
     phone: string;
   };
-  faculty: {
-    id: any;
-    name: string;
-  };
-  class: string;
+  faculty:IdNameView;
+  class: IdNameView;
   isContacted: boolean,
-  syllabus: string;
+  syllabus: IdNameView;
   slot?: slotIdView | undefined;
-  chapter?: {
-    id: any;
-    name: string;
-  } | undefined ;
+  chapter?: IdNameView | undefined ;
   mode: BookingMode;
   status: BookingStatus;
   createdAt: Date;
@@ -46,12 +40,43 @@ export interface AdminBookingView {
     phone: string;
   };
   faculty: IdNameView
-  class: string;  
+  class: IdNameView;  
   isContacted: boolean      
-  syllabus: string;     
+  syllabus: IdNameView;     
   slot?: slotIdView | undefined,
   chapter?: IdNameView | undefined; 
   mode: BookingMode
   status: BookingStatus
   createdAt: string; 
+}
+
+export type AdminPoolingRaw = {
+  id: {
+    facultyId: any;        
+    mode: BookingMode;
+    slotId?: string | null;
+    chapterId?: any;       
+  };
+  faculty: IdNameView
+  mode: BookingMode;
+  class: IdNameView;  
+  syllabus: IdNameView;
+  chapter?: IdNameView | undefined,
+  slot?: slotIdView | undefined,
+  totalStudents: number;
+  pendingContactCount: number;
+  hasPendingContact: boolean;
+  createdAt: Date;
+};
+
+export interface AdminPoolingView {
+  faculty: IdNameView;
+  mode: BookingMode;
+  class: IdNameView;  
+  syllabus: IdNameView;
+  chapter?: IdNameView | undefined
+  slot?: slotIdView | undefined,
+  totalStudents: number;
+  hasPendingContact: boolean;
+  createdAt: string; // ISO
 }

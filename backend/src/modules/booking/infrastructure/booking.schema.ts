@@ -14,7 +14,9 @@ export interface IBooking extends Document {
   chapterId?: Types.ObjectId;
   isContacted: boolean;
   status: BookingStatus;
-  isDeleted: boolean
+  isDeleted: boolean;
+  class: Types.ObjectId;
+  syllabus: Types.ObjectId
 }
 
 const bookingSchema = new Schema<IBooking>(
@@ -50,6 +52,14 @@ const bookingSchema = new Schema<IBooking>(
     chapterId: {
       type: Schema.Types.ObjectId,
       ref: "Chapter",
+    },
+    class: {
+      type: Schema.Types.ObjectId,
+      ref: "Class",
+    },
+    syllabus: {
+      type: Schema.Types.ObjectId,
+      ref: "Syllabus",
     },
 
     isContacted: {

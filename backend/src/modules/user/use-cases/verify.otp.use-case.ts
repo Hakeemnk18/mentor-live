@@ -47,8 +47,7 @@ export class VerifyOtpUseCase implements IVerifyOtpUseCase {
         HttpStatusCode.BAD_REQUEST
       );
     }
-    console.log("otp ",otp)
-    console.log("hash otp ",verification.otpHash)
+    
     const isMatch = await bcrypt.compare(otp!, verification.otpHash);
 
     if (!isMatch) {

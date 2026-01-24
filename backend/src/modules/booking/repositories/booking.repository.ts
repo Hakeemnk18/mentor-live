@@ -9,10 +9,12 @@ import { BookingMapper } from "../mapper/booking.mapper.js";
 import { Types } from "mongoose";
 import type {
   AdminBookingView,
+  AdminPoolingView,
   ExistingBookingProps,
 } from "../type/booking.type.js";
 import type { IBookingRepository } from "./booking.repository.interface.js";
-const { ObjectId } = Types
+import type { GetOneToOneBookingUseCase } from "../use-cases/get.one.to.one.booking.use-case.js";
+const { ObjectId } = Types;
 
 export class BookingRepository implements IBookingRepository {
   async create(bookingEntity: Booking): Promise<Booking> {
@@ -145,9 +147,8 @@ export class BookingRepository implements IBookingRepository {
       isContacted,
       status,
     } = dto;
-    
+
     const skip = (page - 1) * limit;
-    
 
     const pipeline: any[] = [];
 
@@ -167,6 +168,13 @@ export class BookingRepository implements IBookingRepository {
     if (chapterId) {
       baseMatch.chapterId = new ObjectId(chapterId);
     }
+    if (classId) {
+      baseMatch.class = new ObjectId(classId);
+    }
+
+    if (syllabusId) {
+      baseMatch.syllabus = new ObjectId(syllabusId);
+    }
 
     pipeline.push({ $match: baseMatch });
 
@@ -183,6 +191,31 @@ export class BookingRepository implements IBookingRepository {
         },
       },
       { $unwind: "$student" },
+    );
+    // LOOKUP CLASS
+    pipeline.push(
+      {
+        $lookup: {
+          from: "classes",
+          localField: "class",
+          foreignField: "_id",
+          as: "class",
+        },
+      },
+      { $unwind: "$class" },
+    );
+
+    // LOOKUP Syllabus
+    pipeline.push(
+      {
+        $lookup: {
+          from: "syllabuses",
+          localField: "syllabus",
+          foreignField: "_id",
+          as: "syllabus",
+        },
+      },
+      { $unwind: "$syllabus" },
     );
 
     /**
@@ -223,14 +256,6 @@ export class BookingRepository implements IBookingRepository {
     /**
      * 5️⃣ ACADEMIC FILTERS (AFTER LOOKUPS)
      */
-    const academicMatch: any = {};
-
-    if (classId) academicMatch["student.class"] = classId;
-    if (syllabusId) academicMatch["student.syllabus"] = syllabusId;
-
-    if (Object.keys(academicMatch).length) {
-      pipeline.push({ $match: academicMatch });
-    }
 
     /**
      * 6️⃣ SEARCH (student name OR faculty name)
@@ -263,9 +288,16 @@ export class BookingRepository implements IBookingRepository {
           id: "$faculty._id",
           name: "$faculty.name",
         },
-        isContacted:"$isContacted",
-        class: "$student.class",
-        syllabus: "$student.syllabus",
+        isContacted: "$isContacted",
+        class: {
+          id: "$class._id",
+          name: "$class.name",
+        },
+
+        syllabus: {
+          id: "$syllabus._id",
+          name: "$syllabus.name",
+        },
 
         slot: {
           $cond: [
@@ -337,16 +369,261 @@ export class BookingRepository implements IBookingRepository {
         meta: [{ $count: "total" }],
       },
     });
-    
+
     const [result] = await BookingModel.aggregate(pipeline);
-    
+
     const data = result.data;
-    
+
     const total = result.meta[0]?.total ?? 0;
 
     const bookings = data.map(BookingMapper.mapAdminBookingView);
     return { data: bookings, total: total };
   }
 
-  
+  async findAllPoolingBooking(
+    dto: GetAllOneToOneBookingDto,
+  ): Promise<{ data: AdminPoolingView[]; total: number }> {
+    const {
+      page,
+      limit,
+      search,
+      mode,
+      syllabusId,
+      classId,
+      chapterId,
+      isContacted,
+      status,
+    } = dto;
+
+    const skip = (page - 1) * limit;
+    const pipeline: any[] = [];
+
+    /**
+     * 1️⃣ BASE MATCH (booking-only)
+     */
+    const baseMatch: any = {
+      isDeleted: false,
+      type: "pooling",
+    };
+
+    if (mode) baseMatch.mode = mode;
+    if (status) baseMatch.status = status;
+    if (typeof isContacted === "boolean") {
+      baseMatch.isContacted = isContacted;
+    }
+    if (classId) {
+      baseMatch.class = new ObjectId(classId);
+    }
+
+    if (syllabusId) {
+      baseMatch.syllabus = new ObjectId(syllabusId);
+    }
+    if (chapterId) {
+      baseMatch.chapterId = new ObjectId(chapterId);
+    }
+
+    pipeline.push({ $match: baseMatch });
+
+    // LOOKUP CLASS
+    pipeline.push(
+      {
+        $lookup: {
+          from: "classes",
+          localField: "class",
+          foreignField: "_id",
+          as: "class",
+        },
+      },
+      { $unwind: "$class" },
+    );
+
+    // LOOKUP Syllabus
+    pipeline.push(
+      {
+        $lookup: {
+          from: "syllabuses",
+          localField: "syllabus",
+          foreignField: "_id",
+          as: "syllabus",
+        },
+      },
+      { $unwind: "$syllabus" },
+    );
+
+    /**
+     * 4️⃣ LOOKUP FACULTY
+     */
+    pipeline.push(
+      {
+        $lookup: {
+          from: "faculties",
+          localField: "facultyId",
+          foreignField: "_id",
+          as: "faculty",
+        },
+      },
+      { $unwind: "$faculty" },
+    );
+
+    /**
+     * 5️⃣ LOOKUP CHAPTER (optional)
+     */
+    pipeline.push(
+      {
+        $lookup: {
+          from: "chapters",
+          localField: "chapterId",
+          foreignField: "_id",
+          as: "chapter",
+        },
+      },
+      {
+        $unwind: {
+          path: "$chapter",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+    );
+
+    /**
+     * 6️⃣ SEARCH
+     */
+    if (search.trim()) {
+      pipeline.push({
+        $match: { "faculty.name": { $regex: search, $options: "i" } },
+      });
+    }
+
+    /**
+     * 7️⃣ GROUP → THIS IS THE CORE CHANGE
+     */
+    pipeline.push({
+      $group: {
+        _id: {
+          facultyId: "$faculty._id",
+          mode: "$mode",
+          slotId: { $arrayElemAt: ["$slotId", 0] },
+          chapterId: "$chapterId",
+        },
+
+        faculty: { $first: "$faculty" },
+        chapter: { $first: "$chapter" },
+        slot: {
+          $first: {
+            $cond: [
+              { $eq: ["$mode", "slot"] },
+              {
+                $let: {
+                  vars: {
+                    matchedSlot: {
+                      $arrayElemAt: [
+                        {
+                        $filter: {
+                          input: "$faculty.slots",
+                          as: "slot",
+                          cond: {
+                            $in: [
+                              "$$slot._id",
+                              {
+                                $map: {
+                                  input: "$slotId",
+                                  as: "id",
+                                  in: { $toObjectId: "$$id" },
+                                },
+                              },
+                            ],
+                          },
+                        },
+                      },
+                      0,
+                      ],
+                    },
+                  },
+                  in: {
+                    id: "$$matchedSlot._id",
+                    time: "$$matchedSlot.time",
+                  },
+                },
+              },
+              null,
+            ],
+          },
+        },
+        syllabus: { $first: "$syllabus" },
+        class: { $first: "$class" },
+        mode: { $first: "$mode" },
+        createdAt: { $min: "$createdAt" },
+        totalStudents: { $sum: 1 },
+
+        pendingContactCount: {
+          $sum: {
+            $cond: [{ $eq: ["$isContacted", false] }, 1, 0],
+          },
+        },
+      },
+    });
+
+    /**
+     * 8️⃣ PROJECT (admin-friendly pool row)
+     */
+    pipeline.push({
+      $project: {
+        id: "$_id",
+        faculty: {
+          id: "$faculty._id",
+          name: "$faculty.name",
+        },
+        mode: 1,
+        chapter: {
+          $cond: [
+            { $eq: ["$mode", "chapter"] },
+            {
+              id: "$chapter._id",
+              name: "$chapter.name",
+            },
+            "$$REMOVE",
+          ],
+        },
+        slot: {
+          $cond: [{ $eq: ["$mode", "slot"] }, "$slot", "$$REMOVE"],
+        },
+        class: {
+          id: "$class._id",
+          name: "$class.name",
+        },
+        syllabus: {
+          id: "$syllabus._id",
+          name: "$syllabus.name",
+        },
+        totalStudents: 1,
+        pendingContactCount: 1,
+        hasPendingContact: {
+          $gt: ["$pendingContactCount", 0],
+        },
+        students: 1,
+        createdAt: 1,
+      },
+    });
+
+    /**
+     * 9️⃣ SORT + PAGINATION
+     */
+    pipeline.push({
+      $facet: {
+        data: [
+          { $sort: { createdAt: -1 } },
+          { $skip: skip },
+          { $limit: limit },
+        ],
+        meta: [{ $count: "total" }],
+      },
+    });
+
+    const [result] = await BookingModel.aggregate(pipeline);
+
+    return {
+      data: result.data.map(BookingMapper.mapAdminPoolingView),
+      total: result.meta[0]?.total ?? 0,
+    };
+  }
 }
