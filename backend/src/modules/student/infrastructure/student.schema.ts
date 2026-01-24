@@ -1,12 +1,12 @@
-import { Schema, model, Document } from "mongoose";
+import { Schema, model, Document, Types } from "mongoose";
 
 export interface IStudent extends Document {
   name: string;
-  class: string;
+  class: Types.ObjectId;
   place: string;
   phoneNumber: string;
   school: string;
-  syllabus: string;
+  syllabus: Types.ObjectId;
 }
 
 const studentSchema = new Schema<IStudent>(
@@ -20,7 +20,8 @@ const studentSchema = new Schema<IStudent>(
     },
 
     class: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: "Class",
       required: true,
       trim: true,
     },
@@ -44,8 +45,8 @@ const studentSchema = new Schema<IStudent>(
     },
 
     syllabus: {
-      type: String,
-      required: true,
+      type: Schema.Types.ObjectId,
+      ref: "Syllabus",
       trim: true,
     },
   },

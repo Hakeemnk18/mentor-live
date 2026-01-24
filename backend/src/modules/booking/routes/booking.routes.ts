@@ -22,4 +22,8 @@ router.get('/one-to-one',
   (req,res)=> bookingController.getAllOneToOneBooking(req, res)
 )
 
+router.get('/pooling',
+  (req,res)=> bookingController.getAllPoolingBooking(req, res)
+)
+
 export default router;

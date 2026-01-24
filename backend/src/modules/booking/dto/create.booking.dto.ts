@@ -10,7 +10,7 @@ export const CreateBookingSchema = z
   .object({
     user: z.object({
       name: z.string().trim().min(2).max(100),
-      class: z.string().trim().min(1),
+      class: ObjectIdSchema,
       place: z.string().trim().min(1),
       phoneNumber: z.string().trim().min(7).max(15),
       school: z.string().trim().min(1),
@@ -21,7 +21,6 @@ export const CreateBookingSchema = z
       facultyId: ObjectIdSchema,
       type: BookingTypeEnum,
       mode: BookingModeEnum,
-
       slotId: z.array(ObjectIdSchema).optional(),
       chapterId: ObjectIdSchema.optional(),
     }),
