@@ -94,41 +94,49 @@ export default function ChapterFormModal({
 
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   /* ---------------- INIT ---------------- */
+useEffect(() => {
+  if (!open) {
+    // ✅ Clear validation when modal closes
+    setSubmitAttempted(false);
+    return;
+  }
 
-  useEffect(() => {
-    if (!open) return;
+  if (mode === "edit" && initialData) {
+    setName(initialData.name);
+    setPrice(initialData.price);
 
-    if (mode === "edit" && initialData) {
-      setName(initialData.name);
-      setPrice(initialData.price);
+    // dropdowns intentionally reset
+    setSyllabusId("");
+    setClassId("");
+    setSubjectVariantId("");
 
-      // ⛔ dropdowns intentionally reset
-      setSyllabusId("");
-      setClassId("");
-      setSubjectVariantId("");
+    setIcon(initialData.icon ?? null);
+    setIconPreview(initialData.icon?.url ?? null);
 
-      setIcon(initialData.icon ?? null);
-      setIconPreview(initialData.icon?.url ?? null);
+    setIconFile(null);
+    setIsNewImage(false);
+  } else {
+    setName("");
+    setPrice(0);
+    setSyllabusId("");
+    setClassId("");
+    setSubjectVariantId("");
 
-      setIconFile(null);
-      setIsNewImage(false);
-    } else {
-      setName("");
-      setPrice(0);
-      setSyllabusId("");
-      setClassId("");
-      setSubjectVariantId("");
+    setIcon(null);
+    setIconPreview(null);
+    setIconFile(null);
+    setIsNewImage(false);
+  }
 
-      setIcon(null);
-      setIconPreview(null);
-      setIconFile(null);
-      setIsNewImage(false);
-    }
-  }, [open, mode, initialData]);
+  // ✅ Clear validation on open
+  setSubmitAttempted(false);
+}, [open, mode, initialData]);
+
 
   /* ---------------- SUBJECT VARIANTS ---------------- */
 
@@ -162,9 +170,7 @@ export default function ChapterFormModal({
     setCropOpen(true);
   };
 
-  const uploadToCloudinary = (
-    file: File
-  ): Promise<CloudinaryUploadResult> => {
+  const uploadToCloudinary = (file: File): Promise<CloudinaryUploadResult> => {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       const formData = new FormData();
@@ -213,15 +219,25 @@ export default function ChapterFormModal({
 
   /* ---------------- SUBMIT ---------------- */
 
-  const canSubmit =
-    name.trim() &&
-    price > 0 &&
-    syllabusId &&
-    classId &&
-    subjectVariantId &&
-    (mode === "edit" || iconFile);
+  const validationErrors = {
+    name: !name.trim(),
+    price: price <= 0,
+    syllabus: !syllabusId,
+    class: !classId,
+    subject: !subjectVariantId,
+    icon: mode === "create" && !iconFile && !icon,
+  };
+
+  const hasErrors = Object.values(validationErrors).some(Boolean);
 
   const handleSubmit = async () => {
+    setSubmitAttempted(true);
+
+    if (hasErrors) {
+      toast.error("Please fix the highlighted fields");
+      return;
+    }
+
     try {
       let finalIcon: IconPayload;
 
@@ -248,9 +264,7 @@ export default function ChapterFormModal({
         await onUpdate(initialData._id, payload);
       }
 
-      toast.success(
-        mode === "create" ? "Chapter created" : "Chapter updated"
-      );
+      toast.success(mode === "create" ? "Chapter created" : "Chapter updated");
       onClose();
     } catch (err) {
       console.error(err);
@@ -278,21 +292,37 @@ export default function ChapterFormModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Chapter name"
-              className="w-full px-3 py-2 text-sm border rounded"
+              className={`w-full px-3 py-2 text-sm border rounded
+    ${submitAttempted && validationErrors.name ? "border-red-400" : ""}
+  `}
             />
+
+            {submitAttempted && validationErrors.name && (
+              <p className="text-xs text-red-500">Chapter name is required</p>
+            )}
 
             <input
               type="number"
               value={price}
               onChange={(e) => setPrice(Number(e.target.value))}
               placeholder="Price"
-              className="w-full px-3 py-2 text-sm border rounded"
+              className={`w-full px-3 py-2 text-sm border rounded
+    ${submitAttempted && validationErrors.price ? "border-red-400" : ""}
+  `}
             />
+
+            {submitAttempted && validationErrors.price && (
+              <p className="text-xs text-red-500">
+                Price must be greater than 0
+              </p>
+            )}
 
             <select
               value={syllabusId}
               onChange={(e) => setSyllabusId(e.target.value)}
-              className="w-full px-3 py-2 text-sm border rounded"
+              className={`w-full px-3 py-2 text-sm border rounded
+    ${submitAttempted && validationErrors.syllabus ? "border-red-400" : ""}
+  `}
             >
               <option value="">Select syllabus</option>
               {syllabuses.map((s) => (
@@ -302,10 +332,16 @@ export default function ChapterFormModal({
               ))}
             </select>
 
+            {submitAttempted && validationErrors.syllabus && (
+              <p className="text-xs text-red-500">Please select a syllabus</p>
+            )}
+
             <select
               value={classId}
               onChange={(e) => setClassId(e.target.value)}
-              className="w-full px-3 py-2 text-sm border rounded"
+              className={`w-full px-3 py-2 text-sm border rounded
+    ${submitAttempted && validationErrors.class ? "border-red-400" : ""}
+  `}
             >
               <option value="">Select class</option>
               {classes.map((c) => (
@@ -315,11 +351,16 @@ export default function ChapterFormModal({
               ))}
             </select>
 
+            {submitAttempted && validationErrors.class && (
+              <p className="text-xs text-red-500">Please select a class</p>
+            )}
+
             <select
               value={subjectVariantId}
               onChange={(e) => setSubjectVariantId(e.target.value)}
-              disabled={!syllabusId || !classId}
-              className="w-full px-3 py-2 text-sm border rounded"
+              className={`w-full px-3 py-2 text-sm border rounded
+    ${submitAttempted && validationErrors.subject ? "border-red-400" : ""}
+  `}
             >
               <option value="">Select subject</option>
               {subjectVariants.map((sv) => (
@@ -328,6 +369,10 @@ export default function ChapterFormModal({
                 </option>
               ))}
             </select>
+
+            {submitAttempted && validationErrors.subject && (
+              <p className="text-xs text-red-500">Please select a subject</p>
+            )}
           </div>
 
           {/* IMAGE */}
@@ -335,6 +380,9 @@ export default function ChapterFormModal({
             <label className="text-xs font-medium text-gray-600">
               Chapter Icon
             </label>
+            {submitAttempted && validationErrors.icon && (
+              <p className="text-xs text-red-500">Chapter icon is required</p>
+            )}
 
             {iconPreview ? (
               <div className="flex items-start gap-4">
@@ -390,16 +438,28 @@ export default function ChapterFormModal({
           )}
 
           <div className="mt-6 flex justify-end gap-3">
-            <button onClick={onClose} className="px-4 py-2 text-sm border rounded">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm border rounded hover:bg-gray-100"
+            >
               Cancel
             </button>
 
             <button
-              disabled={!canSubmit || uploading}
+              disabled={uploading}
               onClick={handleSubmit}
-              className="px-4 py-2 text-sm bg-[#DB313E] text-white rounded"
+              className={`
+      px-4 py-2 text-sm rounded text-white
+      bg-[#DB313E]
+      transition
+      ${uploading ? "opacity-50 cursor-not-allowed" : "hover:bg-[#c72b36]"}
+    `}
             >
-              {mode === "create" ? "Create" : "Update"}
+              {uploading
+                ? "Saving..."
+                : mode === "create"
+                ? "Create"
+                : "Update"}
             </button>
           </div>
         </div>
