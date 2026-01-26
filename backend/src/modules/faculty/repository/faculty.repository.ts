@@ -120,8 +120,8 @@ export class FacultyRepository implements IFacultyRepository {
 
       {
         $match: {
-          ...(classId && { "sv.subject": new ObjectId(classId) }),
-          ...(syllabusId && { "sv.subject": new ObjectId(syllabusId) }),
+          ...(classId && { "sv.class": new ObjectId(classId) }),
+          ...(syllabusId && { "sv.syllabus": new ObjectId(syllabusId) }),
           ...(subjectId && { "sv.subject": new ObjectId(subjectId) }),
         },
       },

@@ -9,11 +9,13 @@ import { BookingMapper } from "../mapper/booking.mapper.js";
 import { Types } from "mongoose";
 import type {
   AdminBookingView,
+  AdminPoolingStudentRaw,
   AdminPoolingView,
   ExistingBookingProps,
 } from "../type/booking.type.js";
 import type { IBookingRepository } from "./booking.repository.interface.js";
 import type { GetOneToOneBookingUseCase } from "../use-cases/get.one.to.one.booking.use-case.js";
+import type { GetAdminPoolingStudentsDto } from "../dto/get.pooling.students.dto.js";
 const { ObjectId } = Types;
 
 export class BookingRepository implements IBookingRepository {
@@ -518,24 +520,24 @@ export class BookingRepository implements IBookingRepository {
                     matchedSlot: {
                       $arrayElemAt: [
                         {
-                        $filter: {
-                          input: "$faculty.slots",
-                          as: "slot",
-                          cond: {
-                            $in: [
-                              "$$slot._id",
-                              {
-                                $map: {
-                                  input: "$slotId",
-                                  as: "id",
-                                  in: { $toObjectId: "$$id" },
+                          $filter: {
+                            input: "$faculty.slots",
+                            as: "slot",
+                            cond: {
+                              $in: [
+                                "$$slot._id",
+                                {
+                                  $map: {
+                                    input: "$slotId",
+                                    as: "id",
+                                    in: { $toObjectId: "$$id" },
+                                  },
                                 },
-                              },
-                            ],
+                              ],
+                            },
                           },
                         },
-                      },
-                      0,
+                        0,
                       ],
                     },
                   },
@@ -625,5 +627,208 @@ export class BookingRepository implements IBookingRepository {
       data: result.data.map(BookingMapper.mapAdminPoolingView),
       total: result.meta[0]?.total ?? 0,
     };
+  }
+
+  async findAdminPoolingStudents(
+    dto: GetAdminPoolingStudentsDto,
+  ): Promise<AdminPoolingStudentRaw[]> {
+    const pipeline: any[] = [];
+    const { facultyId, slotId, chapterId, mode } = dto;
+    
+    /* 1️⃣ Base match */
+    pipeline.push({
+      $match: {
+        facultyId: new Types.ObjectId(facultyId),
+        type: "pooling",
+        mode,
+        isDeleted: false,
+      },
+    });
+
+    /* 2️⃣ Mode-specific match */
+    if (mode === "slot") {
+      pipeline.push({
+        $match: {
+          slotId: { $in: [slotId] },
+        },
+      });
+    }
+
+    if (mode === "chapter") {
+      pipeline.push({
+        $match: {
+          chapterId: new Types.ObjectId(chapterId),
+        },
+      });
+    }
+
+    /* 3️⃣ Lookups */
+    pipeline.push(
+      {
+        $lookup: {
+          from: "students",
+          localField: "userId",
+          foreignField: "_id",
+          as: "student",
+        },
+      },
+      { $unwind: "$student" },
+
+      {
+        $lookup: {
+          from: "faculties",
+          localField: "facultyId",
+          foreignField: "_id",
+          as: "faculty",
+        },
+      },
+      { $unwind: "$faculty" },
+
+      {
+        $lookup: {
+          from: "classes",
+          localField: "class",
+          foreignField: "_id",
+          as: "class",
+        },
+      },
+      { $unwind: "$class" },
+
+      {
+        $lookup: {
+          from: "syllabuses",
+          localField: "syllabus",
+          foreignField: "_id",
+          as: "syllabus",
+        },
+      },
+      { $unwind: "$syllabus" },
+
+      {
+        $lookup: {
+          from: "chapters",
+          localField: "chapterId",
+          foreignField: "_id",
+          as: "chapter",
+        },
+      },
+      {
+        $unwind: {
+          path: "$chapter",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+    );
+
+    /* 4️⃣ Slot resolution (only for slot mode) */
+    pipeline.push({
+      $addFields: {
+        slot: {
+          $cond: [
+            { $eq: ["$mode", "slot"] },
+            {
+              $let: {
+                vars: {
+                  matchedSlot: {
+                    $arrayElemAt: [
+                      {
+                        $filter: {
+                          input: "$faculty.slots",
+                          as: "slot",
+                          cond: {
+                            $eq: ["$$slot._id", { $toObjectId: slotId }],
+                          },
+                        },
+                      },
+                      0,
+                    ],
+                  },
+                },
+                in: {
+                  id: "$$matchedSlot._id",
+                  time: "$$matchedSlot.time",
+                },
+              },
+            },
+            null,
+          ],
+        },
+      },
+    });
+
+    //group faculty
+    pipeline.push({
+      $group: {
+        _id: {
+          faculty: "$faculty._id",
+          mode: "$mode",
+          class: "$class._id",
+          syllabus: "$syllabus._id",
+          slot: "$slot.id",
+          chapter: "$chapter._id",
+        },
+
+        faculty: { $first: "$faculty" },
+        mode: { $first: "$mode" },
+        class: { $first: "$class" },
+        syllabus: { $first: "$syllabus" },
+        slot: { $first: "$slot" },
+        chapter: { $first: "$chapter" },
+
+        student: {
+          $push: {
+            id: "$student._id",
+            name: "$student.name",
+            phone: "$student.phone",
+            isContacted: "$isContacted",
+          },
+        },
+      },
+    });
+
+    /* 5️⃣ Final projection (EXACTLY your type) */
+    pipeline.push({
+      $project: {
+        _id: 0,
+
+        faculty: {
+          id: "$faculty._id",
+          name: "$faculty.name",
+        },
+
+        mode: 1,
+
+        class: {
+          id: "$class._id",
+          name: "$class.name",
+        },
+
+        syllabus: {
+          id: "$syllabus._id",
+          name: "$syllabus.name",
+        },
+
+        slot: {
+          $cond: [{ $eq: ["$mode", "slot"] }, "$slot", "$$REMOVE"],
+        },
+
+        chapter: {
+          $cond: [
+            { $eq: ["$mode", "chapter"] },
+            {
+              id: "$chapter._id",
+              name: "$chapter.name",
+            },
+            "$$REMOVE",
+          ],
+        },
+
+        student: 1,
+      },
+    });
+
+    const documents =
+      await BookingModel.aggregate<AdminPoolingStudentRaw>(pipeline);
+    return documents.map(BookingMapper.mapAdminPoolingStudentView);
   }
 }

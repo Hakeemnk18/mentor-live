@@ -3,6 +3,7 @@ import type {
   AdminBookingRaw,
   AdminBookingView,
   AdminPoolingRaw,
+  AdminPoolingStudentRaw,
   AdminPoolingView,
 } from "../type/booking.type.js";
 
@@ -121,5 +122,22 @@ export class BookingMapper {
       hasPendingContact: raw.hasPendingContact,
       createdAt: raw.createdAt.toISOString(),
     };
+  }
+
+  static mapAdminPoolingStudentView(raw: AdminPoolingStudentRaw): AdminPoolingStudentRaw {
+    return {
+      faculty: raw.faculty,
+      mode: raw.mode,
+      class: raw.class,  
+      syllabus: raw.syllabus,
+      slot: raw.mode === "slot" ? raw.slot : undefined,
+      chapter: raw.mode === "chapter" && raw.chapter
+          ? {
+              id: String(raw.chapter.id),
+              name: raw.chapter.name,
+            }
+          : undefined,
+      student : raw.student
+    }
   }
 }

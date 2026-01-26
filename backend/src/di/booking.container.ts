@@ -7,6 +7,8 @@ import type { IGetOneToOneBookingUseCase } from "../modules/booking/use-cases/in
 import { GetOneToOneBookingUseCase } from "../modules/booking/use-cases/get.one.to.one.booking.use-case.js";
 import type { IGetPoolingBookingUseCase } from "../modules/booking/use-cases/interfaces/get.pooling.booking.use-case.interfaces.js";
 import { GetPoolingBookingUseCase } from "../modules/booking/use-cases/get.pooling.booking.use-case.js";
+import type { IGetPoolingStudentsUseCase } from "../modules/booking/use-cases/interfaces/get.pooling.students.use-case.interface.js";
+import { GetPoolingStudentsUseCase } from "../modules/booking/use-cases/get.pooling.students.use-case.js";
 
 export const registerBookingDependencies = () => {
   
@@ -24,5 +26,9 @@ export const registerBookingDependencies = () => {
 
     container.register<IGetPoolingBookingUseCase>("IGetPoolingBookingUseCase", {
         useClass: GetPoolingBookingUseCase,
+    });
+
+    container.register<IGetPoolingStudentsUseCase>("IGetPoolingStudentsUseCase", {
+        useClass: GetPoolingStudentsUseCase,
     });
 };

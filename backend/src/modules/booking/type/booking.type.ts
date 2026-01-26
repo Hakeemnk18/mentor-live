@@ -80,3 +80,19 @@ export interface AdminPoolingView {
   hasPendingContact: boolean;
   createdAt: string; // ISO
 }
+
+export type AdminPoolingStudentRaw = {
+  faculty: IdNameView;
+  mode: BookingMode;
+  class: IdNameView;
+  syllabus: IdNameView;
+  slot?: slotIdView | undefined;          
+  chapter?: IdNameView | undefined;       
+  student: {
+    id: string;
+    name: string;
+    phone: string;
+    isContacted: boolean;
+  } [];
+};
+
