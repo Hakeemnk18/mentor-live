@@ -21,7 +21,7 @@ const chapterSchema = new Schema<IChapter>(
       },
       publicId: {
         type: String,
-        required: false, // important for backward compatibility
+        required: true, 
       },
     },
 

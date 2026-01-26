@@ -7,7 +7,18 @@ import { Faculty } from "../entities/faculty.entity.js";
 import { FacultyModel } from "../infrastructure/faculty.schema.js";
 import { FacultyMapper } from "../mapper/faculty.mapper.js";
 import type { IFacultyRepository } from "./faculty.repository.interface.js";
-import type { FacultyView } from "../types/faculty.type.js";
+import type {
+  ChapterSlotProps,
+  FacultyChapterSearchFilters,
+  FacultyClassAndSyllabusSearchFilters,
+  FacultyDetailsViewForUser,
+  FacultyFullAdminView,
+  FacultyPopulatedLean,
+  FacultyView,
+  FacultyViewForUser,
+  SlotProps,
+} from "../types/faculty.type.js";
+import { _null } from "zod/v4/core";
 
 const { ObjectId } = Types;
 
@@ -21,7 +32,7 @@ export class FacultyRepository implements IFacultyRepository {
     if (!domainFaculty) {
       throw new CustomError(
         ResponseMessages.FAILED_TO_MAP,
-        HttpStatusCode.INTERNAL_SERVER_ERROR
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
       );
     }
 
@@ -30,6 +41,13 @@ export class FacultyRepository implements IFacultyRepository {
 
   async findById(id: string): Promise<Faculty | null> {
     const foundDocument = await FacultyModel.findOne({ _id: id }).lean();
+    return FacultyMapper.toDomain(foundDocument);
+  }
+
+  async findFacultyByQuery(
+    query: Record<string, any>,
+  ): Promise<Faculty | null> {
+    const foundDocument = await FacultyModel.findOne(query).lean();
     return FacultyMapper.toDomain(foundDocument);
   }
 
@@ -42,7 +60,7 @@ export class FacultyRepository implements IFacultyRepository {
     if (!facultyEntity.id) {
       throw new CustomError(
         ResponseMessages.ID_MISSING,
-        HttpStatusCode.INTERNAL_SERVER_ERROR
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
       );
     }
 
@@ -51,13 +69,13 @@ export class FacultyRepository implements IFacultyRepository {
     const updatedDocument = await FacultyModel.findByIdAndUpdate(
       facultyEntity.id,
       { $set: persistenceData },
-      { new: true }
+      { new: true },
     ).lean();
 
     if (!updatedDocument) {
       throw new CustomError(
         ResponseMessages.FACULTY_NOT_FOUND,
-        HttpStatusCode.NOT_FOUND
+        HttpStatusCode.NOT_FOUND,
       );
     }
 
@@ -65,7 +83,7 @@ export class FacultyRepository implements IFacultyRepository {
     if (!domainFaculty) {
       throw new CustomError(
         ResponseMessages.FAILED_TO_MAP,
-        HttpStatusCode.INTERNAL_SERVER_ERROR
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
       );
     }
 
@@ -73,8 +91,8 @@ export class FacultyRepository implements IFacultyRepository {
   }
 
   async findAllFacultyForAdmin(
-    allDoc: AcademicListFiltersBase
-  ): Promise<{ data: FacultyView[], total: number}> {
+    allDoc: AcademicListFiltersBase,
+  ): Promise<{ data: FacultyView[]; total: number }> {
     const { page, limit, classId, syllabusId, subjectId, search, sort } =
       allDoc;
     const skip = (page - 1) * limit;
@@ -102,8 +120,8 @@ export class FacultyRepository implements IFacultyRepository {
 
       {
         $match: {
-          ...(classId && { "sv.subject": new ObjectId(classId) }),
-          ...(syllabusId && { "sv.subject": new ObjectId(syllabusId) }),
+          ...(classId && { "sv.class": new ObjectId(classId) }),
+          ...(syllabusId && { "sv.syllabus": new ObjectId(syllabusId) }),
           ...(subjectId && { "sv.subject": new ObjectId(subjectId) }),
         },
       },
@@ -139,5 +157,506 @@ export class FacultyRepository implements IFacultyRepository {
       data: faculties,
       total,
     };
+  }
+
+  async findFacultyFullByIdForAdmin(
+    id: string,
+  ): Promise<FacultyFullAdminView | null> {
+    if (!Types.ObjectId.isValid(id)) return null;
+
+    const doc = await FacultyModel.findOne({
+      _id: new Types.ObjectId(id),
+      isDeleted: false,
+    })
+      .populate({
+        path: "subjectOffering",
+        populate: [
+          { path: "class", select: "name" },
+          { path: "syllabus", select: "name" },
+          { path: "subject", select: "name" },
+        ],
+      })
+      .populate({
+        path: "chapterSlots.chapter",
+        select: "name",
+      })
+      .populate({
+        path: "slots.pool",
+        select: "_id",
+      })
+      .populate({
+        path: "chapterSlots.pool",
+        select: "_id",
+      })
+      .lean<FacultyPopulatedLean>();
+
+    if (!doc) return null;
+
+    return {
+      id: doc._id.toString(),
+      name: doc.name,
+      qualifications: doc.qualifications,
+      description: doc.description,
+      demoClass: doc.demoClass,
+      image: doc.image.url,
+      price: doc.price,
+      isDeleted: doc.isDeleted,
+
+      slots: doc.slots.map((s) => ({
+        id: s._id.toString(),
+        time: s.time.toISOString().slice(11, 16),
+        isAvailable: s.isAvailable,
+        pool: s.pool.map((u: any) => ({ id: u._id.toString() })),
+        poolLimit: s.poolLimit,
+      })),
+
+      chapterSlots: doc.chapterSlots.map((c) => ({
+        id: c._id.toString(),
+        isAvailable: c.isAvailable,
+        chapter: {
+          id: c.chapter._id.toString(),
+          name: c.chapter.name,
+        },
+        pool: c.pool.map((u: any) => ({ id: u._id.toString() })),
+        poolLimit: c.poolLimit,
+      })),
+
+      subjectOffering: doc.subjectOffering.map((so: any) => ({
+        id: so._id.toString(),
+        class: {
+          id: so.class._id.toString(),
+          name: so.class.name,
+        },
+        syllabus: {
+          id: so.syllabus._id.toString(),
+          name: so.syllabus.name,
+        },
+        subject: {
+          id: so.subject._id.toString(),
+          name: so.subject.name,
+        },
+      })),
+    };
+  }
+
+  async findFacultyByChapter(
+    dto: FacultyChapterSearchFilters,
+  ): Promise<FacultyViewForUser[]> {
+    const { chapterId, page, limit, search, sort } = dto;
+
+    const skip = (page - 1) * limit;
+    const filter: Record<string, any> = {
+      isDeleted: false,
+    };
+
+    if (search) {
+      filter.name = { $regex: search, $options: "i" };
+    }
+
+    if (chapterId) {
+      filter["chapterSlots.chapter"] = chapterId;
+    }
+
+    const documents = await FacultyModel.find(filter)
+      .sort(sort)
+      .collation({ locale: "en", strength: 1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    return documents.map(FacultyMapper.toFacultyUserView);
+  }
+
+  async findFacultyByClassAndSyllabus(
+    dto: FacultyClassAndSyllabusSearchFilters,
+  ): Promise<FacultyViewForUser[]> {
+    const { subjectVariantIds, page, limit, search, sort, subjectId } = dto;
+    const skip = (page - 1) * limit;
+
+    const variantObjectIds = subjectVariantIds.map(
+      (id) => new Types.ObjectId(id),
+    );
+
+    const documents = await FacultyModel.aggregate([
+      {
+        $match: {
+          isDeleted: false,
+          ...(search && {
+            name: { $regex: search, $options: "i" },
+          }),
+          subjectOffering: { $in: variantObjectIds },
+        },
+      },
+      { $unwind: "$subjectOffering" },
+      {
+        $match: {
+          subjectOffering: { $in: variantObjectIds },
+        },
+      },
+      {
+        $lookup: {
+          from: "subjectvariants",
+          localField: "subjectOffering",
+          foreignField: "_id",
+          as: "sv",
+        },
+      },
+
+      { $unwind: "$sv" },
+
+      {
+        $match: {
+          ...(subjectId && { "sv.subject": new ObjectId(subjectId) }),
+        },
+      },
+      { $sort: sort },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $project: {
+          name: 1,
+          price: 1,
+          image: 1,
+          qualifications: 1,
+          description: 1,
+          createdAt: 1,
+        },
+      },
+    ]);
+
+    return documents.map(FacultyMapper.toFacultyUserView);
+  }
+
+  async findFacultyFullByIdAndChapter(
+    facultyId: string,
+    chapterId: string,
+  ): Promise<FacultyDetailsViewForUser | null> {
+    const documents = await FacultyModel.aggregate([
+      {
+        $match: {
+          isDeleted: false,
+          _id: new ObjectId(facultyId),
+        },
+      },
+      { $unwind: "$chapterSlots" },
+      {
+        $match: {
+          "chapterSlots.chapter": new ObjectId(chapterId),
+        },
+      },
+      {
+        $lookup: {
+          from: "chapters",
+          localField: "chapterSlots.chapter",
+          foreignField: "_id",
+          as: "chapter",
+        },
+      },
+
+      { $unwind: "$chapter" },
+      {
+        $project: {
+          name: 1,
+          price: 1,
+          image: 1,
+          qualifications: 1,
+          demoClass: 1,
+          description: 1,
+          createdAt: 1,
+          chapterSlots: 1,
+          "chapter.name": 1,
+          "chapter.price": 1,
+        },
+      },
+    ]);
+
+    const doc = documents?.[0];
+    if (!doc) return null;
+
+    return {
+      id: doc._id.toString(),
+      name: doc.name,
+      qualifications: doc.qualifications,
+      description: doc.description,
+      demoClass: doc.demoClass,
+      image: doc.image.url,
+      price: doc.chapter.price,
+      slot: {
+        id: doc.chapterSlots._id.toString(),
+        isAvailable: doc.chapterSlots.isAvailable,
+        chapter: { id: doc.chapterSlots.chapter, name: doc.chapter.name },
+        pool: doc.chapterSlots.pool,
+        poolLimit: doc.chapterSlots.poolLimit,
+      },
+    };
+  }
+
+  async findFacultyFullByIdAndSlot(
+    facultyId: string,
+    slotId: string,
+  ): Promise<FacultyDetailsViewForUser | null> {
+    const documents = await FacultyModel.aggregate([
+      {
+        $match: {
+          isDeleted: false,
+          _id: new ObjectId(facultyId),
+        },
+      },
+      { $unwind: "$slots" },
+      {
+        $match: {
+          "slots._id": new ObjectId(slotId),
+        },
+      },
+      {
+        $project: {
+          name: 1,
+          price: 1,
+          image: 1,
+          qualifications: 1,
+          demoClass: 1,
+          description: 1,
+          createdAt: 1,
+          slots: 1,
+        },
+      },
+    ]);
+    console.log(documents);
+
+    const doc = documents?.[0];
+    if (!doc) return null;
+
+    return FacultyMapper.toFacultyWithSlotToUserView(doc);
+  }
+
+  async findFacultyByIdWithFirstSlot(
+    facultyId: string,
+  ): Promise<FacultyDetailsViewForUser | null> {
+    const documents = await FacultyModel.aggregate([
+      {
+        $match: {
+          isDeleted: false,
+          _id: new ObjectId(facultyId),
+        },
+      },
+      { $unwind: "$slots" },
+      {
+        $project: {
+          name: 1,
+          price: 1,
+          image: 1,
+          qualifications: 1,
+          demoClass: 1,
+          description: 1,
+          createdAt: 1,
+          slots: 1,
+        },
+      },
+      { $limit: 1 },
+    ]);
+
+    const doc = documents?.[0];
+    if (!doc) return null;
+
+    return FacultyMapper.toFacultyWithSlotToUserView(doc);
+  }
+
+  async getSlot(facultyId: string, slotId: string): Promise<SlotProps | null> {
+    const faculty = await FacultyModel.findOne(
+      { _id: facultyId, isDeleted: false },
+      { slots: { $elemMatch: { _id: new Types.ObjectId(slotId) } } },
+    ).lean();
+
+    if (!faculty || !faculty.slots || faculty.slots.length === 0) {
+      return null;
+    }
+
+    const slot = faculty.slots[0] as {
+      _id: any;
+      time: Date;
+      isAvailable: boolean;
+      pool: any[];
+      poolLimit: number;
+    };
+
+    return {
+      id: slot._id.toString(),
+      time: slot.time,
+      isAvailable: slot.isAvailable,
+      pool: slot.pool.map((u) => u.toString()),
+      poolLimit: slot.poolLimit,
+    };
+  }
+
+  async getChapterSlot(
+    facultyId: string,
+    chapterId: string,
+  ): Promise<ChapterSlotProps | null> {
+    const faculty = await FacultyModel.findOne(
+      { _id: facultyId, isDeleted: false },
+      {
+        chapterSlots: {
+          $elemMatch: {
+            chapter: new Types.ObjectId(chapterId),
+            isAvailable: true,
+          },
+        },
+      },
+    ).lean();
+
+    if (
+      !faculty ||
+      !faculty.chapterSlots ||
+      faculty.chapterSlots.length === 0
+    ) {
+      return null;
+    }
+
+    const slot = faculty.chapterSlots[0] as {
+      _id: any;
+      chapter: any;
+      isAvailable: boolean;
+      pool: any[];
+      poolLimit: number;
+    };
+
+    return {
+      id: slot._id.toString(),
+      chapterId: slot.chapter,
+      isAvailable: slot.isAvailable,
+      pool: slot.pool.map((u) => u.toString()),
+      poolLimit: slot.poolLimit,
+    };
+  }
+
+  async addToSlotPool(
+    facultyId: string,
+    slotId: string,
+    studentId: string,
+  ): Promise<void> {
+    const result = await FacultyModel.updateOne(
+      {
+        _id: facultyId,
+        isDeleted: false,
+        "slots._id": new Types.ObjectId(slotId),
+        "slots.isAvailable": true,
+      },
+      [
+        {
+          $set: {
+            slots: {
+              $map: {
+                input: "$slots",
+                as: "slot",
+                in: {
+                  $cond: [
+                    {
+                      $and: [
+                        {
+                          $eq: ["$$slot._id", new Types.ObjectId(slotId)],
+                        },
+                        {
+                          $lt: [{ $size: "$$slot.pool" }, "$$slot.poolLimit"],
+                        },
+                      ],
+                    },
+                    {
+                      $mergeObjects: [
+                        "$$slot",
+                        {
+                          pool: {
+                            $setUnion: [
+                              "$$slot.pool",
+                              [new Types.ObjectId(studentId)],
+                            ],
+                          },
+                        },
+                      ],
+                    },
+                    "$$slot",
+                  ],
+                },
+              },
+            },
+          },
+        },
+      ],
+      {
+        updatePipeline: true,
+      },
+    );
+
+    if (result.matchedCount === 0) {
+      throw new CustomError(
+        ResponseMessages.SLOT_NOT_FOUND,
+        HttpStatusCode.BAD_REQUEST,
+      );
+    }
+  }
+
+  async addToChapterSlotPool(
+    facultyId: string,
+    chapterSlotId: string,
+    studentId: string,
+  ): Promise<void> {
+    const result = await FacultyModel.updateOne(
+      {
+        _id: facultyId,
+        isDeleted: false,
+        "chapterSlots._id": chapterSlotId,
+        "chapterSlots.isAvailable": true,
+      },
+      [
+        {
+          $set: {
+            chapterSlots: {
+              $map: {
+                input: "$chapterSlots",
+                as: "slot",
+                in: {
+                  $cond: [
+                    {
+                      $and: [
+                        {
+                          $eq: [
+                            "$$slot._id",
+                            new Types.ObjectId(chapterSlotId),
+                          ],
+                        },
+                        { $lt: [{ $size: "$$slot.pool" }, "$$slot.poolLimit"] },
+                      ],
+                    },
+                    {
+                      $mergeObjects: [
+                        "$$slot",
+                        {
+                          pool: {
+                            $setUnion: [
+                              "$$slot.pool",
+                              [new Types.ObjectId(studentId)],
+                            ],
+                          },
+                        },
+                      ],
+                    },
+                    "$$slot",
+                  ],
+                },
+              },
+            },
+          },
+        },
+      ],
+      {
+        updatePipeline: true,
+      },
+    );
+
+    if (result.matchedCount === 0) {
+      throw new CustomError(
+        ResponseMessages.SLOT_NOT_FOUND,
+        HttpStatusCode.BAD_REQUEST,
+      );
+    }
   }
 }

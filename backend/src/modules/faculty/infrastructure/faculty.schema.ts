@@ -5,7 +5,10 @@ export interface IFaculty extends Document {
   qualifications: string[];
   description: string;
   demoClass: string;
-  image: string;
+  image: {
+    url: string,
+    publicId: string
+  };
   price: number;
   subjectOffering: Types.ObjectId[];
   slots: {
@@ -48,9 +51,16 @@ const facultySchema = new Schema<IFaculty>(
       required: true,
     },
 
-    image: {
-      type: String,
-      required: true,
+   image: {
+      url: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+      publicId: {
+        type: String,
+        required: true, 
+      },
     },
 
     price: {
@@ -85,7 +95,7 @@ const facultySchema = new Schema<IFaculty>(
         pool: [
           {
             type: Schema.Types.ObjectId,
-            ref: "User",
+            ref: "Student",
           },
         ],
         poolLimit: {
@@ -114,7 +124,7 @@ const facultySchema = new Schema<IFaculty>(
         pool: [
           {
             type: Schema.Types.ObjectId,
-            ref: "User",
+            ref: "Student",
           },
         ],
         poolLimit: {

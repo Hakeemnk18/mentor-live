@@ -8,6 +8,10 @@ import { handleError } from "../../../core/errors/custom.error.js";
 import type { Response, Request } from "express";
 import { cookieOptions, setAccessTokenCookie, setRefreshTokenCookie } from "../../../core/utils/auth.helpers.js";
 import type { IUserRefreshTokenUseCase } from "../use-cases/interfaces/user.refresh.token.use-case.interface.js";
+import type { ISendOtpUseCase } from "../use-cases/interfaces/send.otp.use-case.interface.js";
+import type { IResendOtpUseCase } from "../use-cases/interfaces/resend.otp.use-case.interface.js";
+import type { IVerifyOtpUseCase } from "../use-cases/interfaces/verify.otp.use-case.interface.js";
+import { VerifyOtpSchema } from "../dtos/otp.dto.js";
 
 @injectable()
 export class AuthController implements IAuthController {
@@ -15,7 +19,16 @@ export class AuthController implements IAuthController {
     @inject('IGetCurrentUserUseCase')
     private readonly _getCurrentUserUseCase: IGetCurrentUserUseCase,
     @inject('IUserRefreshTokenUseCase')
-    private readonly _userRefreshTokenUseCase: IUserRefreshTokenUseCase
+    private readonly _userRefreshTokenUseCase: IUserRefreshTokenUseCase,
+
+    @inject("ISendOtpUseCase")
+    private readonly _sendOtpUseCase: ISendOtpUseCase,
+
+    @inject("IResendOtpUseCase")
+    private readonly _resendOtpUseCase: IResendOtpUseCase,
+
+    @inject("IVerifyOtpUseCase")
+    private readonly _verifyOtpUseCase: IVerifyOtpUseCase,
   ) {}
 
   async getCurrentUser(req: AuthRequest, res: Response): Promise<void> {
@@ -74,4 +87,49 @@ export class AuthController implements IAuthController {
       handleError(res, error);
     }
   }
+
+  async sendOtp(req: Request, res: Response): Promise<void> {
+    try {
+      const dto = VerifyOtpSchema.parse(req.body)
+      await this._sendOtpUseCase.execute(dto)
+      res.status(HttpStatusCode.OK).json({
+        message: ResponseMessages.OTP_SENT_SUCCESS,
+        success: true,
+      });
+    } catch (error) {
+      console.log("error in user send otp", error);
+      handleError(res, error);
+    }
+  }
+
+  async resendOtp(req: Request, res: Response): Promise<void> {
+    try {
+      const dto = VerifyOtpSchema.parse(req.body)
+      await this._resendOtpUseCase.execute(dto)
+      res.status(HttpStatusCode.OK).json({
+        message: ResponseMessages.RESEND_OTP_SUCCESS,
+        success: true,
+      });
+    } catch (error) {
+      console.log("error in user resend otp", error);
+      handleError(res, error);
+    }
+  }
+
+  async verifyOtp(req: Request, res: Response): Promise<void> {
+    try {
+      const dto = VerifyOtpSchema.parse(req.body)
+      console.log(dto)
+      await this._verifyOtpUseCase.execute(dto)
+      res.status(HttpStatusCode.OK).json({
+        message: ResponseMessages.OTP_VERIFICATION_SUCCESS,
+        success: true,
+      });
+    } catch (error) {
+      console.log("error in user verify otp", error);
+      handleError(res, error);
+    }
+  }
+
+
 }

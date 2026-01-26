@@ -123,10 +123,77 @@ FACULTY_CREATION_FAILED: "Failed to create faculty",
 FACULTY_UPDATE_FAILED: "Failed to update faculty",
 FACULTY_DELETE_FAILED: "Failed to delete faculty",
 FACULTY_RESTORE_FAILED: "Failed to restore faculty",
+INVALID_FACULTY_LIST_TYPE: "Invalid faculty list type",
 
 SLOT_TIME_NOT_VALID: "Slot times are not valid",
+SLOT_ADDED_SUCCESS: "Slot added successfully",
+CHAPTER_SLOT_ADDED_SUCCESS: "Chapter slot added successfully",
+CHAPTER_SLOT_ALREADY_EXIST: "Chapter slot already exist",
+SLOT_ALREADY_EXIST: "Slot time already exist",
 
 INVALID_CLOUDINARY_PUBLIC_ID:"publicId is required to delete image",
-DELETE_CLOUDINARY_IMAGE_FAILED:"Failed to delete image from Cloudinary"
+DELETE_CLOUDINARY_IMAGE_FAILED:"Failed to delete image from Cloudinary",
+
+STUDENT_NAME_INVALID: "Student name must be between 2 and 100 characters",
+STUDENT_CLASS_INVALID: "Student class is invalid",
+STUDENT_PLACE_INVALID: "Student place is invalid",
+STUDENT_PHONE_NUMBER_INVALID: "Student phone number is invalid",
+STUDENT_SCHOOL_INVALID: "Student school is invalid",
+STUDENT_SYLLABUS_INVALID: "Student syllabus is invalid",
+STUDENT_ALREADY_EXISTS_IN_THIS_POOL: "Student with this phone number already exists in this pool",
+
+SLOT_TIME_NOT_AVAILABLE: "Slot time is not available",
+SLOT_NOT_FOUND: "Slot not found",
+
+CHAPTER_SLOT_NOT_AVAILABLE: "Chapter Slot is not available",
+
+STUDENT_CREATION_FAILED: "Failed to create student",
+STUDENT_UPDATE_FAILED: "Failed to update student",
+STUDENT_DELETE_FAILED: "Failed to delete student",
+STUDENT_RESTORE_FAILED: "Failed to restore student",
+POOL_ALREADY_FULL: "The pool has reached its limit",
+
+STUDENT_NOT_FOUND: "Student not found",
+INVALID_STUDENT_LIST_TYPE: "Invalid student list type",
+
+BOOKING_CREATED:"Booking created",
+BOOKING_TYPE_INVALID: "Booking type is invalid",
+BOOKING_MODE_INVALID: "Booking mode is invalid",
+BOOKING_SLOT_ID_INVALID: "Booking slot ID is invalid",
+BOOKING_CHAPTER_ID_INVALID: "Booking chapter ID is invalid",
+BOOKING_STATUS_INVALID: "Booking status is invalid",
+
+BOOKING_CREATION_FAILED: "Failed to create booking",
+BOOKING_UPDATE_FAILED: "Failed to update booking",
+BOOKING_DELETE_FAILED: "Failed to delete booking",
+BOOKING_RESTORE_FAILED: "Failed to restore booking",
+BOOKING_ALREADY_EXISTS: 'Booking already exist',
+
+BOOKING_NOT_FOUND: "Booking not found",
+INVALID_BOOKING_LIST_TYPE: "Invalid booking list type",
+
+BOOKING_STATUS_CHANGED: "Booking status updated successfully",
+BOOKING_CONTACT_STATUS_UPDATED: "Booking contact status updated successfully",
+
+PHONE_VERIFICATION_NOT_FOUND: "Phone verification record not found",
+PHONE_ALREADY_VERIFIED: "Phone number already verified",
+PHONE_NOT_VERIFIED: "Phone number is not verified",
+
+OTP_SENT_SUCCESS: "OTP sent successfully",
+OTP_SEND_FAILED: "Failed to send OTP",
+
+OTP_INVALID: "Invalid OTP",
+OTP_EXPIRED: "OTP has expired",
+OTP_VERIFICATION_FAILED: "OTP verification failed",
+OTP_VERIFICATION_SUCCESS: "OTP verified successfully",
+
+OTP_MAX_ATTEMPTS_REACHED: "Maximum OTP attempts reached",
+OTP_ALREADY_USED: "OTP already used",
+
+
+PHONE_VERIFICATION_CREATE_FAILED: "Failed to create phone verification",
+PHONE_VERIFICATION_UPDATE_FAILED: "Failed to update phone verification",
+
+
 
 };

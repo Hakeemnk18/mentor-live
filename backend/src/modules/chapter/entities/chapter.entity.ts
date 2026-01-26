@@ -1,4 +1,4 @@
-import type { ImageValue } from "../type/chapter.type.js";
+import type { ImageValue } from "../../../core/shared/type/image.type.js"; 
 
 export interface ChapterProps {
   id: string | null;

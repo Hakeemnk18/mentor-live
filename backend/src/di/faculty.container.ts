@@ -5,6 +5,22 @@ import type { ICreateFacultyUseCase } from "../modules/faculty/use-cases/interfa
 import { CreateFacultyUseCase } from "../modules/faculty/use-cases/create.faculty.use-case.js";
 import type { IGetAllFacultyForAdminUseCase } from "../modules/faculty/use-cases/interfaces/get.all.faculty.for.admin.use-case.interface.js";
 import { GetAllFacultyForAdminUseCase } from "../modules/faculty/use-cases/get.all.faculty.for.admin.use-case.js";
+import type { IGetFacultyDetailsUseCase } from "../modules/faculty/use-cases/interfaces/get.faculty.details.use-case.interface.js";
+import { GetFacultyDetailsUseCase } from "../modules/faculty/use-cases/get.faculty.details.use-case.js";
+import type { IEditFacultyUseCase } from "../modules/faculty/use-cases/interfaces/edit.faculty.use-case.interface.js";
+import { EditFacultyUseCase } from "../modules/faculty/use-cases/edit.faculty.use-case.js";
+import type { IFacultyAddSlotUseCase } from "../modules/faculty/use-cases/interfaces/faculty.add.slot.use-case.interface.js";
+import { FacultyAddSlotUseCase } from "../modules/faculty/use-cases/faculty.add.slot.use-case.interface.js";
+import type { IFacultyAddChapterSlotUseCase } from "../modules/faculty/use-cases/interfaces/faculty.add.chapter.slot.use-case.interface.js";
+import { FacultyAddChapterSlotUseCase } from "../modules/faculty/use-cases/faculty.add.chapter.slot.use-case.js";
+import type { IFindFacultyByChapterUseCase } from "../modules/faculty/use-cases/interfaces/find.faculty.by.chapter.use-case.interface.js";
+import { FindFacultyByChapterUseCase } from "../modules/faculty/use-cases/find.faculty.by.chapter.use-case.js";
+import type { IFindFacultyByClassAndSyllabusUseCaseUseCase } from "../modules/faculty/use-cases/interfaces/find.faculty.by.class.and.syllabus.use-case.interface.js";
+import { FindFacultyByClassAndSyllabusUseCaseUseCase } from "../modules/faculty/use-cases/find.faculty.by.class.and.syllabus.use-case.js";
+import type { IGetFacultyDetailsByChapterUseCase } from "../modules/faculty/use-cases/interfaces/get.faculty.details.by.chapter.use-case.interface.js";
+import { GetFacultyDetailsByChapterUseCase } from "../modules/faculty/use-cases/get.faculty.details.by.chapter.use-case.js";
+import type { IGetFacultyDetailsBySlotUseCase } from "../modules/faculty/use-cases/interfaces/get.faculty.details.by.slot.use-case.interface.js";
+import { GetFacultyDetailsBySlotUseCase } from "../modules/faculty/use-cases/get.faculty.details.by.slot.use-case.js";
 
 export const registerFacultyDependencies = () => {
   container.register<IFacultyRepository>("IFacultyRepository", {
@@ -19,6 +35,35 @@ export const registerFacultyDependencies = () => {
     useClass: GetAllFacultyForAdminUseCase,
   });
 
-  
+  container.register<IGetFacultyDetailsUseCase>("IGetFacultyDetailsUseCase", {
+    useClass: GetFacultyDetailsUseCase,
+  });
 
+  container.register<IEditFacultyUseCase>("IEditFacultyUseCase", {
+    useClass: EditFacultyUseCase,
+  });
+
+  container.register<IFacultyAddSlotUseCase>("IFacultyAddSlotUseCase", {
+    useClass: FacultyAddSlotUseCase,
+  });
+
+  container.register<IFacultyAddChapterSlotUseCase>("IFacultyAddChapterSlotUseCase", {
+    useClass: FacultyAddChapterSlotUseCase,
+  });
+
+  container.register<IFindFacultyByChapterUseCase>("IFindFacultyByChapterUseCase", {
+    useClass: FindFacultyByChapterUseCase,
+  });
+
+  container.register<IFindFacultyByClassAndSyllabusUseCaseUseCase>("IFindFacultyByClassAndSyllabusUseCaseUseCase", {
+    useClass: FindFacultyByClassAndSyllabusUseCaseUseCase,
+  });
+
+  container.register<IGetFacultyDetailsByChapterUseCase>("IGetFacultyDetailsByChapterUseCase", {
+    useClass: GetFacultyDetailsByChapterUseCase,
+  })
+
+  container.register<IGetFacultyDetailsBySlotUseCase>("IGetFacultyDetailsBySlotUseCase", {
+    useClass: GetFacultyDetailsBySlotUseCase,
+  })
 };
