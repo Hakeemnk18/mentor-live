@@ -4,4 +4,5 @@ export interface IBookingController {
     createBooking(req: Request, res: Response): Promise<void>;
     getAllOneToOneBooking(req: Request, res: Response): Promise<void>;
     getAllPoolingBooking(req: Request, res: Response): Promise<void>;
+    getPoolingStudents(req: Request, res: Response): Promise<void>;
 }

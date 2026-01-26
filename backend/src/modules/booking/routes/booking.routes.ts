@@ -26,4 +26,8 @@ router.get('/pooling',
   (req,res)=> bookingController.getAllPoolingBooking(req, res)
 )
 
+router.get('/pooling/students',
+  (req,res)=> bookingController.getPoolingStudents(req, res)
+)
+
 export default router;

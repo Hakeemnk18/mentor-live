@@ -1,8 +1,10 @@
 import type { IGetAllDocDB } from "../../../core/shared/interfaces/get.all.doc.interface.js";
 import type { GetAllOneToOneBookingDto } from "../dto/get.all.one.to.one.dto.js";
+import type { GetAdminPoolingStudentsDto } from "../dto/get.pooling.students.dto.js";
 import { Booking } from "../entities/booking.entity.js";
 import type {
   AdminBookingView,
+  AdminPoolingStudentRaw,
   AdminPoolingView,
   ExistingBookingProps,
 } from "../type/booking.type.js";
@@ -21,4 +23,7 @@ export interface IBookingRepository {
   findAllPoolingBooking(
     dto: GetAllOneToOneBookingDto,
   ): Promise<{ data: AdminPoolingView[]; total: number }>;
+  findAdminPoolingStudents(
+     dto: GetAdminPoolingStudentsDto
+    ): Promise<AdminPoolingStudentRaw[]>
 }

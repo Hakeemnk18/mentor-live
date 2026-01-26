@@ -9,6 +9,8 @@ import { handleError } from "../../../core/errors/custom.error.js";
 import type { IGetOneToOneBookingUseCase } from "../use-cases/interfaces/get.one.to.one.booking.use-case.interface.js";
 import { GetAllBookingByOneToOneSchema } from "../dto/get.all.one.to.one.dto.js";
 import type { IGetPoolingBookingUseCase } from "../use-cases/interfaces/get.pooling.booking.use-case.interfaces.js";
+import type { IGetPoolingStudentsUseCase } from "../use-cases/interfaces/get.pooling.students.use-case.interface.js";
+import { GetAdminPoolingStudentsSchema } from "../dto/get.pooling.students.dto.js";
 
 
 @injectable()
@@ -23,6 +25,9 @@ export class BookingController implements IBookingController {
 
          @inject("IGetPoolingBookingUseCase") 
         private _getPoolingBookingUseCase: IGetPoolingBookingUseCase,
+
+        @inject("IGetPoolingStudentsUseCase") 
+        private _getPoolingStudentsUseCase: IGetPoolingStudentsUseCase,
 
     ){}
 
@@ -72,6 +77,23 @@ export class BookingController implements IBookingController {
         } catch (error) {
             handleError(res, error)
             console.log("error in get all pooling booking ", error)
+        }
+    }
+
+    async getPoolingStudents(req: Request, res: Response): Promise<void> {
+        try {
+            const dto = GetAdminPoolingStudentsSchema.parse(req.query)
+           const data = await this._getPoolingStudentsUseCase.execute(dto)
+            
+            res.status(HttpStatusCode.OK).json({
+                message: ResponseMessages.SUCCESS,
+                success: true,
+                data: data,
+                
+            })
+        } catch (error) {
+            handleError(res, error)
+            console.log("error in get all pooling students  ", error)
         }
     }
 }
