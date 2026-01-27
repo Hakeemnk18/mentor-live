@@ -7,6 +7,7 @@ import type {
   AdminPoolingStudentRaw,
   AdminPoolingView,
   ExistingBookingProps,
+  ExpireOtherBookingsForSlotParams,
 } from "../type/booking.type.js";
 
 export interface IBookingRepository {
@@ -26,4 +27,6 @@ export interface IBookingRepository {
   findAdminPoolingStudents(
      dto: GetAdminPoolingStudentsDto
     ): Promise<AdminPoolingStudentRaw[]>
+  confirmPoolingBookings(ids: string[]): Promise<void>;
+  expireOtherBookingsForSlot(params: ExpireOtherBookingsForSlotParams): Promise<void>
 }

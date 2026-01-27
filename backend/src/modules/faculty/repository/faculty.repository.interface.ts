@@ -20,14 +20,46 @@ export interface IFacultyRepository {
     allDoc: AcademicListFiltersBase,
   ): Promise<{ data: FacultyView[]; total: number }>;
   findFacultyFullByIdForAdmin(id: string): Promise<FacultyFullAdminView | null>;
-  findFacultyByChapter(dto: FacultyChapterSearchFilters): Promise<FacultyViewForUser[]>;
-  findFacultyByClassAndSyllabus(dto: FacultyClassAndSyllabusSearchFilters): Promise<FacultyViewForUser[]>
-  findFacultyFullByIdAndChapter(facultyId: string, chapterId: string): Promise<FacultyDetailsViewForUser | null >
-  findFacultyFullByIdAndSlot(facultyId: string, slotId: string): Promise<FacultyDetailsViewForUser | null >
-  findFacultyByIdWithFirstSlot(facultyId: string): Promise<FacultyDetailsViewForUser | null >
-  getSlot(facultyId: string, slotId: string): Promise< SlotProps | null>
-  getChapterSlot(facultyId: string, chapterId: string): Promise<ChapterSlotProps | null>
-  addToSlotPool(facultyId: string, slotId: string, studentId: string): Promise<void>
-  addToChapterSlotPool(facultyId: string, chapterSlotId: string, studentId: string): Promise<void>
+  findFacultyByChapter(
+    dto: FacultyChapterSearchFilters,
+  ): Promise<FacultyViewForUser[]>;
+  findFacultyByClassAndSyllabus(
+    dto: FacultyClassAndSyllabusSearchFilters,
+  ): Promise<FacultyViewForUser[]>;
+  findFacultyFullByIdAndChapter(
+    facultyId: string,
+    chapterId: string,
+  ): Promise<FacultyDetailsViewForUser | null>;
+  findFacultyFullByIdAndSlot(
+    facultyId: string,
+    slotId: string,
+  ): Promise<FacultyDetailsViewForUser | null>;
+  findFacultyByIdWithFirstSlot(
+    facultyId: string,
+  ): Promise<FacultyDetailsViewForUser | null>;
+  getSlot(facultyId: string, slotId: string): Promise<SlotProps | null>;
+  getChapterSlot(
+    facultyId: string,
+    chapterId: string,
+  ): Promise<ChapterSlotProps | null>;
+  addToSlotPool(
+    facultyId: string,
+    slotId: string,
+    studentId: string,
+  ): Promise<void>;
+  addToChapterSlotPool(
+    facultyId: string,
+    chapterSlotId: string,
+    studentId: string,
+  ): Promise<void>;
   findFacultyByQuery(query: Record<string, any>): Promise<Faculty | null>;
+  consumeSlot(facultyId: string, slotId: string): Promise<void>;
+  consumeSlots(
+    facultyId: string, 
+    slotIds: string[],
+  ): Promise<void>;
+  getAllSlots(
+    facultyId: string
+  ): Promise<SlotProps[]>;
+  
 }
