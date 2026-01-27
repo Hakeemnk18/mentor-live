@@ -114,7 +114,7 @@ export class BookingRepository implements IBookingRepository {
       type,
       mode,
       isDeleted,
-      status: { $ne: "cancelled" },
+      status: { $nin: ["cancelled", "expired"] }
     };
 
     if (mode === "chapter") {
@@ -845,14 +845,14 @@ export class BookingRepository implements IBookingRepository {
     );
   }
 
-  async expireOtherBookingsForSlot(params: ExpireOtherBookingsForSlotParams): Promise<void> {
+  async expireOtherBookingsForSlots(params: ExpireOtherBookingsForSlotParams): Promise<void> {
 
-    const { facultyId, slotId, excludeBookingId } = params;
-
+    const { facultyId, slotIds, excludeBookingId } = params;
+    
     await BookingModel.updateMany(
       {
         facultyId,
-        slotId: { $eq: [slotId] }, 
+        slotId: { $in: slotIds }, 
         mode: "slot",
         status: "interested", 
         isDeleted: false,

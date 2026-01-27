@@ -28,5 +28,5 @@ export interface IBookingRepository {
      dto: GetAdminPoolingStudentsDto
     ): Promise<AdminPoolingStudentRaw[]>
   confirmPoolingBookings(ids: string[]): Promise<void>;
-  expireOtherBookingsForSlot(params: ExpireOtherBookingsForSlotParams): Promise<void>
+  expireOtherBookingsForSlots(params: ExpireOtherBookingsForSlotParams): Promise<void>
 }

@@ -51,10 +51,12 @@ export class FacultyAddSlotUseCase implements IFacultyAddSlotUseCase {
     }));
 
     /* ---------- add slots via entity ---------- */
+    faculty.addSlots(normalizedSlots);
 
-    faculty = faculty.addSlots(normalizedSlots);
+    await this._facultyRepository.addSlots(facultyId, normalizedSlots)
 
-    /* ---------- persist ---------- */
-    await this._facultyRepository.save(faculty);
+    
+
+    
   }
 }

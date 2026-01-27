@@ -19,6 +19,7 @@ import type {
   SlotProps,
 } from "../types/faculty.type.js";
 import { _null } from "zod/v4/core";
+import type { AddChapterSlotRequestDto } from "../dtos/add.chapter.dto.js";
 
 const { ObjectId } = Types;
 
@@ -88,6 +89,42 @@ export class FacultyRepository implements IFacultyRepository {
     }
 
     return domainFaculty;
+  }
+
+  async addSlots(facultyId: string, slots: { time: Date }[]): Promise<void> {
+    await FacultyModel.updateOne(
+      { _id: facultyId },
+      {
+        $push: {
+          slots: {
+            $each: slots.map((s) => ({
+              time: s.time,
+              isAvailable: true,
+              pool: [],
+              poolLimit: 5,
+            })),
+          },
+        },
+      },
+    );
+  }
+  async addChapterSlots(facultyId: string, slots: AddChapterSlotRequestDto): Promise<void> {
+    const { chapterSlots } = slots
+    await FacultyModel.updateOne(
+      { _id: facultyId },
+      {
+        $push: {
+          chapterSlots: {
+            $each: chapterSlots.map((s) => ({
+              chapter: s.chapter,
+              isAvailable: true,
+              pool: [],
+              poolLimit: 5,
+            })),
+          },
+        },
+      },
+    );
   }
 
   async findAllFacultyForAdmin(
@@ -661,21 +698,24 @@ export class FacultyRepository implements IFacultyRepository {
   }
 
   async consumeSlot(facultyId: string, slotId: string): Promise<void> {
-    
     const result = await FacultyModel.updateOne(
       {
         _id: facultyId,
-        "slots._id": new ObjectId(slotId),
-        "slots.isAvailable": true,
+        slots: {
+          $elemMatch: {
+            _id: new ObjectId(slotId),
+            isAvailable: true,
+          },
+        },
       },
       {
         $set: {
           "slots.$.isAvailable": false,
-          "slots.$.pool":[]
+          "slots.$.pool": [],
         },
       },
     );
-   
+
     if (result.modifiedCount === 0) {
       throw new CustomError(
         ResponseMessages.SLOT_TIME_NOT_AVAILABLE,
@@ -684,7 +724,6 @@ export class FacultyRepository implements IFacultyRepository {
     }
   }
 
-  
   async consumeSlots(facultyId: string, slotIds: string[]): Promise<void> {
     const result = await FacultyModel.updateOne(
       {
@@ -695,6 +734,7 @@ export class FacultyRepository implements IFacultyRepository {
       {
         $set: {
           "slots.$[s].isAvailable": false,
+          "slots.$[s].pool": [],
         },
       },
       {

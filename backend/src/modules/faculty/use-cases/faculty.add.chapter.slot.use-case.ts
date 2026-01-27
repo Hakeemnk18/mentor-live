@@ -40,8 +40,8 @@ export class FacultyAddChapterSlotUseCase implements IFacultyAddChapterSlotUseCa
       }
     }
 
-    const updatedFaculty = faculty.addChapterSlots(dto.chapterSlots)
+    faculty.addChapterSlots(dto.chapterSlots)
 
-    await this._facultyRepository.save(updatedFaculty)
+    await this._facultyRepository.addChapterSlots(facultyId, dto)
   }
 }
