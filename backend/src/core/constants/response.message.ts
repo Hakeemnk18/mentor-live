@@ -145,6 +145,7 @@ STUDENT_ALREADY_EXISTS_IN_THIS_POOL: "Student with this phone number already exi
 SLOT_TIME_NOT_AVAILABLE: "Slot time is not available",
 SLOT_NOT_FOUND: "Slot not found",
 
+
 CHAPTER_SLOT_NOT_AVAILABLE: "Chapter Slot is not available",
 
 STUDENT_CREATION_FAILED: "Failed to create student",
@@ -174,6 +175,8 @@ INVALID_BOOKING_LIST_TYPE: "Invalid booking list type",
 
 BOOKING_STATUS_CHANGED: "Booking status updated successfully",
 BOOKING_CONTACT_STATUS_UPDATED: "Booking contact status updated successfully",
+INVALID_BOOKING_TYPE: "Invalid booking type for this action",
+INVALID_BOOKING_STATE: "Booking is not in a confirmable state",
 
 PHONE_VERIFICATION_NOT_FOUND: "Phone verification record not found",
 PHONE_ALREADY_VERIFIED: "Phone number already verified",

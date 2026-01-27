@@ -9,6 +9,10 @@ import type { IGetPoolingBookingUseCase } from "../modules/booking/use-cases/int
 import { GetPoolingBookingUseCase } from "../modules/booking/use-cases/get.pooling.booking.use-case.js";
 import type { IGetPoolingStudentsUseCase } from "../modules/booking/use-cases/interfaces/get.pooling.students.use-case.interface.js";
 import { GetPoolingStudentsUseCase } from "../modules/booking/use-cases/get.pooling.students.use-case.js";
+import type { IConfirmChapterOneToOneBookingUseCase } from "../modules/booking/use-cases/interfaces/confirm.chapter.one.to.one.booking.use-case.interface.js";
+import { ConfirmChapterOneToOneBookingUseCase } from "../modules/booking/use-cases/confirm.chapter.one.to.one.use-case.js";
+import type { IConfirmOneToOneBookingUseCase } from "../modules/booking/use-cases/interfaces/confirm.one.to.one.booking.use-case.interface.js";
+import { ConfirmOneToOneBookingUseCase } from "../modules/booking/use-cases/confirm.one.to.one.booking.use-case.js";
 
 export const registerBookingDependencies = () => {
   
@@ -31,4 +35,13 @@ export const registerBookingDependencies = () => {
     container.register<IGetPoolingStudentsUseCase>("IGetPoolingStudentsUseCase", {
         useClass: GetPoolingStudentsUseCase,
     });
+
+    container.register<IConfirmChapterOneToOneBookingUseCase>("IConfirmChapterOneToOneBookingUseCase", {
+        useClass: ConfirmChapterOneToOneBookingUseCase,
+    });
+
+    container.register<IConfirmOneToOneBookingUseCase>("IConfirmOneToOneBookingUseCase", {
+        useClass: ConfirmOneToOneBookingUseCase,
+    });
+
 };

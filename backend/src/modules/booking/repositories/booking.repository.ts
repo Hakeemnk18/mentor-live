@@ -12,6 +12,7 @@ import type {
   AdminPoolingStudentRaw,
   AdminPoolingView,
   ExistingBookingProps,
+  ExpireOtherBookingsForSlotParams,
 } from "../type/booking.type.js";
 import type { IBookingRepository } from "./booking.repository.interface.js";
 import type { GetOneToOneBookingUseCase } from "../use-cases/get.one.to.one.booking.use-case.js";
@@ -634,7 +635,7 @@ export class BookingRepository implements IBookingRepository {
   ): Promise<AdminPoolingStudentRaw[]> {
     const pipeline: any[] = [];
     const { facultyId, slotId, chapterId, mode } = dto;
-    
+
     /* 1️⃣ Base match */
     pipeline.push({
       $match: {
@@ -830,5 +831,38 @@ export class BookingRepository implements IBookingRepository {
     const documents =
       await BookingModel.aggregate<AdminPoolingStudentRaw>(pipeline);
     return documents.map(BookingMapper.mapAdminPoolingStudentView);
+  }
+
+  async confirmPoolingBookings(ids: string[]): Promise<void> {
+    await BookingModel.updateMany(
+      { _id: { $in: ids } },
+      {
+        $set: {
+          status: "joined",
+          isContacted: true,
+        },
+      },
+    );
+  }
+
+  async expireOtherBookingsForSlot(params: ExpireOtherBookingsForSlotParams): Promise<void> {
+
+    const { facultyId, slotId, excludeBookingId } = params;
+
+    await BookingModel.updateMany(
+      {
+        facultyId,
+        slotId: { $eq: [slotId] }, 
+        mode: "slot",
+        status: "interested", 
+        isDeleted: false,
+        _id: { $ne: excludeBookingId }, 
+      },
+      {
+        $set: {
+          status: "expired",
+        },
+      },
+    );
   }
 }

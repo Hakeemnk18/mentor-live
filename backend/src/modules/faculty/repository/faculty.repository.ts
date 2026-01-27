@@ -659,4 +659,78 @@ export class FacultyRepository implements IFacultyRepository {
       );
     }
   }
+
+  async consumeSlot(facultyId: string, slotId: string): Promise<void> {
+    
+    const result = await FacultyModel.updateOne(
+      {
+        _id: facultyId,
+        "slots._id": new ObjectId(slotId),
+        "slots.isAvailable": true,
+      },
+      {
+        $set: {
+          "slots.$.isAvailable": false,
+          "slots.$.pool":[]
+        },
+      },
+    );
+   
+    if (result.modifiedCount === 0) {
+      throw new CustomError(
+        ResponseMessages.SLOT_TIME_NOT_AVAILABLE,
+        HttpStatusCode.CONFLICT,
+      );
+    }
+  }
+
+  
+  async consumeSlots(facultyId: string, slotIds: string[]): Promise<void> {
+    const result = await FacultyModel.updateOne(
+      {
+        _id: facultyId,
+        "slots._id": { $in: slotIds },
+        "slots.isAvailable": true,
+      },
+      {
+        $set: {
+          "slots.$[s].isAvailable": false,
+        },
+      },
+      {
+        arrayFilters: [
+          {
+            "s._id": { $in: slotIds },
+            "s.isAvailable": true,
+          },
+        ],
+      },
+    );
+
+    if (result.modifiedCount === 0) {
+      throw new CustomError(
+        ResponseMessages.SLOT_TIME_NOT_AVAILABLE,
+        HttpStatusCode.CONFLICT,
+      );
+    }
+  }
+
+  async getAllSlots(facultyId: string): Promise<SlotProps[]> {
+    const faculty = await FacultyModel.findOne(
+      { _id: facultyId, isDeleted: false },
+      { slots: 1 },
+    ).lean();
+
+    if (!faculty || !faculty.slots || faculty.slots.length === 0) {
+      return [];
+    }
+
+    return faculty.slots.map((slot: any) => ({
+      id: slot._id.toString(),
+      time: slot.time,
+      isAvailable: slot.isAvailable,
+      pool: slot.pool.map((u: any) => u.toString()),
+      poolLimit: slot.poolLimit,
+    }));
+  }
 }

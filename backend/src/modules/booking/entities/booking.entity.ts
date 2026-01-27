@@ -75,5 +75,33 @@ export class Booking {
     });
   }
 
+  confirm(): Booking {
+  if (this.status !== "interested") {
+    throw new Error("Invalid booking state transition");
+  }
+
+  return new Booking ({
+    ...this,
+    isContacted: true,
+    status: "confirmed"
+  })
+
+  
+
+ 
+}
+confirmWithSlots(slotId: string[]): Booking {
+  if (this.status !== "interested") {
+    throw new Error("Invalid booking state transition");
+  }
+
+  return new Booking({
+    ...this,
+    slotId,
+    status: "confirmed",
+    isContacted: true,
+  });
+}
+
   
 }
