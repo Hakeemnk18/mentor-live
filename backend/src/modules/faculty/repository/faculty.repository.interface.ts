@@ -1,4 +1,5 @@
 import type { AcademicListFiltersBase } from "../../../core/shared/type/find.all.with.filters.js";
+import type { AddChapterSlotRequestDto } from "../dtos/add.chapter.dto.js";
 import { Faculty } from "../entities/faculty.entity.js";
 import type {
   ChapterSlotProps,
@@ -61,5 +62,7 @@ export interface IFacultyRepository {
   getAllSlots(
     facultyId: string
   ): Promise<SlotProps[]>;
+  addSlots(facultyId: string, slots: { time: Date }[]): Promise<void>
+  addChapterSlots(facultyId: string, slots: AddChapterSlotRequestDto): Promise<void>
   
 }

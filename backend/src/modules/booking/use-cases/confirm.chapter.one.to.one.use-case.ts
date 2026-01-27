@@ -96,5 +96,11 @@ export class ConfirmChapterOneToOneBookingUseCase
       booking.facultyId,
       dto.slotId
     );
+
+    await this._bookingRepo.expireOtherBookingsForSlots({
+      facultyId: booking.facultyId,
+      slotIds:dto.slotId,
+      excludeBookingId: booking.id!
+    })
   }
 }

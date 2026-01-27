@@ -37,7 +37,7 @@ export class ConfirmOneToOneBookingUseCase
         HttpStatusCode.BAD_REQUEST
       );
     }
-
+    
     if (booking.status !== "interested") {
       throw new CustomError(
         ResponseMessages.INVALID_BOOKING_STATE,
@@ -51,7 +51,7 @@ export class ConfirmOneToOneBookingUseCase
       booking.slotId?.[0]!
     );
    
-    
+   
     if (!slot || !slot.isAvailable) {
       throw new CustomError(
         ResponseMessages.SLOT_TIME_NOT_AVAILABLE,
@@ -66,9 +66,9 @@ export class ConfirmOneToOneBookingUseCase
     await this._facultyRepo.consumeSlot(booking.facultyId, booking.slotId?.[0]! )
     
     
-    await this._bookingRepo.expireOtherBookingsForSlot({
+    await this._bookingRepo.expireOtherBookingsForSlots({
       facultyId: booking.facultyId,
-      slotId: booking.slotId?.[0]!,
+      slotIds:[ booking.slotId?.[0]!],
       excludeBookingId: booking.id!
     })
     
