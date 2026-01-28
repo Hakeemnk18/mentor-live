@@ -19,6 +19,8 @@ import type { IConfirmChapterOneToOneBookingUseCase } from "../use-cases/interfa
 import { ConfirmPoolingBookingSchema } from "../dto/confirm.pooling.booking.dto.js";
 import type { IConfirmChapterPoolingBookingUseCase } from "../use-cases/interfaces/confirm.chapter.pooling.booking.interface.js";
 import { ConfirmChapterPoolingBookingSchema } from "../dto/confirm.chapter.pooling.dto.js";
+import type { IRemoveStudentFromPoolingUseCase } from "../use-cases/interfaces/remove.student.from.pooling.use-case.interface.js";
+import { RemoveUserFromPoolSchema } from "../dto/remove.student.from.pooling.dto.js";
 
 @injectable()
 export class BookingController implements IBookingController {
@@ -46,6 +48,9 @@ export class BookingController implements IBookingController {
 
     @inject("IConfirmChapterPoolingBookingUseCase")
     private readonly _confirmChapterPoolingBookingUseCase: IConfirmChapterPoolingBookingUseCase,
+
+    @inject("IRemoveStudentFromPoolingUseCase")
+    private readonly _removeStudentFromPoolingUseCase: IRemoveStudentFromPoolingUseCase,
   ) {}
 
   async createBooking(req: Request, res: Response): Promise<void> {
@@ -171,5 +176,20 @@ export class BookingController implements IBookingController {
     } catch (error) {
       handleError(res, error);
     }
+  }
+
+  async removeStudentFromPooling(req: Request, res: Response): Promise<void> {
+    try {
+      const dto = RemoveUserFromPoolSchema.parse(req.body);
+      await this._removeStudentFromPoolingUseCase.execute(dto);
+      res.status(HttpStatusCode.OK).json({
+        success: true,
+        message: ResponseMessages.REMOVE_STUDENT_FROM_POOLING_SUCCESS,
+      });
+    } catch (error) {
+      console.log("error in remove student from pooling ", error);
+      handleError(res, error);
+    }
+
   }
 }

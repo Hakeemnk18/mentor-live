@@ -131,6 +131,7 @@ SLOT_ADDED_SUCCESS: "Slot added successfully",
 CHAPTER_SLOT_ADDED_SUCCESS: "Chapter slot added successfully",
 CHAPTER_SLOT_ALREADY_EXIST: "Chapter slot already exist",
 SLOT_ALREADY_EXIST: "Slot time already exist",
+REMOVE_STUDENT_FROM_POOLING_SUCCESS: "Student removed from pooling successfully",
 
 INVALID_CLOUDINARY_PUBLIC_ID:"publicId is required to delete image",
 DELETE_CLOUDINARY_IMAGE_FAILED:"Failed to delete image from Cloudinary",

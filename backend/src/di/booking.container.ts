@@ -17,6 +17,8 @@ import type { IConfirmPoolingBookingUseCase } from "../modules/booking/use-cases
 import { ConfirmPoolingBookingUseCase } from "../modules/booking/use-cases/confirm.pooling.booking.use-case.js";
 import type { IConfirmChapterPoolingBookingUseCase } from "../modules/booking/use-cases/interfaces/confirm.chapter.pooling.booking.interface.js";
 import { ConfirmChapterPoolingBookingUseCase } from "../modules/booking/use-cases/confirm.chapter.pooling.booking.js";
+import type { IRemoveStudentFromPoolingUseCase } from "../modules/booking/use-cases/interfaces/remove.student.from.pooling.use-case.interface.js";
+import { RemoveStudentFromPoolingUseCase } from "../modules/booking/use-cases/remove.student.from.pooling.use-case.js";
 
 export const registerBookingDependencies = () => {
   
@@ -54,5 +56,9 @@ export const registerBookingDependencies = () => {
 
     container.register<IConfirmChapterPoolingBookingUseCase>("IConfirmChapterPoolingBookingUseCase",
         { useClass: ConfirmChapterPoolingBookingUseCase}
+    )
+
+    container.register<IRemoveStudentFromPoolingUseCase>("IRemoveStudentFromPoolingUseCase",
+        { useClass: RemoveStudentFromPoolingUseCase}
     )
 };
