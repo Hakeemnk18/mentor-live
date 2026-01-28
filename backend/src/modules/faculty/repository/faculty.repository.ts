@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { Types, type ClientSession } from "mongoose";
 import { HttpStatusCode } from "../../../core/constants/http.status.codes.js";
 import { ResponseMessages } from "../../../core/constants/response.message.js";
 import { CustomError } from "../../../core/errors/custom.error.js";
@@ -697,10 +697,11 @@ export class FacultyRepository implements IFacultyRepository {
     }
   }
 
-  async consumeSlot(facultyId: string, slotId: string): Promise<void> {
+  async consumeSlot(facultyId: string, slotId: string, session?: ClientSession ): Promise<void> {
+    
     const result = await FacultyModel.updateOne(
       {
-        _id: facultyId,
+        _id: new ObjectId(slotId),
         slots: {
           $elemMatch: {
             _id: new ObjectId(slotId),
@@ -714,6 +715,7 @@ export class FacultyRepository implements IFacultyRepository {
           "slots.$.pool": [],
         },
       },
+      session ? { session } : undefined 
     );
 
     if (result.modifiedCount === 0) {

@@ -13,10 +13,12 @@ import type {
   AdminPoolingView,
   ExistingBookingProps,
   ExpireOtherBookingsForSlotParams,
+  GetBookingsFromSlotParams,
 } from "../type/booking.type.js";
 import type { IBookingRepository } from "./booking.repository.interface.js";
 import type { GetOneToOneBookingUseCase } from "../use-cases/get.one.to.one.booking.use-case.js";
 import type { GetAdminPoolingStudentsDto } from "../dto/get.pooling.students.dto.js";
+import type { ClientSession } from "mongoose";
 const { ObjectId } = Types;
 
 export class BookingRepository implements IBookingRepository {
@@ -114,7 +116,7 @@ export class BookingRepository implements IBookingRepository {
       type,
       mode,
       isDeleted,
-      status: { $nin: ["cancelled", "expired"] }
+      status: { $nin: ["cancelled", "expired"] },
     };
 
     if (mode === "chapter") {
@@ -833,36 +835,70 @@ export class BookingRepository implements IBookingRepository {
     return documents.map(BookingMapper.mapAdminPoolingStudentView);
   }
 
-  async confirmPoolingBookings(ids: string[]): Promise<void> {
-    await BookingModel.updateMany(
-      { _id: { $in: ids } },
-      {
-        $set: {
-          status: "joined",
-          isContacted: true,
-        },
-      },
-    );
-  }
+  
 
-  async expireOtherBookingsForSlots(params: ExpireOtherBookingsForSlotParams): Promise<void> {
+  async expireOtherBookingsForSlots(
+    params: ExpireOtherBookingsForSlotParams,
+    session: ClientSession
+  ): Promise<void> {
+    const { facultyId, slotIds, excludeBookingIds } = params;
 
-    const { facultyId, slotIds, excludeBookingId } = params;
-    
     await BookingModel.updateMany(
       {
         facultyId,
-        slotId: { $in: slotIds }, 
+        slotId: { $in: slotIds },
         mode: "slot",
-        status: "interested", 
+        status: "interested",
         isDeleted: false,
-        _id: { $ne: excludeBookingId }, 
+        _id: { $nin: excludeBookingIds }
       },
       {
         $set: {
           status: "expired",
         },
       },
+      session ? { session } : undefined 
     );
+  }
+
+  
+  
+
+  async getBookingIds(params: GetBookingsFromSlotParams): Promise<string[]> {
+    const { facultyId, slotIds, userIds } = params;
+
+    const doc = await BookingModel.find(
+      {
+        facultyId,
+        slotId: { $in: slotIds },
+        mode: "slot",
+        status: "interested",
+        type: "pooling",
+        isDeleted: false,
+        userId: { $in: userIds },
+      },
+      { _id: 1 },
+    );
+
+    return doc.map((item) => item._id.toString());
+  }
+
+  async confirmPoolingBookings(ids: string[], session: ClientSession): Promise<number> {
+    
+    const result = await BookingModel.updateMany(
+      {
+        _id: { $in: ids },
+        status: "interested",
+        isDeleted: false,
+      },
+      {
+        $set: {
+          status: "confirmed",
+        },
+      },
+      { session }
+    );
+
+    return result.modifiedCount;
   }
 }

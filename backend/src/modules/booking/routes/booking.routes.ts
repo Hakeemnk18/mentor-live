@@ -42,7 +42,7 @@ router.patch(
 );
 
 router.patch(
-  "/pooling/confirm",
+  "/pooling/slot/confirm",
   (req, res) => bookingController.confirmPoolingBookings(req, res)
 );
 

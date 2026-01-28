@@ -100,7 +100,7 @@ export class ConfirmChapterOneToOneBookingUseCase
     await this._bookingRepo.expireOtherBookingsForSlots({
       facultyId: booking.facultyId,
       slotIds:dto.slotId,
-      excludeBookingId: booking.id!
+      excludeBookingIds: [booking.id!]
     })
   }
 }
