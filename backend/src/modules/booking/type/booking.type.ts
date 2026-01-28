@@ -16,7 +16,14 @@ export type ExistingBookingProps = {
 export type ExpireOtherBookingsForSlotParams = {
   facultyId: string;
   slotIds: string[];
-  excludeBookingId: string;
+  excludeBookingIds: string[];
+  
+};
+
+export type GetBookingsFromSlotParams = {
+  facultyId: string;
+  slotIds: string[];
+  userIds: string[];
 };
 
 export type AdminBookingRaw = {

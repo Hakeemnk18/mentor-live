@@ -1,3 +1,4 @@
+import type { ClientSession } from "mongoose";
 import type { IGetAllDocDB } from "../../../core/shared/interfaces/get.all.doc.interface.js";
 import type { GetAllOneToOneBookingDto } from "../dto/get.all.one.to.one.dto.js";
 import type { GetAdminPoolingStudentsDto } from "../dto/get.pooling.students.dto.js";
@@ -8,6 +9,7 @@ import type {
   AdminPoolingView,
   ExistingBookingProps,
   ExpireOtherBookingsForSlotParams,
+  GetBookingsFromSlotParams,
 } from "../type/booking.type.js";
 
 export interface IBookingRepository {
@@ -27,6 +29,8 @@ export interface IBookingRepository {
   findAdminPoolingStudents(
      dto: GetAdminPoolingStudentsDto
     ): Promise<AdminPoolingStudentRaw[]>
-  confirmPoolingBookings(ids: string[]): Promise<void>;
-  expireOtherBookingsForSlots(params: ExpireOtherBookingsForSlotParams): Promise<void>
+  confirmPoolingBookings(ids: string[], session: ClientSession): Promise<number>;
+  expireOtherBookingsForSlots(params: ExpireOtherBookingsForSlotParams, session?: ClientSession): Promise<void>
+  getBookingIds(prams: GetBookingsFromSlotParams): Promise<string []>
+  
 }

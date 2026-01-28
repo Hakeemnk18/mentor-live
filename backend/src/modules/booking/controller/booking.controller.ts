@@ -16,6 +16,7 @@ import type { IConfirmOneToOneBookingUseCase } from "../use-cases/interfaces/con
 import type { IConfirmPoolingBookingUseCase } from "../use-cases/interfaces/confirm.pooling.booking.use-case.interface.js";
 import { ConfirmChapterOneToOneBookingSchema } from "../dto/confirm.chapter.one.to.one.dto.js";
 import type { IConfirmChapterOneToOneBookingUseCase } from "../use-cases/interfaces/confirm.chapter.one.to.one.booking.use-case.interface.js";
+import { ConfirmPoolingBookingSchema } from "../dto/confirm.pooling.booking.dto.js";
 
 @injectable()
 export class BookingController implements IBookingController {
@@ -35,8 +36,8 @@ export class BookingController implements IBookingController {
     @inject("IConfirmOneToOneBookingUseCase")
     private _confirmOneToOneBookingUseCase: IConfirmOneToOneBookingUseCase,
 
-    // @inject("IConfirmPoolingBookingUseCase")
-    // private _confirmPoolingBookingUseCase: IConfirmPoolingBookingUseCase,
+    @inject("IConfirmPoolingBookingUseCase")
+    private _confirmPoolingBookingUseCase: IConfirmPoolingBookingUseCase,
 
     @inject("IConfirmChapterOneToOneBookingUseCase")
     private readonly _confirmChapterOneToOneBookingUseCase: IConfirmChapterOneToOneBookingUseCase,
@@ -141,15 +142,15 @@ export class BookingController implements IBookingController {
   }
 
   async confirmPoolingBookings(req: Request, res: Response): Promise<void> {
-    //   try {
-    //     const dto = ConfirmPoolingBookingSchema.parse(req.body);
-    //     await this._confirmPoolingBookingUseCase.execute(dto);
-    //     res.status(HttpStatusCode.OK).json({
-    //       success: true,
-    //       message: ResponseMessages.SUCCESS,
-    //     });
-    //   } catch (error) {
-    //     handleError(res, error);
-    //   }
+      try {
+        const dto = ConfirmPoolingBookingSchema.parse(req.body);
+        await this._confirmPoolingBookingUseCase.execute(dto);
+        res.status(HttpStatusCode.OK).json({
+          success: true,
+          message: ResponseMessages.BOOKING_STATUS_CHANGED,
+        });
+      } catch (error) {
+        handleError(res, error);
+      }
   }
 }

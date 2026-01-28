@@ -1,3 +1,4 @@
+import type { ClientSession } from "mongoose";
 import type { AcademicListFiltersBase } from "../../../core/shared/type/find.all.with.filters.js";
 import type { AddChapterSlotRequestDto } from "../dtos/add.chapter.dto.js";
 import { Faculty } from "../entities/faculty.entity.js";
@@ -54,7 +55,7 @@ export interface IFacultyRepository {
     studentId: string,
   ): Promise<void>;
   findFacultyByQuery(query: Record<string, any>): Promise<Faculty | null>;
-  consumeSlot(facultyId: string, slotId: string): Promise<void>;
+  consumeSlot(facultyId: string, slotId: string, session?: ClientSession): Promise<void>;
   consumeSlots(
     facultyId: string, 
     slotIds: string[],
