@@ -726,7 +726,7 @@ export class FacultyRepository implements IFacultyRepository {
     }
   }
 
-  async consumeSlots(facultyId: string, slotIds: string[]): Promise<void> {
+  async consumeSlots(facultyId: string, slotIds: string[], session?: ClientSession ): Promise<void> {
     const result = await FacultyModel.updateOne(
       {
         _id: facultyId,
@@ -746,7 +746,9 @@ export class FacultyRepository implements IFacultyRepository {
             "s.isAvailable": true,
           },
         ],
+         ...(session ? { session } : {}),
       },
+      
     );
 
     if (result.modifiedCount === 0) {
@@ -774,5 +776,40 @@ export class FacultyRepository implements IFacultyRepository {
       pool: slot.pool.map((u: any) => u.toString()),
       poolLimit: slot.poolLimit,
     }));
+  }
+
+  async consumeChapterSlot(facultyId: string, chapterId: string, session: ClientSession): Promise<void> {
+    const result = await FacultyModel.updateOne(
+      {
+        _id: new ObjectId(facultyId), 
+        chapterSlots: {
+          $elemMatch: {
+            chapter: new ObjectId(chapterId),
+          },
+        },
+      },
+      {
+        $set: {
+          
+          "chapterSlots.$[s].pool": [],
+        },
+      },
+      {
+        arrayFilters: [
+          {
+            "s.chapter": new ObjectId(chapterId),
+            "s.isAvailable": true,
+          },
+        ],
+        session,
+      }
+    );
+    
+    if (result.modifiedCount === 0) {
+      throw new CustomError(
+        ResponseMessages.CHAPTER_SLOT_NOT_FOUND,
+        HttpStatusCode.NOT_FOUND,
+      );
+    }
   }
 }

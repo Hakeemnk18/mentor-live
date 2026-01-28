@@ -59,11 +59,13 @@ export interface IFacultyRepository {
   consumeSlots(
     facultyId: string, 
     slotIds: string[],
+    session?: ClientSession
   ): Promise<void>;
   getAllSlots(
     facultyId: string
   ): Promise<SlotProps[]>;
   addSlots(facultyId: string, slots: { time: Date }[]): Promise<void>
   addChapterSlots(facultyId: string, slots: AddChapterSlotRequestDto): Promise<void>
+  consumeChapterSlot(facultyId: string, chapterId: string, session: ClientSession): Promise<void>
   
 }

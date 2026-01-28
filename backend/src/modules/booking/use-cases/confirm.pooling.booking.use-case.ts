@@ -6,8 +6,8 @@ import type { IFacultyRepository } from "../../faculty/repository/faculty.reposi
 import { CustomError } from "../../../core/errors/custom.error.js";
 import { ResponseMessages } from "../../../core/constants/response.message.js";
 import { HttpStatusCode } from "../../../core/constants/http.status.codes.js";
-import mongoose, { Types } from "mongoose";
-const { ObjectId } = Types;
+import mongoose from "mongoose";
+
 
 @injectable()
 export class ConfirmPoolingBookingUseCase implements IConfirmPoolingBookingUseCase {
@@ -37,8 +37,9 @@ export class ConfirmPoolingBookingUseCase implements IConfirmPoolingBookingUseCa
       slotIds: [slotId],
       userIds: slot.pool,
       facultyId,
+      mode: "slot",
     });
-    console.log("booking ids ", bookingIds);
+    
 
     if (bookingIds.length !== slot.pool.length) {
       throw new CustomError(
@@ -59,9 +60,9 @@ export class ConfirmPoolingBookingUseCase implements IConfirmPoolingBookingUseCa
           HttpStatusCode.INTERNAL_SERVER_ERROR,
         );
       }
-      console.log("booking updated")
+      
       await this._facultyRepo.consumeSlot(facultyId, slotId, session);
-      console.log("slot consumed")
+      
 
       await this._bookingRepo.expireOtherBookingsForSlots({
         facultyId: facultyId,

@@ -20,11 +20,20 @@ export type ExpireOtherBookingsForSlotParams = {
   
 };
 
-export type GetBookingsFromSlotParams = {
-  facultyId: string;
-  slotIds: string[];
-  userIds: string[];
-};
+export type GetBookingsFromSlotParams = | {
+      mode: "slot";
+      facultyId: string;
+      slotIds: string[];
+      userIds: string[];
+      chapterIds?: never;
+    }
+  | {
+      mode: "chapter";
+      facultyId: string;
+      chapterId: string;
+      userIds: string[];
+      slotIds?: never;
+    };
 
 export type AdminBookingRaw = {
   id: any; // ObjectId or string

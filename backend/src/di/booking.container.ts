@@ -15,6 +15,8 @@ import type { IConfirmOneToOneBookingUseCase } from "../modules/booking/use-case
 import { ConfirmOneToOneBookingUseCase } from "../modules/booking/use-cases/confirm.one.to.one.booking.use-case.js";
 import type { IConfirmPoolingBookingUseCase } from "../modules/booking/use-cases/interfaces/confirm.pooling.booking.use-case.interface.js";
 import { ConfirmPoolingBookingUseCase } from "../modules/booking/use-cases/confirm.pooling.booking.use-case.js";
+import type { IConfirmChapterPoolingBookingUseCase } from "../modules/booking/use-cases/interfaces/confirm.chapter.pooling.booking.interface.js";
+import { ConfirmChapterPoolingBookingUseCase } from "../modules/booking/use-cases/confirm.chapter.pooling.booking.js";
 
 export const registerBookingDependencies = () => {
   
@@ -50,4 +52,7 @@ export const registerBookingDependencies = () => {
         { useClass: ConfirmPoolingBookingUseCase}
     )
 
+    container.register<IConfirmChapterPoolingBookingUseCase>("IConfirmChapterPoolingBookingUseCase",
+        { useClass: ConfirmChapterPoolingBookingUseCase}
+    )
 };

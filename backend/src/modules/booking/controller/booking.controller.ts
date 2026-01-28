@@ -17,6 +17,8 @@ import type { IConfirmPoolingBookingUseCase } from "../use-cases/interfaces/conf
 import { ConfirmChapterOneToOneBookingSchema } from "../dto/confirm.chapter.one.to.one.dto.js";
 import type { IConfirmChapterOneToOneBookingUseCase } from "../use-cases/interfaces/confirm.chapter.one.to.one.booking.use-case.interface.js";
 import { ConfirmPoolingBookingSchema } from "../dto/confirm.pooling.booking.dto.js";
+import type { IConfirmChapterPoolingBookingUseCase } from "../use-cases/interfaces/confirm.chapter.pooling.booking.interface.js";
+import { ConfirmChapterPoolingBookingSchema } from "../dto/confirm.chapter.pooling.dto.js";
 
 @injectable()
 export class BookingController implements IBookingController {
@@ -41,6 +43,9 @@ export class BookingController implements IBookingController {
 
     @inject("IConfirmChapterOneToOneBookingUseCase")
     private readonly _confirmChapterOneToOneBookingUseCase: IConfirmChapterOneToOneBookingUseCase,
+
+    @inject("IConfirmChapterPoolingBookingUseCase")
+    private readonly _confirmChapterPoolingBookingUseCase: IConfirmChapterPoolingBookingUseCase,
   ) {}
 
   async createBooking(req: Request, res: Response): Promise<void> {
@@ -152,5 +157,19 @@ export class BookingController implements IBookingController {
       } catch (error) {
         handleError(res, error);
       }
+  }
+
+  async confirmChapterPoolingBooking(req: Request,res: Response,): Promise<void> {
+    try {
+      const dto = ConfirmChapterPoolingBookingSchema.parse(req.body);
+      await this._confirmChapterPoolingBookingUseCase.execute(dto);
+
+      res.status(HttpStatusCode.OK).json({
+        success: true,
+        message: ResponseMessages.SUCCESS,
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
   }
 }
