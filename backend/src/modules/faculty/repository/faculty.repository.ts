@@ -20,6 +20,7 @@ import type {
 } from "../types/faculty.type.js";
 import { _null } from "zod/v4/core";
 import type { AddChapterSlotRequestDto } from "../dtos/add.chapter.dto.js";
+import type { RemoveUserFromPoolDto } from "../../booking/dto/remove.student.from.pooling.dto.js";
 
 const { ObjectId } = Types;
 
@@ -108,8 +109,11 @@ export class FacultyRepository implements IFacultyRepository {
       },
     );
   }
-  async addChapterSlots(facultyId: string, slots: AddChapterSlotRequestDto): Promise<void> {
-    const { chapterSlots } = slots
+  async addChapterSlots(
+    facultyId: string,
+    slots: AddChapterSlotRequestDto,
+  ): Promise<void> {
+    const { chapterSlots } = slots;
     await FacultyModel.updateOne(
       { _id: facultyId },
       {
@@ -697,8 +701,11 @@ export class FacultyRepository implements IFacultyRepository {
     }
   }
 
-  async consumeSlot(facultyId: string, slotId: string, session?: ClientSession ): Promise<void> {
-    
+  async consumeSlot(
+    facultyId: string,
+    slotId: string,
+    session?: ClientSession,
+  ): Promise<void> {
     const result = await FacultyModel.updateOne(
       {
         _id: new ObjectId(slotId),
@@ -715,7 +722,7 @@ export class FacultyRepository implements IFacultyRepository {
           "slots.$.pool": [],
         },
       },
-      session ? { session } : undefined 
+      session ? { session } : undefined,
     );
 
     if (result.modifiedCount === 0) {
@@ -726,7 +733,11 @@ export class FacultyRepository implements IFacultyRepository {
     }
   }
 
-  async consumeSlots(facultyId: string, slotIds: string[], session?: ClientSession ): Promise<void> {
+  async consumeSlots(
+    facultyId: string,
+    slotIds: string[],
+    session?: ClientSession,
+  ): Promise<void> {
     const result = await FacultyModel.updateOne(
       {
         _id: facultyId,
@@ -746,9 +757,8 @@ export class FacultyRepository implements IFacultyRepository {
             "s.isAvailable": true,
           },
         ],
-         ...(session ? { session } : {}),
+        ...(session ? { session } : {}),
       },
-      
     );
 
     if (result.modifiedCount === 0) {
@@ -778,10 +788,14 @@ export class FacultyRepository implements IFacultyRepository {
     }));
   }
 
-  async consumeChapterSlot(facultyId: string, chapterId: string, session: ClientSession): Promise<void> {
+  async consumeChapterSlot(
+    facultyId: string,
+    chapterId: string,
+    session: ClientSession,
+  ): Promise<void> {
     const result = await FacultyModel.updateOne(
       {
-        _id: new ObjectId(facultyId), 
+        _id: new ObjectId(facultyId),
         chapterSlots: {
           $elemMatch: {
             chapter: new ObjectId(chapterId),
@@ -790,7 +804,6 @@ export class FacultyRepository implements IFacultyRepository {
       },
       {
         $set: {
-          
           "chapterSlots.$[s].pool": [],
         },
       },
@@ -802,14 +815,54 @@ export class FacultyRepository implements IFacultyRepository {
           },
         ],
         session,
-      }
+      },
     );
-    
+
     if (result.modifiedCount === 0) {
       throw new CustomError(
         ResponseMessages.CHAPTER_SLOT_NOT_FOUND,
         HttpStatusCode.NOT_FOUND,
       );
+    }
+  }
+
+  async removeUserFromPool(params: RemoveUserFromPoolDto, session: ClientSession): Promise<void> {
+    const { facultyId, userId, mode } = params;
+
+    let updateQuery: any;
+    let arrayFilters: any[] = [];
+
+    if (mode === "chapter") {
+      updateQuery = {
+        $pull: {
+          "chapterSlots.$[c].pool": userId,
+        },
+      };
+
+      arrayFilters = [{ "c.chapter": new Types.ObjectId(params.chapterId) }];
+    }
+
+    if (mode === "slot") {
+      updateQuery = {
+        $pull: {
+          "slots.$[s].pool": userId,
+        },
+      };
+
+      arrayFilters = [{ "s._id": new Types.ObjectId(params.slotId) }];
+    }
+
+    const result = await FacultyModel.updateOne(
+      { _id: facultyId },
+      updateQuery,
+      {
+        arrayFilters,
+        session,
+      },
+    );
+
+    if (result.matchedCount === 0) {
+      throw new Error("Faculty not found");
     }
   }
 }

@@ -12,6 +12,7 @@ import type {
   FacultyViewForUser,
   SlotProps,
 } from "../types/faculty.type.js";
+import type { RemoveUserFromPoolDto } from "../../booking/dto/remove.student.from.pooling.dto.js";
 
 export interface IFacultyRepository {
   create(facultyEntity: Faculty): Promise<Faculty>;
@@ -55,17 +56,26 @@ export interface IFacultyRepository {
     studentId: string,
   ): Promise<void>;
   findFacultyByQuery(query: Record<string, any>): Promise<Faculty | null>;
-  consumeSlot(facultyId: string, slotId: string, session?: ClientSession): Promise<void>;
-  consumeSlots(
-    facultyId: string, 
-    slotIds: string[],
-    session?: ClientSession
+  consumeSlot(
+    facultyId: string,
+    slotId: string,
+    session?: ClientSession,
   ): Promise<void>;
-  getAllSlots(
-    facultyId: string
-  ): Promise<SlotProps[]>;
-  addSlots(facultyId: string, slots: { time: Date }[]): Promise<void>
-  addChapterSlots(facultyId: string, slots: AddChapterSlotRequestDto): Promise<void>
-  consumeChapterSlot(facultyId: string, chapterId: string, session: ClientSession): Promise<void>
-  
+  consumeSlots(
+    facultyId: string,
+    slotIds: string[],
+    session?: ClientSession,
+  ): Promise<void>;
+  getAllSlots(facultyId: string): Promise<SlotProps[]>;
+  addSlots(facultyId: string, slots: { time: Date }[]): Promise<void>;
+  addChapterSlots(
+    facultyId: string,
+    slots: AddChapterSlotRequestDto,
+  ): Promise<void>;
+  consumeChapterSlot(
+    facultyId: string,
+    chapterId: string,
+    session: ClientSession,
+  ): Promise<void>;
+  removeUserFromPool(params: RemoveUserFromPoolDto, session: ClientSession): Promise<void>;
 }

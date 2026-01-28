@@ -51,4 +51,9 @@ router.patch(
   (req, res) => bookingController.confirmChapterPoolingBooking(req, res)
 );
 
+router.patch(
+  "/pooling/remove-student",
+  (req, res) => bookingController.removeStudentFromPooling(req, res)
+);
+
 export default router;

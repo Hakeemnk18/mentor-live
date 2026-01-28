@@ -928,4 +928,30 @@ export class BookingRepository implements IBookingRepository {
       throw new Error("No bookings matched for adding slots");
     }
   }
+
+  async findByQuery(query: Record<string, any>): Promise<Booking | null> {
+    const foundDocument = await BookingModel.findOne(query).lean();
+    return BookingMapper.toDomain(foundDocument);
+  }
+
+  async cancelBookingsByIds(bookingIds: string[], session: ClientSession): Promise<void> {
+    const result =await BookingModel.updateMany(
+      { 
+        _id: { $in: bookingIds },
+        status: { $ne: "cancelled" },
+        isDeleted: false,
+      },
+      {
+        $set: {
+          status: "cancelled",
+        },
+      },
+      { session },
+    );
+
+    if (result.matchedCount === 0) {
+      throw new Error("No bookings matched for  cancellation");
+    }
+  } 
+
 }
