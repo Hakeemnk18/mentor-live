@@ -46,4 +46,9 @@ router.patch(
   (req, res) => bookingController.confirmPoolingBookings(req, res)
 );
 
+router.patch(
+  "/pooling/chapter/confirm",
+  (req, res) => bookingController.confirmChapterPoolingBooking(req, res)
+);
+
 export default router;

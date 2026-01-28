@@ -835,11 +835,9 @@ export class BookingRepository implements IBookingRepository {
     return documents.map(BookingMapper.mapAdminPoolingStudentView);
   }
 
-  
-
   async expireOtherBookingsForSlots(
     params: ExpireOtherBookingsForSlotParams,
-    session: ClientSession
+    session: ClientSession,
   ): Promise<void> {
     const { facultyId, slotIds, excludeBookingIds } = params;
 
@@ -850,41 +848,46 @@ export class BookingRepository implements IBookingRepository {
         mode: "slot",
         status: "interested",
         isDeleted: false,
-        _id: { $nin: excludeBookingIds }
+        _id: { $nin: excludeBookingIds },
       },
       {
         $set: {
           status: "expired",
         },
       },
-      session ? { session } : undefined 
+      session ? { session } : undefined,
     );
   }
-
-  
-  
 
   async getBookingIds(params: GetBookingsFromSlotParams): Promise<string[]> {
-    const { facultyId, slotIds, userIds } = params;
+    const { facultyId, userIds, mode } = params;
 
-    const doc = await BookingModel.find(
-      {
-        facultyId,
-        slotId: { $in: slotIds },
-        mode: "slot",
-        status: "interested",
-        type: "pooling",
-        isDeleted: false,
-        userId: { $in: userIds },
-      },
-      { _id: 1 },
-    );
+    const query: Record<string, any> = {
+      facultyId,
+      mode,
+      status: "interested",
+      type: "pooling",
+      isDeleted: false,
+      userId: { $in: userIds },
+    };
 
-    return doc.map((item) => item._id.toString());
+    if (mode === "slot") {
+      query.slotId = { $in: params.slotIds };
+    }
+
+    if (mode === "chapter") {
+      query.chapterId = params.chapterId;
+    }
+
+    const docs = await BookingModel.find(query, { _id: 1 });
+
+    return docs.map((d) => d._id.toString());
   }
 
-  async confirmPoolingBookings(ids: string[], session: ClientSession): Promise<number> {
-    
+  async confirmPoolingBookings(
+    ids: string[],
+    session: ClientSession,
+  ): Promise<number> {
     const result = await BookingModel.updateMany(
       {
         _id: { $in: ids },
@@ -896,9 +899,33 @@ export class BookingRepository implements IBookingRepository {
           status: "confirmed",
         },
       },
-      { session }
+      { session },
     );
 
     return result.modifiedCount;
+  }
+
+  async addSlotsToBookings(
+    bookingIds: string[],
+    slotIds: string[],
+    session: ClientSession,
+  ): Promise<void> {
+    const result = await BookingModel.updateMany(
+      {
+        _id: { $in: bookingIds },
+        status: "confirmed",
+        isDeleted: false,
+      },
+      {
+        $set: {
+          slotId: slotIds, 
+        },
+      },
+      { session },
+    );
+
+    if (result.matchedCount === 0) {
+      throw new Error("No bookings matched for adding slots");
+    }
   }
 }

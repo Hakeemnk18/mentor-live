@@ -32,5 +32,6 @@ export interface IBookingRepository {
   confirmPoolingBookings(ids: string[], session: ClientSession): Promise<number>;
   expireOtherBookingsForSlots(params: ExpireOtherBookingsForSlotParams, session?: ClientSession): Promise<void>
   getBookingIds(prams: GetBookingsFromSlotParams): Promise<string []>
+  addSlotsToBookings(bookingIds: string[], slotIds: string[], session: ClientSession): Promise<void>
   
 }
