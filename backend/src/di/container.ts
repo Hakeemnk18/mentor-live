@@ -1,3 +1,4 @@
+import { registerBannerDependencies } from "./banner.container.js";
 import { registerBookingDependencies } from "./booking.container.js";
 import { registerChapterDependencies } from "./chapter.container.js";
 import { registerClassDependencies } from "./class.container.js";
@@ -22,6 +23,7 @@ registerChapterDependencies()
 registerFacultyDependencies()
 registerStudentDependencies()
 registerBookingDependencies()
+registerBannerDependencies()
 
 
 export { container } from "tsyringe";

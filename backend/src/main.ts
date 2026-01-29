@@ -13,6 +13,7 @@ import registerFacultyModule from "./modules/faculty/faculty.module.js";
 import registerMediaModule from "./modules/media/media.module.js";
 import registerBookingModule from "./modules/booking/booking.module.js";
 import registerStudentsModule from "./modules/student/student.module.js";
+import registerBannerModule from "./modules/banner/banner.module.js";
 
 
 
@@ -38,6 +39,7 @@ const startServer = async () => {
         registerFacultyModule(expressApp)
         registerBookingModule(expressApp)
         registerStudentsModule(expressApp)
+        registerBannerModule(expressApp)
         
 
 
