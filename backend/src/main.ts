@@ -14,6 +14,7 @@ import registerMediaModule from "./modules/media/media.module.js";
 import registerBookingModule from "./modules/booking/booking.module.js";
 import registerStudentsModule from "./modules/student/student.module.js";
 import registerBannerModule from "./modules/banner/banner.module.js";
+import registerTestimonialModule from "./modules/testimonial/testimonial.module.js";
 
 
 
@@ -40,6 +41,7 @@ const startServer = async () => {
         registerBookingModule(expressApp)
         registerStudentsModule(expressApp)
         registerBannerModule(expressApp)
+        registerTestimonialModule(expressApp)
         
 
 
