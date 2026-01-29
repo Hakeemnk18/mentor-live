@@ -9,6 +9,7 @@ import { registerStudentDependencies } from "./student.container.js";
 import { registerSubjectDependencies } from "./subject.container.js";
 import { registerSubjectVariantDependencies } from "./subject.variant.container.js";
 import { registerSyllabusDependencies } from "./syllabus.container.js";
+import { registerTestimonialDependencies } from "./testimonial.container.js";
 import { registerUserDependencies } from "./user.container.js";
 
 
@@ -24,6 +25,7 @@ registerFacultyDependencies()
 registerStudentDependencies()
 registerBookingDependencies()
 registerBannerDependencies()
+registerTestimonialDependencies()
 
 
 export { container } from "tsyringe";

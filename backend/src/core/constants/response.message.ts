@@ -228,5 +228,19 @@ export const ResponseMessages = {
   BANNER_CREATED: "Banner created successfully",
   BANNER_UPDATED: "Banner updated successfully",
   BANNER_DELETED: "Banner deleted successfully",
-  BANNER_PRIORITY_ALREADY_EXISTS: "Banner with this priority already exist"
+  BANNER_PRIORITY_ALREADY_EXISTS: "Banner with this priority already exist",
+
+  TESTIMONIAL_NOT_FOUND: "Testimonial not found",
+  TESTIMONIAL_AUTHOR_INVALID: "Testimonial author is invalid",
+  TESTIMONIAL_DESIGNATION_INVALID: "Testimonial designation is invalid",
+  TESTIMONIAL_COMMENT_INVALID: "Testimonial comment is invalid",
+  TESTIMONIAL_CREATION_FAILED: "Failed to create testimonial",
+  TESTIMONIAL_UPDATE_FAILED: "Failed to update testimonial",
+  TESTIMONIAL_DELETE_FAILED: "Failed to delete testimonial",
+  TESTIMONIAL_ALREADY_DELETED: "Testimonial is already deleted",
+  TESTIMONIAL_NOT_DELETED: "Testimonial is not deleted",
+  TESTIMONIAL_CREATED: "Testimonial created successfully",
+  TESTIMONIAL_UPDATED: "Testimonial updated successfully",
+  TESTIMONIAL_DELETED: "Testimonial deleted successfully",
+  TESTIMONIAL_AUTHOR_ALREADY_EXISTS: "Testimonial is already exist"
 };
