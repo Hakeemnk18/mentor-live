@@ -213,5 +213,20 @@ export const ResponseMessages = {
   STUDENT_BLOCK_FAILED: "Failed to block student",
   STUDENT_UNBLOCK_FAILED: "Failed to unblock student",
   STUDENT_UNBLOCKED: "Student successfully unblocked",
-  STUDENT_BLOCKED: "Student successfully blocked"
+  STUDENT_BLOCKED: "Student successfully blocked",
+
+  BANNER_NOT_FOUND: "Banner not found",
+  BANNER_IMAGE_INVALID: "Banner image URL is invalid",
+  BANNER_DESCRIPTION_INVALID: "Banner description is invalid",
+  BANNER_PRIORITY_INVALID: "Banner priority must be a positive number",
+  BANNER_CREATION_FAILED: "Failed to create banner",
+  BANNER_UPDATE_FAILED: "Failed to update banner",
+  BANNER_DELETE_FAILED: "Failed to delete banner",
+  BANNER_LIMIT_REACHED: "Banner limit reached",
+  BANNER_ALREADY_DELETED: "Banner is already deleted",
+  BANNER_NOT_DELETED: "Banner is not deleted",
+  BANNER_CREATED: "Banner created successfully",
+  BANNER_UPDATED: "Banner updated successfully",
+  BANNER_DELETED: "Banner deleted successfully",
+  BANNER_PRIORITY_ALREADY_EXISTS: "Banner with this priority already exist"
 };
