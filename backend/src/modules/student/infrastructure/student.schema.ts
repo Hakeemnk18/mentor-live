@@ -7,6 +7,7 @@ export interface IStudent extends Document {
   phoneNumber: string;
   school: string;
   syllabus: Types.ObjectId;
+  isDeleted: boolean
 }
 
 const studentSchema = new Schema<IStudent>(
@@ -49,6 +50,10 @@ const studentSchema = new Schema<IStudent>(
       ref: "Syllabus",
       trim: true,
     },
+    isDeleted: {
+      type: Boolean,
+      default: false
+    }
   },
   {
     timestamps: true,
