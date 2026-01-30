@@ -242,5 +242,29 @@ export const ResponseMessages = {
   TESTIMONIAL_CREATED: "Testimonial created successfully",
   TESTIMONIAL_UPDATED: "Testimonial updated successfully",
   TESTIMONIAL_DELETED: "Testimonial deleted successfully",
-  TESTIMONIAL_AUTHOR_ALREADY_EXISTS: "Testimonial is already exist"
+  TESTIMONIAL_AUTHOR_ALREADY_EXISTS: "Testimonial is already exist",
+
+  BLOG_NOT_FOUND: "Blog not found",
+
+  BLOG_SLUG_INVALID: "Blog slug is invalid",
+  BLOG_SLUG_ALREADY_EXISTS: "Blog with this slug already exists",
+
+  BLOG_AUTHOR_INVALID: "Blog author is invalid",
+  BLOG_HEADING_INVALID: "Blog heading is invalid",
+  BLOG_DESCRIPTION_INVALID: "Blog description is invalid",
+  BLOG_CONTENT_INVALID: "Blog content is invalid",
+
+  BLOG_CREATION_FAILED: "Failed to create blog",
+  BLOG_UPDATE_FAILED: "Failed to update blog",
+  BLOG_DELETE_FAILED: "Failed to delete blog",
+
+  BLOG_ALREADY_DELETED: "Blog is already deleted",
+  BLOG_NOT_DELETED: "Blog is not deleted",
+
+  BLOG_CREATED: "Blog created successfully",
+  BLOG_UPDATED: "Blog updated successfully",
+  BLOG_DELETED: "Blog deleted successfully",
+
+  BLOG_LIST_FETCH_FAILED: "Failed to fetch blogs",
+  BLOG_SEARCH_FAILED: "Failed to search blogs"
 };
