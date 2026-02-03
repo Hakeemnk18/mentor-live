@@ -20,6 +20,8 @@ import { BlockChapterUseCase } from "../modules/chapter/use-cases/block.chapter.
 
 import type { IUnblockChapterUseCase } from "../modules/chapter/use-cases/interfaces/unblock.chapter.use-case.interface.js";
 import { UnblockChapterUseCase } from "../modules/chapter/use-cases/unblock.chapter.use-case.js";
+import type { IGetChapterNameUseCase } from "../modules/chapter/use-cases/interfaces/get.chapter.name.use-case.interface.js";
+import { GetChapterNameUseCase } from "../modules/chapter/use-cases/get.chapter.name.use-case.js";
 
 export const registerChapterDependencies = () => {
   container.register<IChapterRepository>("IChapterRepository", {
@@ -48,5 +50,9 @@ export const registerChapterDependencies = () => {
 
   container.register<IUnblockChapterUseCase>("IUnblockChapterUseCase", {
     useClass: UnblockChapterUseCase,
+  });
+
+  container.register<IGetChapterNameUseCase>("IGetChapterNameUseCase", {
+    useClass: GetChapterNameUseCase,
   });
 };

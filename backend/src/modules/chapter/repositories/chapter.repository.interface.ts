@@ -10,4 +10,5 @@ export interface IChapterRepository {
   findAllForAdmin(allDoc: IGetAllDocDB): Promise<Chapter[]>;
   findAllForUser(allDoc: ChapterListFilters): Promise<{ id: string; name: string; price: number; icon: string }[]>;
   countDocument(query: Record<string, any>): Promise<number>;
+  findAllNames(): Promise<{ id: string; name: string }[]>;
 }

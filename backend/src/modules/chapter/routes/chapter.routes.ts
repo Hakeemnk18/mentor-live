@@ -42,6 +42,9 @@ router.get(
 );
 
 
+router.get("/names", (req, res) =>
+  chapterController.getChapterNameAndId(req, res)
+);
 
 router.get(
   "/",
