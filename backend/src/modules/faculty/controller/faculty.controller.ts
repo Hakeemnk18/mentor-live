@@ -31,6 +31,10 @@ import type { IGetFacultyDetailsByChapterUseCase } from "../use-cases/interfaces
 import z from "zod";
 import { ObjectIdSchema } from "../../../core/utils/object.id.validation.js";
 import type { IGetFacultyDetailsBySlotUseCase } from "../use-cases/interfaces/get.faculty.details.by.slot.use-case.interface.js";
+import type { ISetFacultySlotAvailabilityUseCase } from "../use-cases/interfaces/set.faculty.slot.availability.usecase.interface.js";
+import { availabilitySchema } from "../../../core/utils/validate.is-availble.js";
+import type { IBlockFacultyUseCase } from "../use-cases/interfaces/block.faculty.use-case.interface.js";
+import type { IUnblockFacultyUseCase } from "../use-cases/interfaces/unblock.faculty.interface.js";
 
 @injectable()
 export class FacultyController implements IFacultyController {
@@ -64,6 +68,17 @@ export class FacultyController implements IFacultyController {
 
     @inject("IGetFacultyDetailsBySlotUseCase")
     private readonly _getFacultyDetailsBySlotUseCase: IGetFacultyDetailsBySlotUseCase,
+
+    @inject("ISetFacultySlotAvailabilityUseCase")
+    private readonly _setFacultySlotAvailabilityUseCase: ISetFacultySlotAvailabilityUseCase,
+
+    @inject("IBlockFacultyUseCase")
+    private readonly _blockFacultyUseCase: IBlockFacultyUseCase,
+
+    @inject("IUnblockFacultyUseCase")
+    private readonly _unblockFacultyUseCase: IUnblockFacultyUseCase,
+
+    
   ) {}
 
   async createFaculty(req: Request, res: Response): Promise<void> {
@@ -175,8 +190,8 @@ export class FacultyController implements IFacultyController {
       if (type !== "class" && type !== "chapter") {
         throw new CustomError(
           ResponseMessages.INVALID_FACULTY_LIST_TYPE,
-          HttpStatusCode.BAD_REQUEST
-        )
+          HttpStatusCode.BAD_REQUEST,
+        );
       }
       let data;
       if (type === "class") {
@@ -203,42 +218,128 @@ export class FacultyController implements IFacultyController {
 
   async getFacultyDetailsByChapter(req: Request, res: Response): Promise<void> {
     try {
-      validateObjectId(req.params.id)
-      
-      const facultyId = req.params.id
+      validateObjectId(req.params.id);
+
+      const facultyId = req.params.id;
       const chapterId = ObjectIdSchema.parse(req.query.chapterId);
-      const data = await this._getFacultyDetailsByChapterUseCase.execute(facultyId!, chapterId)
+      const data = await this._getFacultyDetailsByChapterUseCase.execute(
+        facultyId!,
+        chapterId,
+      );
       res.status(HttpStatusCode.OK).json({
         message: ResponseMessages.SUCCESS,
         success: true,
-        data: data
+        data: data,
       });
-      
     } catch (error) {
-       console.log("Error in  get faculty details by chapter", error);
+      console.log("Error in  get faculty details by chapter", error);
       handleError(res, error);
     }
   }
 
   async getFacultyDetailsBySlot(req: Request, res: Response): Promise<void> {
     try {
-      validateObjectId(req.params.id)
-      
-      const facultyId = req.params.id
-      let slotId
-      if(req.query.slotId){
+      validateObjectId(req.params.id);
+
+      const facultyId = req.params.id;
+      let slotId;
+      if (req.query.slotId) {
         slotId = ObjectIdSchema.parse(req.query.slotId);
       }
-      
-      const data = await this._getFacultyDetailsBySlotUseCase.execute(facultyId!, slotId)
+
+      const data = await this._getFacultyDetailsBySlotUseCase.execute(
+        facultyId!,
+        slotId,
+      );
       res.status(HttpStatusCode.OK).json({
         message: ResponseMessages.SUCCESS,
         success: true,
-        data: data
+        data: data,
       });
-      
     } catch (error) {
-       console.log("Error in  get faculty details by slot", error);
+      console.log("Error in  get faculty details by slot", error);
+      handleError(res, error);
+    }
+  }
+
+  async updateSlotAvailability(req: Request, res: Response) {
+    try {
+      const { facultyId, slotId } = req.params;
+      validateObjectId(facultyId);
+      validateObjectId(slotId);
+      const { isAvailable } = availabilitySchema.parse(req.body);
+
+      const validFacultyId = facultyId as string;
+      const validSlotId = slotId as string;
+
+      await this._setFacultySlotAvailabilityUseCase.execute({
+        facultyId: validFacultyId,
+        mode: "slot",
+        slotId: validSlotId,
+        isAvailable,
+      });
+
+      res.status(HttpStatusCode.OK).json({
+        success: true,
+        message: ResponseMessages.SUCCESS,
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async updateChapterSlotAvailability(req: Request, res: Response) {
+    try {
+      const { facultyId, chapterId } = req.params;
+      validateObjectId(facultyId);
+      validateObjectId(chapterId);
+      const { isAvailable } = availabilitySchema.parse(req.body);
+
+      const validFacultyId = facultyId as string;
+      const validChapterId = chapterId as string;
+
+      await this._setFacultySlotAvailabilityUseCase.execute({
+        facultyId: validFacultyId,
+        mode: "chapter",
+        chapterId: validChapterId,
+        isAvailable,
+      });
+
+      res.status(HttpStatusCode.OK).json({
+        success: true,
+        message: ResponseMessages.SUCCESS,
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async blockFaculty(req: Request, res: Response): Promise<void> {
+    try {
+      const facultyId = req.params.id;
+      validateObjectId(facultyId);
+      await this._blockFacultyUseCase.execute(facultyId!);
+      res.status(HttpStatusCode.OK).json({
+        message: ResponseMessages.FACULTY_BLOCKED,
+        success: true,
+      });
+    } catch (error) {
+      console.log("Error in blocking faculty:", error);
+      handleError(res, error);
+    }
+  }
+
+  async unblockFaculty(req: Request, res: Response): Promise<void> {
+    try { 
+      const facultyId = req.params.id;
+      validateObjectId(facultyId);
+      await this._unblockFacultyUseCase.execute(facultyId!);
+      res.status(HttpStatusCode.OK).json({
+        message: ResponseMessages.FACULTY_UNBLOCKED,
+        success: true,
+      });
+    } catch (error) {
+      console.log("Error in unblocking faculty:", error);
       handleError(res, error);
     }
   }

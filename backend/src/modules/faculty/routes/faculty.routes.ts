@@ -49,6 +49,27 @@ router.post('/:id/chapterSlots',
   (req, res) => facultyController.facultyAddChapterSlots(req, res)
 );
 
+router.patch(
+  "/:id/block",
+  (req, res) => facultyController.blockFaculty(req, res),
+);
+
+
+router.patch(
+  "/:id/unblock",
+  (req, res) => facultyController.unblockFaculty(req, res),
+);
+
+router.patch(
+  "/:facultyId/slots/:slotId",
+  (req, res) => facultyController.updateSlotAvailability(req, res),
+);
+
+router.patch(
+  "/:facultyId/chapter-slots/:chapterId",
+  (req, res) => facultyController.updateChapterSlotAvailability(req, res),
+);
+
 
 
 

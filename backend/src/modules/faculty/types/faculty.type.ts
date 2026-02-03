@@ -128,3 +128,13 @@ export type FacultyDetailsViewForUser = FacultyViewForUser & {
   slot: FacultySlotView | FacultyChapterSlotView;
 };
 
+export type SlotMode = "slot" | "chapter";
+
+export interface SetSlotAvailabilityDto {
+  facultyId: string;
+  mode: SlotMode;
+  slotId?: string;      
+  chapterId?: string;   
+  isAvailable: boolean;
+}
+

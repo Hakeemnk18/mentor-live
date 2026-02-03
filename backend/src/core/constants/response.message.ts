@@ -119,6 +119,9 @@ export const ResponseMessages = {
   FACULTY_DESCRIPTION_INVALID: "Faculty description is invalid",
   FACULTY_DEMO_CLASS_INVALID: "Faculty demo class link is invalid",
   FACULTY_IMAGE_INVALID: "Faculty image URL is invalid",
+  FACULTY_ALREADY_BLOCKED: "Faculty already deleted",
+  FACULTY_ALREADY_UNBLOCKED: "Faculty already unblocked",
+  FACULTY_UNBLOCKED: "Faculty successfully unblocked",
 
   FACULTY_CREATION_FAILED: "Failed to create faculty",
   FACULTY_UPDATE_FAILED: "Failed to update faculty",
@@ -126,6 +129,11 @@ export const ResponseMessages = {
   FACULTY_RESTORE_FAILED: "Failed to restore faculty",
   INVALID_FACULTY_LIST_TYPE: "Invalid faculty list type",
   CHAPTER_SLOT_NOT_FOUND: "Chapter slot not found",
+  FACULTY_BLOCKED:" Faculty is blocked",
+
+  SLOT_ALREADY_BLOCKED: "Slot is already blocked",
+  SLOT_ALREADY_UNBLOCKED: "Slot is already unblocked",
+  SLOT_POOL_NOT_EMPTY:"Cannot block slot as there are students in the pooling list",
 
   SLOT_TIME_NOT_VALID: "Slot times are not valid",
   SLOT_ADDED_SUCCESS: "Slot added successfully",
