@@ -16,6 +16,7 @@ import type {
   FacultyPopulatedLean,
   FacultyView,
   FacultyViewForUser,
+  SetSlotAvailabilityDto,
   SlotProps,
 } from "../types/faculty.type.js";
 import { _null } from "zod/v4/core";
@@ -167,6 +168,18 @@ export class FacultyRepository implements IFacultyRepository {
         },
       },
       {
+        $group: {
+          _id: "$_id",
+          name: { $first: "$name" },
+          price: { $first: "$price" },
+          image: { $first: "$image" },
+          qualifications: { $first: "$qualifications" },
+          demoClass: { $first: "$demoClass" },
+          description: { $first: "$description" },
+          createdAt: { $first: "$createdAt" },
+        },
+      },
+      {
         $facet: {
           data: [
             { $sort: sort },
@@ -190,6 +203,7 @@ export class FacultyRepository implements IFacultyRepository {
     ]);
 
     const data = documents[0]?.data ?? [];
+
     const total = documents[0]?.totalCount[0]?.count ?? 0;
 
     const faculties = data.map(FacultyMapper.toView);
@@ -462,7 +476,6 @@ export class FacultyRepository implements IFacultyRepository {
         },
       },
     ]);
-    console.log(documents);
 
     const doc = documents?.[0];
     if (!doc) return null;
@@ -826,7 +839,10 @@ export class FacultyRepository implements IFacultyRepository {
     }
   }
 
-  async removeUserFromPool(params: RemoveUserFromPoolDto, session: ClientSession): Promise<void> {
+  async removeUserFromPool(
+    params: RemoveUserFromPoolDto,
+    session: ClientSession,
+  ): Promise<void> {
     const { facultyId, userId, mode } = params;
 
     let updateQuery: any;
@@ -859,6 +875,56 @@ export class FacultyRepository implements IFacultyRepository {
         arrayFilters,
         session,
       },
+    );
+
+    if (result.matchedCount === 0) {
+      throw new Error("Faculty not found");
+    }
+  }
+
+  //block and unblock slots and chapter slots
+
+  async setSlotAvailability(
+    params: SetSlotAvailabilityDto,
+    
+  ): Promise<void> {
+    const { facultyId, mode, isAvailable } = params;
+
+    let updateQuery: any;
+    let arrayFilters: any[] = []
+
+    if (mode === "slot") {
+      if (!params.slotId) {
+        throw new Error("slotId is required for slot mode");
+      }
+
+      updateQuery = {
+        $set: {
+          "slots.$[s].isAvailable": isAvailable,
+        },
+      };
+
+      arrayFilters = [{ "s._id": new Types.ObjectId(params.slotId) }];
+    }
+
+    if (mode === "chapter") {
+      if (!params.chapterId) {
+        throw new Error("chapterId is required for chapter mode");
+      }
+
+      updateQuery = {
+        $set: {
+          "chapterSlots.$[c].isAvailable": isAvailable,
+        },
+      };
+
+      arrayFilters = [{ "c.chapter": new Types.ObjectId(params.chapterId) }];
+    }
+
+    const result = await FacultyModel.updateOne(
+      { _id: facultyId },
+      updateQuery,
+      { arrayFilters},
     );
 
     if (result.matchedCount === 0) {

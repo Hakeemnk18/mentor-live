@@ -9,6 +9,7 @@ export const validateObjectId = (id: string | undefined)=> {
   if (!id) {
     throw new CustomError(ResponseMessages.ID_MISSING,HttpStatusCode.BAD_REQUEST)
   }
+  
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new CustomError(ResponseMessages.INVALID_ID,HttpStatusCode.BAD_REQUEST)

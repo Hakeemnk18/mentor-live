@@ -21,6 +21,12 @@ import type { IGetFacultyDetailsByChapterUseCase } from "../modules/faculty/use-
 import { GetFacultyDetailsByChapterUseCase } from "../modules/faculty/use-cases/get.faculty.details.by.chapter.use-case.js";
 import type { IGetFacultyDetailsBySlotUseCase } from "../modules/faculty/use-cases/interfaces/get.faculty.details.by.slot.use-case.interface.js";
 import { GetFacultyDetailsBySlotUseCase } from "../modules/faculty/use-cases/get.faculty.details.by.slot.use-case.js";
+import type { IBlockFacultyUseCase } from "../modules/faculty/use-cases/interfaces/block.faculty.use-case.interface.js";
+import { BlockFacultyUseCase } from "../modules/faculty/use-cases/block.faculty.use-case.js";
+import type { IUnblockFacultyUseCase } from "../modules/faculty/use-cases/interfaces/unblock.faculty.interface.js";
+import { UnblockFacultyUseCase } from "../modules/faculty/use-cases/unblock.faculty.js";
+import type { ISetFacultySlotAvailabilityUseCase } from "../modules/faculty/use-cases/interfaces/set.faculty.slot.availability.usecase.interface.js";
+import { SetFacultySlotAvailabilityUseCase } from "../modules/faculty/use-cases/set.faculty.slot.availability.usecase.js";
 
 export const registerFacultyDependencies = () => {
   container.register<IFacultyRepository>("IFacultyRepository", {
@@ -66,4 +72,16 @@ export const registerFacultyDependencies = () => {
   container.register<IGetFacultyDetailsBySlotUseCase>("IGetFacultyDetailsBySlotUseCase", {
     useClass: GetFacultyDetailsBySlotUseCase,
   })
+
+  container.register<IBlockFacultyUseCase>("IBlockFacultyUseCase", {
+    useClass: BlockFacultyUseCase,
+  });
+
+  container.register<IUnblockFacultyUseCase>("IUnblockFacultyUseCase", {
+    useClass: UnblockFacultyUseCase,
+  });
+
+  container.register<ISetFacultySlotAvailabilityUseCase>("ISetFacultySlotAvailabilityUseCase", {
+    useClass: SetFacultySlotAvailabilityUseCase,
+  });
 };
