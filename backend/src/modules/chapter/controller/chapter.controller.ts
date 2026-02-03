@@ -22,6 +22,7 @@ import { CreateChapterSchema, type CreateChapterRequestDto } from "../dtos/creat
 import { FindByClassSyllabusQuerySchema } from "../../../core/shared/dtos/get.by.class.and.subject.dto.js";
 import { parseListQuery } from "../../../core/utils/parse.list.query.helper.js";
 import { ChapterListQuerySchema } from "../dtos/get.chapter.dto.js";
+import type { IGetChapterNameUseCase } from "../use-cases/interfaces/get.chapter.name.use-case.interface.js";
 
 @injectable()
 export class ChapterController implements IChapterController {
@@ -42,7 +43,10 @@ export class ChapterController implements IChapterController {
     private readonly _blockChapterUseCase: IBlockChapterUseCase,
 
     @inject("IUnblockChapterUseCase")
-    private readonly _unblockChapterUseCase: IUnblockChapterUseCase
+    private readonly _unblockChapterUseCase: IUnblockChapterUseCase,
+
+    @inject("IGetChapterNameUseCase")
+    private readonly _getChapterNameUseCase: IGetChapterNameUseCase
   ) {}
 
   /** 🏗️ Create chapter (Admin) */
@@ -157,6 +161,20 @@ export class ChapterController implements IChapterController {
       });
     } catch (error) {
       console.log("Error in unblockChapter:", error);
+      handleError(res, error);
+    }
+  }
+
+  async getChapterNameAndId(req: Request, res: Response): Promise<void> {
+    try {
+      const chapters = await this._getChapterNameUseCase.execute();
+      res.status(HttpStatusCode.OK).json({
+        success: true,
+        message: ResponseMessages.SUCCESS,
+        data: chapters,
+      });
+    } catch (error) {
+      console.log("Error in getChapterNameAndId:", error);
       handleError(res, error);
     }
   }

@@ -135,14 +135,14 @@ export class FacultyRepository implements IFacultyRepository {
   async findAllFacultyForAdmin(
     allDoc: AcademicListFiltersBase,
   ): Promise<{ data: FacultyView[]; total: number }> {
-    const { page, limit, classId, syllabusId, subjectId, search, sort } =
+    const { page, limit, classId, syllabusId, subjectId, search, sort, isDeleted } =
       allDoc;
     const skip = (page - 1) * limit;
 
     const documents = await FacultyModel.aggregate([
       {
         $match: {
-          isDeleted: false,
+          isDeleted: isDeleted,
           ...(search && {
             name: { $regex: search, $options: "i" },
           }),

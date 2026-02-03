@@ -149,4 +149,15 @@ export class ChapterRepository implements IChapterRepository {
   async countDocument(query: Record<string, any>): Promise<number> {
     return await ChapterModel.countDocuments(query);
   }
+
+  async findAllNames(): Promise<{ id: string; name: string }[]> {
+    const documents = await ChapterModel.find({ isDeleted: false }).select({
+      name: 1,
+    }).lean();
+    return documents.map((doc) => ({
+      id: doc._id.toString(),
+      name: doc.name,
+    }));
+  }
+  
 }

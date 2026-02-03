@@ -16,7 +16,7 @@ export class GetAllFacultyForAdminUseCase
   async execute(
     dto: FindByClassSyllabusQueryDto
   ): Promise<{ data: FacultyView[]; total: number }> {
-    const { syllabusId, classId, subjectId, sortValue, limit, search, page } = dto;
+    const { syllabusId, classId, subjectId, sortValue, limit, search, page, isDeleted } = dto;
     
 
     const sort = buildFacultySort(sortValue)
@@ -29,6 +29,7 @@ export class GetAllFacultyForAdminUseCase
       classId,
       syllabusId,
       sort,
+      isDeleted
     });
 
     return { data, total }

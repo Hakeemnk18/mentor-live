@@ -38,6 +38,7 @@ export class GetChaptersForUserUseCase implements IGetChaptersForUserUseCase {
       classId,
       syllabusId,
       sort,
+      isDeleted: false
     });
     return data;
   }
