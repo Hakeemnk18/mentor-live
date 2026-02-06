@@ -1,4 +1,4 @@
-import Types from "mongoose"
+import Types from "mongoose";
 import type {
   IdNameView,
   IdOnlyView,
@@ -77,11 +77,9 @@ export interface FacultyFullAdminView extends Omit<FacultyView, "id"> {
   subjectOffering: FacultySubjectOfferingView[];
 }
 
-
-export type FacultyPopulatedLean = Omit<IFaculty, 
-  | "subjectOffering"
-  | "chapterSlots"
-  | "slots"
+export type FacultyPopulatedLean = Omit<
+  IFaculty,
+  "subjectOffering" | "chapterSlots" | "slots"
 > & {
   _id: Types.ObjectId;
 
@@ -120,16 +118,23 @@ export type FacultyClassAndSyllabusSearchFilters = {
 
 export type FacultyViewForUser = Pick<
   FacultyProps,
-  | "id"
-  | "name"
-  | "qualifications"
-  | "description"
-  | "price"
+  "id" | "name" | "qualifications" | "description" | "price"
 > & {
   image: string;
 };
 
 export type FacultyDetailsViewForUser = FacultyViewForUser & {
-  demoClass: string,
-  slot: FacultySlotView | FacultyChapterSlotView
+  demoClass: string;
+  slot: FacultySlotView | FacultyChapterSlotView;
 };
+
+export type SlotMode = "slot" | "chapter";
+
+export interface SetSlotAvailabilityDto {
+  facultyId: string;
+  mode: SlotMode;
+  slotId?: string;      
+  chapterId?: string;   
+  isAvailable: boolean;
+}
+

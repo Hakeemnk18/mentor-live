@@ -1,3 +1,5 @@
+import { registerBannerDependencies } from "./banner.container.js";
+import { registerBlogDependencies } from "./blog.container.js";
 import { registerBookingDependencies } from "./booking.container.js";
 import { registerChapterDependencies } from "./chapter.container.js";
 import { registerClassDependencies } from "./class.container.js";
@@ -8,6 +10,7 @@ import { registerStudentDependencies } from "./student.container.js";
 import { registerSubjectDependencies } from "./subject.container.js";
 import { registerSubjectVariantDependencies } from "./subject.variant.container.js";
 import { registerSyllabusDependencies } from "./syllabus.container.js";
+import { registerTestimonialDependencies } from "./testimonial.container.js";
 import { registerUserDependencies } from "./user.container.js";
 
 
@@ -22,6 +25,9 @@ registerChapterDependencies()
 registerFacultyDependencies()
 registerStudentDependencies()
 registerBookingDependencies()
+registerBannerDependencies()
+registerTestimonialDependencies()
+registerBlogDependencies()
 
 
 export { container } from "tsyringe";

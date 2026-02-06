@@ -12,10 +12,13 @@ import type {
   AdminPoolingStudentRaw,
   AdminPoolingView,
   ExistingBookingProps,
+  ExpireOtherBookingsForSlotParams,
+  GetBookingsFromSlotParams,
 } from "../type/booking.type.js";
 import type { IBookingRepository } from "./booking.repository.interface.js";
 import type { GetOneToOneBookingUseCase } from "../use-cases/get.one.to.one.booking.use-case.js";
 import type { GetAdminPoolingStudentsDto } from "../dto/get.pooling.students.dto.js";
+import type { ClientSession } from "mongoose";
 const { ObjectId } = Types;
 
 export class BookingRepository implements IBookingRepository {
@@ -113,7 +116,7 @@ export class BookingRepository implements IBookingRepository {
       type,
       mode,
       isDeleted,
-      status: { $ne: "cancelled" },
+      status: { $nin: ["cancelled", "expired"] },
     };
 
     if (mode === "chapter") {
@@ -634,7 +637,7 @@ export class BookingRepository implements IBookingRepository {
   ): Promise<AdminPoolingStudentRaw[]> {
     const pipeline: any[] = [];
     const { facultyId, slotId, chapterId, mode } = dto;
-    
+
     /* 1️⃣ Base match */
     pipeline.push({
       $match: {
@@ -831,4 +834,124 @@ export class BookingRepository implements IBookingRepository {
       await BookingModel.aggregate<AdminPoolingStudentRaw>(pipeline);
     return documents.map(BookingMapper.mapAdminPoolingStudentView);
   }
+
+  async expireOtherBookingsForSlots(
+    params: ExpireOtherBookingsForSlotParams,
+    session: ClientSession,
+  ): Promise<void> {
+    const { facultyId, slotIds, excludeBookingIds } = params;
+
+    await BookingModel.updateMany(
+      {
+        facultyId,
+        slotId: { $in: slotIds },
+        mode: "slot",
+        status: "interested",
+        isDeleted: false,
+        _id: { $nin: excludeBookingIds },
+      },
+      {
+        $set: {
+          status: "expired",
+        },
+      },
+      session ? { session } : undefined,
+    );
+  }
+
+  async getBookingIds(params: GetBookingsFromSlotParams): Promise<string[]> {
+    const { facultyId, userIds, mode } = params;
+
+    const query: Record<string, any> = {
+      facultyId,
+      mode,
+      status: "interested",
+      type: "pooling",
+      isDeleted: false,
+      userId: { $in: userIds },
+    };
+
+    if (mode === "slot") {
+      query.slotId = { $in: params.slotIds };
+    }
+
+    if (mode === "chapter") {
+      query.chapterId = params.chapterId;
+    }
+
+    const docs = await BookingModel.find(query, { _id: 1 });
+
+    return docs.map((d) => d._id.toString());
+  }
+
+  async confirmPoolingBookings(
+    ids: string[],
+    session: ClientSession,
+  ): Promise<number> {
+    const result = await BookingModel.updateMany(
+      {
+        _id: { $in: ids },
+        status: "interested",
+        isDeleted: false,
+      },
+      {
+        $set: {
+          status: "confirmed",
+        },
+      },
+      { session },
+    );
+
+    return result.modifiedCount;
+  }
+
+  async addSlotsToBookings(
+    bookingIds: string[],
+    slotIds: string[],
+    session: ClientSession,
+  ): Promise<void> {
+    const result = await BookingModel.updateMany(
+      {
+        _id: { $in: bookingIds },
+        status: "confirmed",
+        isDeleted: false,
+      },
+      {
+        $set: {
+          slotId: slotIds, 
+        },
+      },
+      { session },
+    );
+
+    if (result.matchedCount === 0) {
+      throw new Error("No bookings matched for adding slots");
+    }
+  }
+
+  async findByQuery(query: Record<string, any>): Promise<Booking | null> {
+    const foundDocument = await BookingModel.findOne(query).lean();
+    return BookingMapper.toDomain(foundDocument);
+  }
+
+  async cancelBookingsByIds(bookingIds: string[], session: ClientSession): Promise<void> {
+    const result =await BookingModel.updateMany(
+      { 
+        _id: { $in: bookingIds },
+        status: { $ne: "cancelled" },
+        isDeleted: false,
+      },
+      {
+        $set: {
+          status: "cancelled",
+        },
+      },
+      { session },
+    );
+
+    if (result.matchedCount === 0) {
+      throw new Error("No bookings matched for  cancellation");
+    }
+  } 
+
 }

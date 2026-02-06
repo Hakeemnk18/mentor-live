@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { Types, type ClientSession } from "mongoose";
 import { HttpStatusCode } from "../../../core/constants/http.status.codes.js";
 import { ResponseMessages } from "../../../core/constants/response.message.js";
 import { CustomError } from "../../../core/errors/custom.error.js";
@@ -16,9 +16,12 @@ import type {
   FacultyPopulatedLean,
   FacultyView,
   FacultyViewForUser,
+  SetSlotAvailabilityDto,
   SlotProps,
 } from "../types/faculty.type.js";
 import { _null } from "zod/v4/core";
+import type { AddChapterSlotRequestDto } from "../dtos/add.chapter.dto.js";
+import type { RemoveUserFromPoolDto } from "../../booking/dto/remove.student.from.pooling.dto.js";
 
 const { ObjectId } = Types;
 
@@ -90,17 +93,56 @@ export class FacultyRepository implements IFacultyRepository {
     return domainFaculty;
   }
 
+  async addSlots(facultyId: string, slots: { time: Date }[]): Promise<void> {
+    await FacultyModel.updateOne(
+      { _id: facultyId },
+      {
+        $push: {
+          slots: {
+            $each: slots.map((s) => ({
+              time: s.time,
+              isAvailable: true,
+              pool: [],
+              poolLimit: 5,
+            })),
+          },
+        },
+      },
+    );
+  }
+  async addChapterSlots(
+    facultyId: string,
+    slots: AddChapterSlotRequestDto,
+  ): Promise<void> {
+    const { chapterSlots } = slots;
+    await FacultyModel.updateOne(
+      { _id: facultyId },
+      {
+        $push: {
+          chapterSlots: {
+            $each: chapterSlots.map((s) => ({
+              chapter: s.chapter,
+              isAvailable: true,
+              pool: [],
+              poolLimit: 5,
+            })),
+          },
+        },
+      },
+    );
+  }
+
   async findAllFacultyForAdmin(
     allDoc: AcademicListFiltersBase,
   ): Promise<{ data: FacultyView[]; total: number }> {
-    const { page, limit, classId, syllabusId, subjectId, search, sort } =
+    const { page, limit, classId, syllabusId, subjectId, search, sort, isDeleted } =
       allDoc;
     const skip = (page - 1) * limit;
 
     const documents = await FacultyModel.aggregate([
       {
         $match: {
-          isDeleted: false,
+          isDeleted: isDeleted,
           ...(search && {
             name: { $regex: search, $options: "i" },
           }),
@@ -123,6 +165,18 @@ export class FacultyRepository implements IFacultyRepository {
           ...(classId && { "sv.class": new ObjectId(classId) }),
           ...(syllabusId && { "sv.syllabus": new ObjectId(syllabusId) }),
           ...(subjectId && { "sv.subject": new ObjectId(subjectId) }),
+        },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          name: { $first: "$name" },
+          price: { $first: "$price" },
+          image: { $first: "$image" },
+          qualifications: { $first: "$qualifications" },
+          demoClass: { $first: "$demoClass" },
+          description: { $first: "$description" },
+          createdAt: { $first: "$createdAt" },
         },
       },
       {
@@ -149,6 +203,7 @@ export class FacultyRepository implements IFacultyRepository {
     ]);
 
     const data = documents[0]?.data ?? [];
+
     const total = documents[0]?.totalCount[0]?.count ?? 0;
 
     const faculties = data.map(FacultyMapper.toView);
@@ -421,7 +476,6 @@ export class FacultyRepository implements IFacultyRepository {
         },
       },
     ]);
-    console.log(documents);
 
     const doc = documents?.[0];
     if (!doc) return null;
@@ -657,6 +711,224 @@ export class FacultyRepository implements IFacultyRepository {
         ResponseMessages.SLOT_NOT_FOUND,
         HttpStatusCode.BAD_REQUEST,
       );
+    }
+  }
+
+  async consumeSlot(
+    facultyId: string,
+    slotId: string,
+    session?: ClientSession,
+  ): Promise<void> {
+    const result = await FacultyModel.updateOne(
+      {
+        _id: new ObjectId(slotId),
+        slots: {
+          $elemMatch: {
+            _id: new ObjectId(slotId),
+            isAvailable: true,
+          },
+        },
+      },
+      {
+        $set: {
+          "slots.$.isAvailable": false,
+          "slots.$.pool": [],
+        },
+      },
+      session ? { session } : undefined,
+    );
+
+    if (result.modifiedCount === 0) {
+      throw new CustomError(
+        ResponseMessages.SLOT_TIME_NOT_AVAILABLE,
+        HttpStatusCode.CONFLICT,
+      );
+    }
+  }
+
+  async consumeSlots(
+    facultyId: string,
+    slotIds: string[],
+    session?: ClientSession,
+  ): Promise<void> {
+    const result = await FacultyModel.updateOne(
+      {
+        _id: facultyId,
+        "slots._id": { $in: slotIds },
+        "slots.isAvailable": true,
+      },
+      {
+        $set: {
+          "slots.$[s].isAvailable": false,
+          "slots.$[s].pool": [],
+        },
+      },
+      {
+        arrayFilters: [
+          {
+            "s._id": { $in: slotIds },
+            "s.isAvailable": true,
+          },
+        ],
+        ...(session ? { session } : {}),
+      },
+    );
+
+    if (result.modifiedCount === 0) {
+      throw new CustomError(
+        ResponseMessages.SLOT_TIME_NOT_AVAILABLE,
+        HttpStatusCode.CONFLICT,
+      );
+    }
+  }
+
+  async getAllSlots(facultyId: string): Promise<SlotProps[]> {
+    const faculty = await FacultyModel.findOne(
+      { _id: facultyId, isDeleted: false },
+      { slots: 1 },
+    ).lean();
+
+    if (!faculty || !faculty.slots || faculty.slots.length === 0) {
+      return [];
+    }
+
+    return faculty.slots.map((slot: any) => ({
+      id: slot._id.toString(),
+      time: slot.time,
+      isAvailable: slot.isAvailable,
+      pool: slot.pool.map((u: any) => u.toString()),
+      poolLimit: slot.poolLimit,
+    }));
+  }
+
+  async consumeChapterSlot(
+    facultyId: string,
+    chapterId: string,
+    session: ClientSession,
+  ): Promise<void> {
+    const result = await FacultyModel.updateOne(
+      {
+        _id: new ObjectId(facultyId),
+        chapterSlots: {
+          $elemMatch: {
+            chapter: new ObjectId(chapterId),
+          },
+        },
+      },
+      {
+        $set: {
+          "chapterSlots.$[s].pool": [],
+        },
+      },
+      {
+        arrayFilters: [
+          {
+            "s.chapter": new ObjectId(chapterId),
+            "s.isAvailable": true,
+          },
+        ],
+        session,
+      },
+    );
+
+    if (result.modifiedCount === 0) {
+      throw new CustomError(
+        ResponseMessages.CHAPTER_SLOT_NOT_FOUND,
+        HttpStatusCode.NOT_FOUND,
+      );
+    }
+  }
+
+  async removeUserFromPool(
+    params: RemoveUserFromPoolDto,
+    session: ClientSession,
+  ): Promise<void> {
+    const { facultyId, userId, mode } = params;
+
+    let updateQuery: any;
+    let arrayFilters: any[] = [];
+
+    if (mode === "chapter") {
+      updateQuery = {
+        $pull: {
+          "chapterSlots.$[c].pool": userId,
+        },
+      };
+
+      arrayFilters = [{ "c.chapter": new Types.ObjectId(params.chapterId) }];
+    }
+
+    if (mode === "slot") {
+      updateQuery = {
+        $pull: {
+          "slots.$[s].pool": userId,
+        },
+      };
+
+      arrayFilters = [{ "s._id": new Types.ObjectId(params.slotId) }];
+    }
+
+    const result = await FacultyModel.updateOne(
+      { _id: facultyId },
+      updateQuery,
+      {
+        arrayFilters,
+        session,
+      },
+    );
+
+    if (result.matchedCount === 0) {
+      throw new Error("Faculty not found");
+    }
+  }
+
+  //block and unblock slots and chapter slots
+
+  async setSlotAvailability(
+    params: SetSlotAvailabilityDto,
+    
+  ): Promise<void> {
+    const { facultyId, mode, isAvailable } = params;
+
+    let updateQuery: any;
+    let arrayFilters: any[] = []
+
+    if (mode === "slot") {
+      if (!params.slotId) {
+        throw new Error("slotId is required for slot mode");
+      }
+
+      updateQuery = {
+        $set: {
+          "slots.$[s].isAvailable": isAvailable,
+        },
+      };
+
+      arrayFilters = [{ "s._id": new Types.ObjectId(params.slotId) }];
+    }
+
+    if (mode === "chapter") {
+      if (!params.chapterId) {
+        throw new Error("chapterId is required for chapter mode");
+      }
+
+      updateQuery = {
+        $set: {
+          "chapterSlots.$[c].isAvailable": isAvailable,
+        },
+      };
+
+      arrayFilters = [{ "c.chapter": new Types.ObjectId(params.chapterId) }];
+    }
+
+    const result = await FacultyModel.updateOne(
+      { _id: facultyId },
+      updateQuery,
+      { arrayFilters},
+    );
+
+    if (result.matchedCount === 0) {
+      throw new Error("Faculty not found");
     }
   }
 }

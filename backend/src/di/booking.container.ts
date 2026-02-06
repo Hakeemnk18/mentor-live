@@ -9,6 +9,16 @@ import type { IGetPoolingBookingUseCase } from "../modules/booking/use-cases/int
 import { GetPoolingBookingUseCase } from "../modules/booking/use-cases/get.pooling.booking.use-case.js";
 import type { IGetPoolingStudentsUseCase } from "../modules/booking/use-cases/interfaces/get.pooling.students.use-case.interface.js";
 import { GetPoolingStudentsUseCase } from "../modules/booking/use-cases/get.pooling.students.use-case.js";
+import type { IConfirmChapterOneToOneBookingUseCase } from "../modules/booking/use-cases/interfaces/confirm.chapter.one.to.one.booking.use-case.interface.js";
+import { ConfirmChapterOneToOneBookingUseCase } from "../modules/booking/use-cases/confirm.chapter.one.to.one.use-case.js";
+import type { IConfirmOneToOneBookingUseCase } from "../modules/booking/use-cases/interfaces/confirm.one.to.one.booking.use-case.interface.js";
+import { ConfirmOneToOneBookingUseCase } from "../modules/booking/use-cases/confirm.one.to.one.booking.use-case.js";
+import type { IConfirmPoolingBookingUseCase } from "../modules/booking/use-cases/interfaces/confirm.pooling.booking.use-case.interface.js";
+import { ConfirmPoolingBookingUseCase } from "../modules/booking/use-cases/confirm.pooling.booking.use-case.js";
+import type { IConfirmChapterPoolingBookingUseCase } from "../modules/booking/use-cases/interfaces/confirm.chapter.pooling.booking.interface.js";
+import { ConfirmChapterPoolingBookingUseCase } from "../modules/booking/use-cases/confirm.chapter.pooling.booking.js";
+import type { IRemoveStudentFromPoolingUseCase } from "../modules/booking/use-cases/interfaces/remove.student.from.pooling.use-case.interface.js";
+import { RemoveStudentFromPoolingUseCase } from "../modules/booking/use-cases/remove.student.from.pooling.use-case.js";
 
 export const registerBookingDependencies = () => {
   
@@ -31,4 +41,24 @@ export const registerBookingDependencies = () => {
     container.register<IGetPoolingStudentsUseCase>("IGetPoolingStudentsUseCase", {
         useClass: GetPoolingStudentsUseCase,
     });
+
+    container.register<IConfirmChapterOneToOneBookingUseCase>("IConfirmChapterOneToOneBookingUseCase", {
+        useClass: ConfirmChapterOneToOneBookingUseCase,
+    });
+
+    container.register<IConfirmOneToOneBookingUseCase>("IConfirmOneToOneBookingUseCase", {
+        useClass: ConfirmOneToOneBookingUseCase,
+    });
+
+    container.register<IConfirmPoolingBookingUseCase>("IConfirmPoolingBookingUseCase",
+        { useClass: ConfirmPoolingBookingUseCase}
+    )
+
+    container.register<IConfirmChapterPoolingBookingUseCase>("IConfirmChapterPoolingBookingUseCase",
+        { useClass: ConfirmChapterPoolingBookingUseCase}
+    )
+
+    container.register<IRemoveStudentFromPoolingUseCase>("IRemoveStudentFromPoolingUseCase",
+        { useClass: RemoveStudentFromPoolingUseCase}
+    )
 };

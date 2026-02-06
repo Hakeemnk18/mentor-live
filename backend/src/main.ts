@@ -12,6 +12,10 @@ import registerChapterModule from "./modules/chapter/chapter.module.js";
 import registerFacultyModule from "./modules/faculty/faculty.module.js";
 import registerMediaModule from "./modules/media/media.module.js";
 import registerBookingModule from "./modules/booking/booking.module.js";
+import registerStudentsModule from "./modules/student/student.module.js";
+import registerBannerModule from "./modules/banner/banner.module.js";
+import registerTestimonialModule from "./modules/testimonial/testimonial.module.js";
+import registerBlogModule from "./modules/blog/blog.module.js";
 
 
 
@@ -36,6 +40,10 @@ const startServer = async () => {
         registerChapterModule(expressApp)
         registerFacultyModule(expressApp)
         registerBookingModule(expressApp)
+        registerStudentsModule(expressApp)
+        registerBannerModule(expressApp)
+        registerTestimonialModule(expressApp)
+        registerBlogModule(expressApp)
         
 
 

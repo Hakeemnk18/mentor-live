@@ -1,8 +1,13 @@
-import type { Request, Response } from 'express';
+import type { Request, Response } from "express";
 
 export interface IBookingController {
-    createBooking(req: Request, res: Response): Promise<void>;
-    getAllOneToOneBooking(req: Request, res: Response): Promise<void>;
-    getAllPoolingBooking(req: Request, res: Response): Promise<void>;
-    getPoolingStudents(req: Request, res: Response): Promise<void>;
+  createBooking(req: Request, res: Response): Promise<void>;
+  getAllOneToOneBooking(req: Request, res: Response): Promise<void>;
+  getAllPoolingBooking(req: Request, res: Response): Promise<void>;
+  getPoolingStudents(req: Request, res: Response): Promise<void>;
+  confirmOneToOneBooking(req: Request, res: Response): Promise<void>;
+  confirmPoolingBookings(req: Request, res: Response): Promise<void>;
+  confirmChapterOneToOneBooking(req: Request, res: Response): Promise<void>;
+  confirmChapterPoolingBooking(req: Request, res: Response): Promise<void>;
+  removeStudentFromPooling(req: Request, res: Response): Promise<void>;
 }

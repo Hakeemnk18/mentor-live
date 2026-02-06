@@ -30,4 +30,30 @@ router.get('/pooling/students',
   (req,res)=> bookingController.getPoolingStudents(req, res)
 )
 
+router.patch(
+  "/one-to-one/slot/:bookingId/confirm",
+  (req, res) => bookingController.confirmOneToOneBooking(req, res)
+);
+
+router.patch(
+  "/one-to-one/chapter/:bookingId/confirm",
+  (req, res) =>
+    bookingController.confirmChapterOneToOneBooking(req, res)
+);
+
+router.patch(
+  "/pooling/slot/confirm",
+  (req, res) => bookingController.confirmPoolingBookings(req, res)
+);
+
+router.patch(
+  "/pooling/chapter/confirm",
+  (req, res) => bookingController.confirmChapterPoolingBooking(req, res)
+);
+
+router.patch(
+  "/pooling/remove-student",
+  (req, res) => bookingController.removeStudentFromPooling(req, res)
+);
+
 export default router;

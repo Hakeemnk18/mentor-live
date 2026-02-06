@@ -7,4 +7,5 @@ export interface IChapterController {
   getChaptersForAdmin(req: Request, res: Response): Promise<void>;
   blockChapter(req: Request, res: Response): Promise<void>;
   unblockChapter(req: Request, res: Response): Promise<void>;
+  getChapterNameAndId(req: Request, res: Response): Promise<void>;
 }

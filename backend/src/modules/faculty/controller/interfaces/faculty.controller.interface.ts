@@ -10,4 +10,8 @@ export interface IFacultyController {
   findAllFacultyForUser(req: Request, res: Response): Promise<void>
   getFacultyDetailsByChapter(req: Request, res: Response): Promise<void>
   getFacultyDetailsBySlot(req: Request, res: Response): Promise<void>
+  updateSlotAvailability(req: Request, res: Response): Promise<void>
+  updateChapterSlotAvailability(req: Request, res: Response): Promise<void>
+  blockFaculty(req: Request, res: Response): Promise<void>
+  unblockFaculty(req: Request, res: Response): Promise<void>
 }

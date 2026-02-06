@@ -10,4 +10,5 @@ export type AcademicListFiltersBase =
   classId: string | undefined;
   syllabusId: string | undefined;
   subjectId: string | undefined;
+  isDeleted: boolean
 };

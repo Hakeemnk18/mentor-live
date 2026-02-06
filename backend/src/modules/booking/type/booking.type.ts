@@ -2,7 +2,7 @@ import type { IdNameView, slotIdView } from "../../../core/shared/type/id.type.j
 
 export type BookingType = "oneToOne" | "pooling";
 export type BookingMode = "slot" | "chapter";
-export type BookingStatus = "interested" | "confirmed" | "cancelled";
+export type BookingStatus = "interested" | "confirmed" | "cancelled" | "expired";
 
 export type ExistingBookingProps = {
     studentId: string,
@@ -13,6 +13,27 @@ export type ExistingBookingProps = {
     chapterId: string | null,
     slotId: string | null
 }
+export type ExpireOtherBookingsForSlotParams = {
+  facultyId: string;
+  slotIds: string[];
+  excludeBookingIds: string[];
+  
+};
+
+export type GetBookingsFromSlotParams = | {
+      mode: "slot";
+      facultyId: string;
+      slotIds: string[];
+      userIds: string[];
+      chapterIds?: never;
+    }
+  | {
+      mode: "chapter";
+      facultyId: string;
+      chapterId: string;
+      userIds: string[];
+      slotIds?: never;
+    };
 
 export type AdminBookingRaw = {
   id: any; // ObjectId or string
