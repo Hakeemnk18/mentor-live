@@ -9,7 +9,14 @@ import type { Column } from "../components/AdminTable";
 import { getClasses } from "../../../api/class.api";
 import { getSyllabus } from "../../../api/syllabus.api";
 import { getSubjects } from "../../../api/subject.api";
-import { getFaculties } from "../../../api/faculty.api"; // 👈 you create this API
+import {
+  createFaculty,
+  getFaculties,
+  getFacultyById,
+} from "../../../api/faculty.api"; // 👈 you create this API
+import FacultyFormModal from "../components/FacultyFormModal";
+import type { CreateFacultyPayload } from "../../../shared/types/api.types";
+// import { createFaculty, updateFaculty } from "../../../api/faculty.api";
 
 /* ---------------- TYPES ---------------- */
 
@@ -22,6 +29,14 @@ type FacultyRow = {
   image: string;
   price: number;
   isDeleted: boolean;
+
+  // needed for edit
+  slots: { time: string }[];
+  chapterSlots: string[];
+  imageObj?: {
+    url: string;
+    publicId: string;
+  };
 };
 
 /* ---------------- COMPONENT ---------------- */
@@ -42,15 +57,19 @@ export default function FacultyPage() {
 
   const [totalPages, setTotalPages] = useState(1);
 
-  const [classesList, setClassesList] = useState<{ _id: string; name: string }[]>(
-    []
-  );
-  const [syllabusList, setSyllabusList] = useState<{ _id: string; name: string }[]>(
-    []
-  );
-  const [subjectList, setSubjectList] = useState<{ _id: string; name: string }[]>(
-    []
-  );
+  const [classesList, setClassesList] = useState<
+    { _id: string; name: string }[]
+  >([]);
+  const [syllabusList, setSyllabusList] = useState<
+    { _id: string; name: string }[]
+  >([]);
+  const [subjectList, setSubjectList] = useState<
+    { _id: string; name: string }[]
+  >([]);
+  const [formOpen, setFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit">("create");
+  const [saving, setSaving] = useState(false);
+  const [editingFaculty, setEditingFaculty] = useState<any | undefined>();
 
   /* ---------------- TABLE ---------------- */
 
@@ -141,14 +160,67 @@ export default function FacultyPage() {
   }, []);
 
   /* ---------------- UI ---------------- */
+  const openCreate = () => {
+    setFormMode("create");
+    setEditingFaculty(undefined);
+    setFormOpen(true);
+  };
+
+  const openEdit = async (row: any) => {
+    try {
+      setSaving(true);
+
+      const fullFaculty = await getFacultyById(row.id);
+      console.log("faculty edit result ", fullFaculty);
+
+      setEditingFaculty(fullFaculty);
+      setFormMode("edit");
+      setFormOpen(true);
+    } catch (err) {
+      toast.error("Failed to load faculty details");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCreate = async (data: CreateFacultyPayload) => {
+    try {
+      setSaving(true);
+      await createFaculty(data);
+      toast.success("Faculty created");
+      setFormOpen(false);
+      fetchFaculties();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.response?.data?.message || "Failed to create faculty");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdate = async (id: string, data: any) => {
+    try {
+      setSaving(true);
+      await updateFaculty(id, data);
+      toast.success("Faculty updated");
+      setFormOpen(false);
+      fetchFaculties();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.response?.data?.message || "Failed to update faculty");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <AdminPageContainer>
-      <AdminPageActions title="Faculties" actions={[]} />
-
+      <AdminPageActions
+        title="Faculty"
+        actions={[{ label: "Create Faculty", onClick: openCreate }]}
+      />
       {/* FILTER BAR */}
       <div className="flex flex-col md:flex-row md:items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
-
         {/* Search */}
         <div className="flex flex-col gap-1 w-full md:w-auto">
           <label className="text-xs font-medium text-gray-600">Search</label>
@@ -232,7 +304,9 @@ export default function FacultyPage() {
         <div className="flex flex-col gap-1 w-full md:w-auto">
           <label className="text-xs font-medium text-gray-600">Status</label>
           <select
-            value={isDeleted === undefined ? "" : isDeleted ? "deleted" : "active"}
+            value={
+              isDeleted === undefined ? "" : isDeleted ? "deleted" : "active"
+            }
             onChange={(e) => {
               setPage(1);
               if (e.target.value === "") setIsDeleted(undefined);
@@ -276,14 +350,7 @@ export default function FacultyPage() {
         <AdminTable
           data={faculties}
           columns={columns}
-          actions={[
-            {
-              label: "View",
-              onClick: (row) => {
-                console.log("View faculty:", row);
-              },
-            },
-          ]}
+          actions={[{ label: "Edit", onClick: openEdit }]}
           getRowId={(row) => row.id}
         />
       )}
@@ -314,6 +381,18 @@ export default function FacultyPage() {
           </button>
         </div>
       </div>
+      <FacultyFormModal
+        open={formOpen}
+        mode={formMode}
+        initialData={editingFaculty}
+        onClose={() => setFormOpen(false)}
+        loading={saving}
+        syllabuses={syllabusList}
+        classes={classesList}
+        subjects={subjectList}
+        onCreate={handleCreate}
+        onUpdate={handleUpdate}
+      />
     </AdminPageContainer>
   );
 }

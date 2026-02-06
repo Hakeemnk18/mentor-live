@@ -195,6 +195,17 @@ export type GetChaptersResult = {
   totalPages: number;
   total: number;
 };
+export type GetChaptersListParams = {
+  syllabusId: string;
+  classId: string;
+};
+
+export type ChapterListItem = {
+  _id: string;
+  name: string;
+  price: number;
+  icon: string;
+};
 
 export type SubjectVariantOption = {
   _id: string;
@@ -237,3 +248,27 @@ export type GetSubjectVariantsParams = {
   syllabusId: string;
 };
 
+export type CloudinaryUploadResult = {
+  url: string;
+  publicId: string;
+};
+
+export type FacultyImagePayload = {
+  url: string;
+  publicId: string;
+};
+
+export type FacultySlotPayload = {
+  time: string; // ISO string
+};
+
+export type CreateFacultyPayload = {
+  name: string;
+  qualifications: string[];
+  description: string;
+  demoClass: string;
+  image: FacultyImagePayload;
+  price: number;
+  subjects: string[];
+  slots: FacultySlotPayload[];
+};

@@ -1,23 +1,54 @@
-export const uploadToCloudinary = async (
-  file: File
-): Promise<string> => {
-  const formData = new FormData();
+export type CloudinaryUploadResult = {
+  url: string;
+  publicId: string;
+};
 
-  formData.append("file", file);
-  formData.append("upload_preset", import.meta.env.VITE_CLOUDINARY_PRESET);
+type UploadOptions = {
+  file: File;
+  uploadPreset: string;
+  cloudName: string;
+  onProgress?: (percent: number) => void;
+};
 
-  const res = await fetch(
-    import.meta.env.VITE_CLOUDINARY_UPLOAD_URL,
-    {
-      method: "POST",
-      body: formData,
-    }
-  );
+export const uploadToCloudinary = ({
+  file,
+  uploadPreset,
+  cloudName,
+  onProgress,
+}: UploadOptions): Promise<CloudinaryUploadResult> => {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const formData = new FormData();
 
-  if (!res.ok) {
-    throw new Error("Cloudinary upload failed");
-  }
+    formData.append("file", file);
+    formData.append("upload_preset", uploadPreset);
 
-  const data = await res.json();
-  return data.secure_url; // ✅ THIS is what backend needs
+    xhr.open(
+      "POST",
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`
+    );
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        onProgress(percent);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const res = JSON.parse(xhr.responseText);
+        resolve({
+          url: res.secure_url,
+          publicId: res.public_id,
+        });
+      } else {
+        reject(new Error("Upload failed"));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Upload failed"));
+
+    xhr.send(formData);
+  });
 };

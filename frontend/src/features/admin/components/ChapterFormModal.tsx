@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import ImageCropModal from "../../../shared/components/ImageCropModal/ImageCropModal";
 import { getSubjectVariants } from "../../../api/chapter.api";
+import { uploadToCloudinary } from "../../../shared/utils/cloudinary";
 
 /* ---------------- TYPES ---------------- */
 
@@ -55,7 +56,7 @@ type Props = {
       price: number;
       subjectVariant: string;
       icon: IconPayload;
-    }
+    },
   ) => Promise<void>;
 };
 
@@ -95,48 +96,48 @@ export default function ChapterFormModal({
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   /* ---------------- INIT ---------------- */
-useEffect(() => {
-  if (!open) {
-    // ✅ Clear validation when modal closes
+  useEffect(() => {
+    if (!open) {
+      // ✅ Clear validation when modal closes
+      setSubmitAttempted(false);
+      return;
+    }
+
+    if (mode === "edit" && initialData) {
+      setName(initialData.name);
+      setPrice(initialData.price);
+
+      // dropdowns intentionally reset
+      setSyllabusId("");
+      setClassId("");
+      setSubjectVariantId("");
+
+      setIcon(initialData.icon ?? null);
+      setIconPreview(initialData.icon?.url ?? null);
+
+      setIconFile(null);
+      setIsNewImage(false);
+    } else {
+      setName("");
+      setPrice(0);
+      setSyllabusId("");
+      setClassId("");
+      setSubjectVariantId("");
+
+      setIcon(null);
+      setIconPreview(null);
+      setIconFile(null);
+      setIsNewImage(false);
+    }
+
+    // ✅ Clear validation on open
     setSubmitAttempted(false);
-    return;
-  }
-
-  if (mode === "edit" && initialData) {
-    setName(initialData.name);
-    setPrice(initialData.price);
-
-    // dropdowns intentionally reset
-    setSyllabusId("");
-    setClassId("");
-    setSubjectVariantId("");
-
-    setIcon(initialData.icon ?? null);
-    setIconPreview(initialData.icon?.url ?? null);
-
-    setIconFile(null);
-    setIsNewImage(false);
-  } else {
-    setName("");
-    setPrice(0);
-    setSyllabusId("");
-    setClassId("");
-    setSubjectVariantId("");
-
-    setIcon(null);
-    setIconPreview(null);
-    setIconFile(null);
-    setIsNewImage(false);
-  }
-
-  // ✅ Clear validation on open
-  setSubmitAttempted(false);
-}, [open, mode, initialData]);
-
+  }, [open, mode, initialData]);
 
   /* ---------------- SUBJECT VARIANTS ---------------- */
 
@@ -170,53 +171,6 @@ useEffect(() => {
     setCropOpen(true);
   };
 
-  const uploadToCloudinary = (file: File): Promise<CloudinaryUploadResult> => {
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      const formData = new FormData();
-
-      formData.append("file", file);
-      formData.append("upload_preset", "chapters");
-
-      setUploading(true);
-      setUploadProgress(0);
-
-      xhr.open(
-        "POST",
-        `https://api.cloudinary.com/v1_1/${
-          import.meta.env.VITE_CLOUDINARY_NAME
-        }/image/upload`
-      );
-
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          setUploadProgress(Math.round((e.loaded / e.total) * 100));
-        }
-      };
-
-      xhr.onload = () => {
-        setUploading(false);
-
-        if (xhr.status >= 200 && xhr.status < 300) {
-          const res = JSON.parse(xhr.responseText);
-          resolve({
-            url: res.secure_url,
-            publicId: res.public_id,
-          });
-        } else {
-          reject(new Error("Upload failed"));
-        }
-      };
-
-      xhr.onerror = () => {
-        setUploading(false);
-        reject(new Error("Upload failed"));
-      };
-
-      xhr.send(formData);
-    });
-  };
-
   /* ---------------- SUBMIT ---------------- */
 
   const validationErrors = {
@@ -238,11 +192,23 @@ useEffect(() => {
       return;
     }
 
+    setIsSubmitting(true); // 🔒 lock button immediately
+
     try {
       let finalIcon: IconPayload;
 
       if (iconFile) {
-        finalIcon = await uploadToCloudinary(iconFile);
+        setUploading(true);
+        setUploadProgress(0);
+
+        finalIcon = await uploadToCloudinary({
+          file: iconFile,
+          uploadPreset: "chapters",
+          cloudName: import.meta.env.VITE_CLOUDINARY_NAME,
+          onProgress: setUploadProgress,
+        });
+
+        setUploading(false);
       } else if (icon) {
         finalIcon = icon;
       } else {
@@ -269,9 +235,11 @@ useEffect(() => {
     } catch (err) {
       console.error(err);
       toast.error("Operation failed");
+    } finally {
+      setUploading(false);
+      setIsSubmitting(false); // 🔓 unlock only at the very end
     }
   };
-
   /* ---------------- UI ---------------- */
 
   return (
@@ -446,20 +414,24 @@ useEffect(() => {
             </button>
 
             <button
-              disabled={uploading}
+              disabled={uploading || isSubmitting}
               onClick={handleSubmit}
               className={`
-      px-4 py-2 text-sm rounded text-white
-      bg-[#DB313E]
-      transition
-      ${uploading ? "opacity-50 cursor-not-allowed" : "hover:bg-[#c72b36]"}
-    `}
+    px-4 py-2 text-sm rounded text-white
+    bg-[#DB313E]
+    transition
+    ${
+      uploading || isSubmitting
+        ? "opacity-50 cursor-not-allowed"
+        : "hover:bg-[#c72b36]"
+    }
+  `}
             >
               {uploading
                 ? "Saving..."
                 : mode === "create"
-                ? "Create"
-                : "Update"}
+                  ? "Create"
+                  : "Update"}
             </button>
           </div>
         </div>

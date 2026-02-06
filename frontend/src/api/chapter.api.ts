@@ -1,4 +1,4 @@
-import type { CreateChapterPayload, GetChaptersParams, GetChaptersResult, GetSubjectVariantsParams, SubjectVariantApi, SubjectVariantsForChapterApi } from "../shared/types/api.types";
+import type { ChapterListItem, CreateChapterPayload, GetChaptersListParams, GetChaptersParams, GetChaptersResult, GetSubjectVariantsParams, SubjectVariantApi, SubjectVariantsForChapterApi } from "../shared/types/api.types";
 import axiosInstance from "./axios.instance";
 
 export const getChapters = async (
@@ -52,5 +52,22 @@ export const getSubjectVariants = async (
   return apiData.data.map((v: SubjectVariantsForChapterApi) => ({
     _id: v.id,
     subjectName: v.subject.name,
+  }));
+};
+
+export const getChaptersList = async (
+  params: GetChaptersListParams
+): Promise<ChapterListItem[]> => {
+  const res = await axiosInstance.get("/chapters/list", {
+    params,
+  });
+
+  const apiData = res.data;
+
+  return apiData.data.map((c: any) => ({
+    _id: c.id,
+    name: c.name,
+    price: c.price,
+    icon: c.icon,
   }));
 };
