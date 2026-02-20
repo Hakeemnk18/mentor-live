@@ -11,12 +11,15 @@ import { getSyllabus } from "../../../api/syllabus.api";
 import { getSubjects } from "../../../api/subject.api";
 import {
   createFaculty,
+  updateFaculty,
   getFaculties,
   getFacultyById,
-} from "../../../api/faculty.api"; // 👈 you create this API
-import FacultyFormModal from "../components/FacultyFormModal";
-import type { CreateFacultyPayload } from "../../../shared/types/api.types";
-// import { createFaculty, updateFaculty } from "../../../api/faculty.api";
+} from "../../../api/faculty.api";
+
+import FacultyModal from "../components/FacultyModal";
+import type { FacultyModalData } from "../components/FacultyModal";
+import { AddTimeSlotModal } from "../components/AddTimeSlotModal";
+import { AddChapterSlotModal } from "../components/AddChapterSlotModal";
 
 /* ---------------- TYPES ---------------- */
 
@@ -29,14 +32,8 @@ type FacultyRow = {
   image: string;
   price: number;
   isDeleted: boolean;
-
-  // needed for edit
   slots: { time: string }[];
   chapterSlots: string[];
-  imageObj?: {
-    url: string;
-    publicId: string;
-  };
 };
 
 /* ---------------- COMPONENT ---------------- */
@@ -50,28 +47,27 @@ export default function FacultyPage() {
   const [limit, setLimit] = useState(5);
   const [search, setSearch] = useState("");
   const [isDeleted, setIsDeleted] = useState<boolean | undefined>(undefined);
-
   const [classId, setClassId] = useState<string | undefined>();
   const [syllabusId, setSyllabusId] = useState<string | undefined>();
   const [subjectId, setSubjectId] = useState<string | undefined>();
-
   const [totalPages, setTotalPages] = useState(1);
 
-  const [classesList, setClassesList] = useState<
-    { _id: string; name: string }[]
-  >([]);
-  const [syllabusList, setSyllabusList] = useState<
-    { _id: string; name: string }[]
-  >([]);
-  const [subjectList, setSubjectList] = useState<
-    { _id: string; name: string }[]
-  >([]);
-  const [formOpen, setFormOpen] = useState(false);
-  const [formMode, setFormMode] = useState<"create" | "edit">("create");
-  const [saving, setSaving] = useState(false);
-  const [editingFaculty, setEditingFaculty] = useState<any | undefined>();
+  /* Dropdown lists */
+  const [classesList, setClassesList] = useState<{ _id: string; name: string }[]>([]);
+  const [syllabusList, setSyllabusList] = useState<{ _id: string; name: string }[]>([]);
+  const [subjectList, setSubjectList] = useState<{ _id: string; name: string }[]>([]);
 
-  /* ---------------- TABLE ---------------- */
+  /* Modal state */
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+  const [editingFaculty, setEditingFaculty] = useState<FacultyModalData | undefined>();
+  const [saving, setSaving] = useState(false);
+
+  /* Slot modals */
+  const [slotFacultyId, setSlotFacultyId] = useState<string | null>(null);
+  const [chapterFacultyId, setChapterFacultyId] = useState<string | null>(null);
+
+  /* ---------------- TABLE COLUMNS ---------------- */
 
   const columns: Column<FacultyRow>[] = [
     {
@@ -120,7 +116,6 @@ export default function FacultyPage() {
   const fetchFaculties = async () => {
     try {
       setLoading(true);
-
       const res = await getFaculties({
         page,
         limit,
@@ -130,11 +125,9 @@ export default function FacultyPage() {
         subjectId,
         isDeleted,
       });
-
       setFaculties(res.data);
       setTotalPages(Math.ceil(res.total / limit));
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("Failed to load faculties");
     } finally {
       setLoading(false);
@@ -159,59 +152,49 @@ export default function FacultyPage() {
       .catch(() => toast.error("Failed to load filters"));
   }, []);
 
-  /* ---------------- UI ---------------- */
+  /* ---------------- MODAL HANDLERS ---------------- */
+
   const openCreate = () => {
-    setFormMode("create");
     setEditingFaculty(undefined);
-    setFormOpen(true);
+    setModalMode("create");
+    setModalOpen(true);
   };
 
-  const openEdit = async (row: any) => {
+  const openEdit = async (row: FacultyRow) => {
     try {
       setSaving(true);
-
-      const fullFaculty = await getFacultyById(row.id);
-      console.log("faculty edit result ", fullFaculty);
-
-      setEditingFaculty(fullFaculty);
-      setFormMode("edit");
-      setFormOpen(true);
-    } catch (err) {
+      const data = await getFacultyById(row.id);
+      setEditingFaculty(data);
+      setModalMode("edit");
+      setModalOpen(true);
+    } catch {
       toast.error("Failed to load faculty details");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleCreate = async (data: CreateFacultyPayload) => {
+  const handleSubmit = async (payload: any) => {
     try {
       setSaving(true);
-      await createFaculty(data);
-      toast.success("Faculty created");
-      setFormOpen(false);
+      if (modalMode === "create") {
+        await createFaculty(payload);
+        toast.success("Faculty created");
+      } else {
+        await updateFaculty(editingFaculty!.id, payload);
+        toast.success("Faculty updated");
+      }
+      setModalOpen(false);
       fetchFaculties();
     } catch (err: any) {
-      console.error(err);
-      toast.error(err?.response?.data?.message || "Failed to create faculty");
+      toast.error(err?.response?.data?.message || "Operation failed");
+      throw err; // Let modal stop loading spinner
     } finally {
       setSaving(false);
     }
   };
 
-  const handleUpdate = async (id: string, data: any) => {
-    try {
-      setSaving(true);
-      await updateFaculty(id, data);
-      toast.success("Faculty updated");
-      setFormOpen(false);
-      fetchFaculties();
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err?.response?.data?.message || "Failed to update faculty");
-    } finally {
-      setSaving(false);
-    }
-  };
+  /* ---------------- RENDER ---------------- */
 
   return (
     <AdminPageContainer>
@@ -219,6 +202,7 @@ export default function FacultyPage() {
         title="Faculty"
         actions={[{ label: "Create Faculty", onClick: openCreate }]}
       />
+
       {/* FILTER BAR */}
       <div className="flex flex-col md:flex-row md:items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
         {/* Search */}
@@ -304,9 +288,7 @@ export default function FacultyPage() {
         <div className="flex flex-col gap-1 w-full md:w-auto">
           <label className="text-xs font-medium text-gray-600">Status</label>
           <select
-            value={
-              isDeleted === undefined ? "" : isDeleted ? "deleted" : "active"
-            }
+            value={isDeleted === undefined ? "" : isDeleted ? "deleted" : "active"}
             onChange={(e) => {
               setPage(1);
               if (e.target.value === "") setIsDeleted(undefined);
@@ -350,7 +332,11 @@ export default function FacultyPage() {
         <AdminTable
           data={faculties}
           columns={columns}
-          actions={[{ label: "Edit", onClick: openEdit }]}
+          actions={[
+            { label: "Edit", onClick: openEdit },
+            { label: "+ Slot", onClick: (row) => setSlotFacultyId(row.id) },
+            { label: "+ Chapter", onClick: (row) => setChapterFacultyId(row.id) },
+          ]}
           getRowId={(row) => row.id}
         />
       )}
@@ -360,39 +346,60 @@ export default function FacultyPage() {
         <p className="text-sm text-gray-600">
           Page {page} of {totalPages}
         </p>
-
         <div className="flex gap-2">
           <button
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1 text-sm border rounded 
-              disabled:opacity-50 hover:bg-gray-100"
+            className="px-3 py-1 text-sm border rounded disabled:opacity-50 hover:bg-gray-100"
           >
             Prev
           </button>
-
           <button
             disabled={page === totalPages}
             onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1 text-sm border rounded 
-              disabled:opacity-50 hover:bg-gray-100"
+            className="px-3 py-1 text-sm border rounded disabled:opacity-50 hover:bg-gray-100"
           >
             Next
           </button>
         </div>
       </div>
-      <FacultyFormModal
-        open={formOpen}
-        mode={formMode}
+
+      {/* FACULTY MODAL (create + edit) */}
+      <FacultyModal
+        open={modalOpen}
+        mode={modalMode}
         initialData={editingFaculty}
-        onClose={() => setFormOpen(false)}
-        loading={saving}
+        facultyId={editingFaculty?.id}
         syllabuses={syllabusList}
         classes={classesList}
-        subjects={subjectList}
-        onCreate={handleCreate}
-        onUpdate={handleUpdate}
+        saving={saving}
+        onClose={() => setModalOpen(false)}
+        onSubmit={handleSubmit}
       />
+
+      {/* SLOT MODAL */}
+      {slotFacultyId && (
+        <AddTimeSlotModal
+          facultyId={slotFacultyId}
+          onSuccess={() => {
+            fetchFaculties();
+            setSlotFacultyId(null);
+          }}
+        />
+      )}
+
+      {/* CHAPTER MODAL */}
+      {chapterFacultyId && (
+        <AddChapterSlotModal
+          facultyId={chapterFacultyId}
+          syllabuses={syllabusList}
+          classes={classesList}
+          onSuccess={() => {
+            fetchFaculties();
+            setChapterFacultyId(null);
+          }}
+        />
+      )}
     </AdminPageContainer>
   );
 }
