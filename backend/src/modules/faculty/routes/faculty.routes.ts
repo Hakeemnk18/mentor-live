@@ -37,6 +37,10 @@ router.get('/:id/slot',
   (req,res)=> facultyController.getFacultyDetailsBySlot(req,res)
 )
 
+router.get('/:id/available-slots',
+  (req,res)=> facultyController.getAvailableSlots(req,res)
+)
+
 router.put('/:id',
   (req, res)=> facultyController.editFaculty(req, res)
 )
