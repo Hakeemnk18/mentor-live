@@ -12,6 +12,7 @@ import type {
   FacultyViewForUser,
   SetSlotAvailabilityDto,
   SlotProps,
+  AvailableSlots,
 } from "../types/faculty.type.js";
 import type { RemoveUserFromPoolDto } from "../../booking/dto/remove.student.from.pooling.dto.js";
 
@@ -83,4 +84,5 @@ export interface IFacultyRepository {
     session: ClientSession,
   ): Promise<void>;
   setSlotAvailability(params: SetSlotAvailabilityDto): Promise<void>;
+  getAllAvailableSlots(facultyId: string): Promise<AvailableSlots[]>;
 }

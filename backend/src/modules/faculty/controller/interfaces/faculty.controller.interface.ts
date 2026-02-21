@@ -14,4 +14,5 @@ export interface IFacultyController {
   updateChapterSlotAvailability(req: Request, res: Response): Promise<void>
   blockFaculty(req: Request, res: Response): Promise<void>
   unblockFaculty(req: Request, res: Response): Promise<void>
+  getAvailableSlots(req: Request, res: Response): Promise<void>
 }
