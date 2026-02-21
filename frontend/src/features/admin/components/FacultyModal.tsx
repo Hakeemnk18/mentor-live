@@ -5,9 +5,10 @@ import { getSubjectVariants, getChaptersList } from "../../../api/chapter.api";
 import { uploadToCloudinary } from "../../../shared/utils/cloudinary";
 import {
   addFacultySlot,
-  removeFacultySlot,
+  setFacultySlotAvailability,
   addFacultyChapterSlot,
-  removeFacultyChapterSlot,
+  setFacultyChapterSlotAvailability,
+  getFacultyById,
 } from "../../../api/faculty.api";
 
 /* ================================================================== */
@@ -22,12 +23,13 @@ type SubjectGroup = {
   syllabusId: string;
   classId: string;
   variants: SubjectVariant[];
-  selected: string[]; // subjectVariant _ids currently selected
+  selected: string[];           // variant IDs — used for API payload
+  selectedVariants: SubjectVariant[]; // full objects — used for display (independent of variants loading)
 };
 
-// pool carries bookings — remove is only allowed when pool is empty
-type TimeSlot = { id?: string; time: string; pool?: any[] };
-type ChapterSlot = { id?: string; chapter: string; label?: string; pool?: any[] };
+// pool carries bookings — block is only allowed when pool is empty
+type TimeSlot = { id?: string; time: string; pool?: any[]; isAvailable: boolean };
+type ChapterSlot = { id?: string; chapter: string; label?: string; pool?: any[]; isAvailable: boolean };
 
 export type FacultyModalData = {
   id: string;  // backend returns 'id', not '_id'
@@ -43,8 +45,8 @@ export type FacultyModalData = {
     syllabus: { id: string; name: string };
     class: { id: string; name: string };
   }[];
-  slots?: { id?: string; time: string; pool?: any[] }[];
-  chapterSlots?: { id?: string; chapter: string | { id: string; name: string }; pool?: any[] }[];
+  slots?: { id?: string; time: string; pool?: any[]; isAvailable?: boolean }[];
+  chapterSlots?: { id?: string; chapter: string | { id: string; name: string }; pool?: any[]; isAvailable?: boolean }[];
 };
 
 type Props = {
@@ -130,6 +132,7 @@ export default function FacultyModal({
       setTimeSlots(
         Array.from({ length: 5 }, (_, i) => ({
           time: `${String(15 + i).padStart(2, "0")}:00`,
+          isAvailable: true,
         }))
       );
       setNewTime("");
@@ -155,12 +158,17 @@ export default function FacultyModal({
         initialData.image ? { url: initialData.image, publicId: "" } : null
       );
 
-      // Time slots — keep ids for delete API
+      // Time slots — load ALL, preserving isAvailable state
       setTimeSlots(
-        (initialData.slots ?? []).map((s) => ({ id: s.id, time: s.time, pool: s.pool ?? [] }))
+        (initialData.slots ?? []).map((s) => ({
+          id: s.id,
+          time: s.time,
+          pool: s.pool ?? [],
+          isAvailable: s.isAvailable !== false,
+        }))
       );
 
-      // Chapter slots
+      // Chapter slots — load ALL, preserving isAvailable state
       setChapterSlots(
         (initialData.chapterSlots ?? []).map((cs) => ({
           id: cs.id,
@@ -169,6 +177,7 @@ export default function FacultyModal({
           label:
             typeof cs.chapter === "object" ? (cs.chapter as any).name : undefined,
           pool: (cs as any).pool ?? [],
+          isAvailable: (cs as any).isAvailable !== false,
         }))
       );
 
@@ -195,10 +204,12 @@ export default function FacultyModal({
             classId: o.class.id,
             variants: [],
             selected: [],
+            selectedVariants: [],
           });
         }
-        // o.id is the subjectVariant id — same _id getSubjectVariants returns
+        // o.id IS the SubjectVariant's _id (backend maps so._id → o.id)
         map.get(key)!.selected.push(o.id);
+        map.get(key)!.selectedVariants.push({ _id: o.id, subjectName: o.subject.name });
       });
 
       // Fetch variants for all groups in parallel
@@ -251,7 +262,7 @@ export default function FacultyModal({
   /* ================================================================ */
 
   function makeEmptyGroup(): SubjectGroup {
-    return { id: ++groupCounter, syllabusId: "", classId: "", variants: [], selected: [] };
+    return { id: ++groupCounter, syllabusId: "", classId: "", variants: [], selected: [], selectedVariants: [] };
   }
 
   const addGroup = () => setSubjectGroups((prev) => [...prev, makeEmptyGroup()]);
@@ -270,9 +281,12 @@ export default function FacultyModal({
           ? {
               ...g,
               [field]: value,
-              ...(field === "syllabusId"
-                ? { classId: "", variants: [], selected: [] }
-                : { variants: [], selected: [] }),
+              // When syllabus changes, also clear classId; always clear variants
+              // so the available-subjects list refreshes for the new combo.
+              // Do NOT wipe `selected` or `selectedVariants` — that would
+              // erase the user's existing subject picks.
+              ...(field === "syllabusId" ? { classId: "" } : {}),
+              variants: [],
             }
           : g
       )
@@ -302,16 +316,20 @@ export default function FacultyModal({
 
   const toggleVariant = (groupId: number, variantId: string) => {
     setSubjectGroups((prev) =>
-      prev.map((g) =>
-        g.id === groupId
-          ? {
-              ...g,
-              selected: g.selected.includes(variantId)
-                ? g.selected.filter((v) => v !== variantId)
-                : [...g.selected, variantId],
-            }
-          : g
-      )
+      prev.map((g) => {
+        if (g.id !== groupId) return g;
+        const isSelected = g.selected.includes(variantId);
+        const variant = g.variants.find((v) => v._id === variantId);
+        return {
+          ...g,
+          selected: isSelected
+            ? g.selected.filter((v) => v !== variantId)
+            : [...g.selected, variantId],
+          selectedVariants: isSelected
+            ? g.selectedVariants.filter((v) => v._id !== variantId)
+            : [...g.selectedVariants, ...(variant ? [variant] : [])],
+        };
+      })
     );
   };
 
@@ -341,13 +359,19 @@ export default function FacultyModal({
     if (mode === "edit" && facultyId) {
       try {
         setSlotWorking(true);
-        const res = await addFacultySlot(facultyId, { time: newTime });
-        // Backend returns the new slot with its id
-        const newSlotId = res?.data?.id ?? res?.id;
-        setTimeSlots((prev) =>
-          [...prev, { id: newSlotId, time: newTime }].sort(
-            (a, b) => toMinutes(a.time) - toMinutes(b.time)
-          )
+        await addFacultySlot(facultyId, { time: newTime });
+        // Backend returns no slot ID — re-fetch to get fresh slots with real IDs
+        const updated = await getFacultyById(facultyId);
+        setTimeSlots(
+          (updated.slots ?? []).map((s: any) => ({
+            id: s.id,
+            time: (() => {
+              const d = new Date(s.time);
+              return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+            })(),
+            pool: s.pool ?? [],
+            isAvailable: s.isAvailable !== false,
+          }))
         );
         toast.success("Slot added");
         setNewTime("");
@@ -358,7 +382,7 @@ export default function FacultyModal({
       }
     } else {
       setTimeSlots((prev) =>
-        [...prev, { time: newTime }].sort(
+        [...prev, { time: newTime, isAvailable: true }].sort(
           (a, b) => toMinutes(a.time) - toMinutes(b.time)
         )
       );
@@ -366,22 +390,41 @@ export default function FacultyModal({
     }
   };
 
-  const handleRemoveTimeSlot = async (slot: TimeSlot) => {
+  // Block a time slot (sets isAvailable = false via API in edit mode)
+  const handleBlockTimeSlot = async (slot: TimeSlot) => {
     if (mode === "edit" && facultyId && slot.id) {
       try {
-        console.log("deleting timeslot");
-        
         setSlotWorking(true);
-        await removeFacultySlot(facultyId, slot.id);
-        setTimeSlots((prev) => prev.filter((s) => s.id !== slot.id));
-        toast.success("Slot removed");
+        await setFacultySlotAvailability(facultyId, slot.id, false);
+        setTimeSlots((prev) =>
+          prev.map((s) => (s.id === slot.id ? { ...s, isAvailable: false } : s))
+        );
+        toast.success("Slot blocked");
       } catch {
-        toast.error("Failed to remove slot");
+        toast.error("Failed to block slot");
       } finally {
         setSlotWorking(false);
       }
     } else {
+      // In create mode just remove it from the list
       setTimeSlots((prev) => prev.filter((s) => s.time !== slot.time));
+    }
+  };
+
+  // Unblock a time slot (sets isAvailable = true via API)
+  const handleUnblockTimeSlot = async (slot: TimeSlot) => {
+    if (!facultyId || !slot.id) return;
+    try {
+      setSlotWorking(true);
+      await setFacultySlotAvailability(facultyId, slot.id, true);
+      setTimeSlots((prev) =>
+        prev.map((s) => (s.id === slot.id ? { ...s, isAvailable: true } : s))
+      );
+      toast.success("Slot unblocked");
+    } catch {
+      toast.error("Failed to unblock slot");
+    } finally {
+      setSlotWorking(false);
     }
   };
 
@@ -399,12 +442,18 @@ export default function FacultyModal({
     if (mode === "edit" && facultyId) {
       try {
         setChapterWorking(true);
-        const res = await addFacultyChapterSlot(facultyId, { chapter: chapterId });
-        const newSlotId = res?.data?.id ?? res?.id;
-        setChapterSlots((prev) => [
-          ...prev,
-          { id: newSlotId, chapter: chapterId, label },
-        ]);
+        await addFacultyChapterSlot(facultyId, { chapter: chapterId });
+        // Backend returns no slot ID — re-fetch to get fresh chapter slots with real IDs
+        const updated = await getFacultyById(facultyId);
+        setChapterSlots(
+          (updated.chapterSlots ?? []).map((cs: any) => ({
+            id: cs.id,
+            chapter: typeof cs.chapter === "string" ? cs.chapter : cs.chapter?.id,
+            label: typeof cs.chapter === "object" ? cs.chapter?.name : undefined,
+            pool: cs.pool ?? [],
+            isAvailable: cs.isAvailable !== false,
+          }))
+        );
         toast.success("Chapter added");
         setChapterId("");
       } catch {
@@ -413,25 +462,45 @@ export default function FacultyModal({
         setChapterWorking(false);
       }
     } else {
-      setChapterSlots((prev) => [...prev, { chapter: chapterId, label }]);
+      setChapterSlots((prev) => [...prev, { chapter: chapterId, label, isAvailable: true }]);
       setChapterId("");
     }
   };
 
-  const handleRemoveChapterSlot = async (cs: ChapterSlot) => {
-    if (mode === "edit" && facultyId && cs.id) {
+  // Block a chapter slot
+  const handleBlockChapterSlot = async (cs: ChapterSlot) => {
+    if (mode === "edit" && facultyId && cs.chapter) {
       try {
         setChapterWorking(true);
-        await removeFacultyChapterSlot(facultyId, cs.id);
-        setChapterSlots((prev) => prev.filter((c) => c.id !== cs.id));
-        toast.success("Chapter removed");
+        await setFacultyChapterSlotAvailability(facultyId, cs.chapter, false);
+        setChapterSlots((prev) =>
+          prev.map((c) => (c.chapter === cs.chapter ? { ...c, isAvailable: false } : c))
+        );
+        toast.success("Chapter slot blocked");
       } catch {
-        toast.error("Failed to remove chapter slot");
+        toast.error("Failed to block chapter slot");
       } finally {
         setChapterWorking(false);
       }
     } else {
       setChapterSlots((prev) => prev.filter((c) => c.chapter !== cs.chapter));
+    }
+  };
+
+  // Unblock a chapter slot
+  const handleUnblockChapterSlot = async (cs: ChapterSlot) => {
+    if (!facultyId || !cs.chapter) return;
+    try {
+      setChapterWorking(true);
+      await setFacultyChapterSlotAvailability(facultyId, cs.chapter, true);
+      setChapterSlots((prev) =>
+        prev.map((c) => (c.chapter === cs.chapter ? { ...c, isAvailable: true } : c))
+      );
+      toast.success("Chapter slot unblocked");
+    } catch {
+      toast.error("Failed to unblock chapter slot");
+    } finally {
+      setChapterWorking(false);
     }
   };
 
@@ -500,9 +569,15 @@ export default function FacultyModal({
         description: description.trim(),
         demoClass: demoClass.trim(),
         price: Number(price),
-        image: finalImage,
         subjects: subjectGroups.flatMap((g) => g.selected),
       };
+
+      // Only include image when the user actually picked a new file.
+      // imagePayload is already set from initialData in edit mode (for display),
+      // so finalImage alone is always truthy — imageFile is the real new-image signal.
+      if (imageFile && finalImage) {
+        payload.image = finalImage;
+      }
 
       // Slots/chapters only bundled in CREATE — edit handles them via immediate APIs
       if (mode === "create") {
@@ -646,9 +721,8 @@ export default function FacultyModal({
               )}
               <div className="space-y-4">
                 {subjectGroups.map((group, idx) => {
-                  const selected = group.variants.filter((v) =>
-                    group.selected.includes(v._id)
-                  );
+                  // selectedVariants always holds full objects — no dependency on variants loading
+                  const selected = group.selectedVariants;
                   const available = group.variants.filter(
                     (v) => !group.selected.includes(v._id)
                   );
@@ -804,27 +878,60 @@ export default function FacultyModal({
                 </button>
               </div>
 
-              {timeSlots.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {timeSlots.map((s) => (
-                    <span
-                      key={s.id ?? s.time}
-                      className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-50 border border-blue-200 rounded-full text-blue-700"
-                    >
-                      {s.time}
-                      {/* Only allow remove when no students are booked in this slot */}
-                      {(!s.pool || s.pool.length === 0) && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveTimeSlot(s)}
-                          disabled={slotWorking}
-                          className="ml-1 text-blue-400 hover:text-red-500 disabled:opacity-50"
+              {/* Active */}
+              {timeSlots.some((s) => s.isAvailable) && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-gray-500 mb-1">Active</p>
+                  <div className="flex flex-wrap gap-2">
+                    {timeSlots
+                      .filter((s) => s.isAvailable)
+                      .map((s) => (
+                        <span
+                          key={s.id ?? s.time}
+                          className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-50 border border-blue-200 rounded-full text-blue-700"
                         >
-                          ×
-                        </button>
-                      )}
-                    </span>
-                  ))}
+                          {s.time}
+                          {(!s.pool || s.pool.length === 0) && (
+                            <button
+                              type="button"
+                              onClick={() => handleBlockTimeSlot(s)}
+                              disabled={slotWorking}
+                              title="Block slot"
+                              className="ml-1 text-blue-400 hover:text-red-500 disabled:opacity-50"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Blocked */}
+              {timeSlots.some((s) => !s.isAvailable) && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-gray-500 mb-1">Blocked</p>
+                  <div className="flex flex-wrap gap-2">
+                    {timeSlots
+                      .filter((s) => !s.isAvailable)
+                      .map((s) => (
+                        <span
+                          key={s.id ?? s.time}
+                          className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-50 border border-gray-300 rounded-full text-gray-400"
+                        >
+                          {s.time}
+                          <button
+                            type="button"
+                            onClick={() => handleUnblockTimeSlot(s)}
+                            disabled={slotWorking}
+                            className="ml-1 text-xs text-green-600 hover:text-green-700 font-medium disabled:opacity-50"
+                          >
+                            Unblock
+                          </button>
+                        </span>
+                      ))}
+                  </div>
                 </div>
               )}
             </Section>
@@ -894,27 +1001,60 @@ export default function FacultyModal({
                 </div>
               )}
 
-              {chapterSlots.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {chapterSlots.map((cs) => (
-                    <span
-                      key={cs.id ?? cs.chapter}
-                      className="flex items-center gap-1 px-2 py-1 text-xs bg-green-50 border border-green-200 rounded-full text-green-700"
-                    >
-                      {cs.label ?? cs.chapter}
-                      {/* Only allow remove when no students are booked */}
-                      {(!cs.pool || cs.pool.length === 0) && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveChapterSlot(cs)}
-                          disabled={chapterWorking}
-                          className="ml-1 text-green-400 hover:text-red-500 disabled:opacity-50"
+              {/* Active chapter slots */}
+              {chapterSlots.some((cs) => cs.isAvailable) && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-gray-500 mb-1">Active</p>
+                  <div className="flex flex-wrap gap-2">
+                    {chapterSlots
+                      .filter((cs) => cs.isAvailable)
+                      .map((cs) => (
+                        <span
+                          key={cs.id ?? cs.chapter}
+                          className="flex items-center gap-1 px-2 py-1 text-xs bg-green-50 border border-green-200 rounded-full text-green-700"
                         >
-                          ×
-                        </button>
-                      )}
-                    </span>
-                  ))}
+                          {cs.label ?? cs.chapter}
+                          {(!cs.pool || cs.pool.length === 0) && (
+                            <button
+                              type="button"
+                              onClick={() => handleBlockChapterSlot(cs)}
+                              disabled={chapterWorking}
+                              title="Block chapter slot"
+                              className="ml-1 text-green-400 hover:text-red-500 disabled:opacity-50"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Blocked chapter slots */}
+              {chapterSlots.some((cs) => !cs.isAvailable) && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-gray-500 mb-1">Blocked</p>
+                  <div className="flex flex-wrap gap-2">
+                    {chapterSlots
+                      .filter((cs) => !cs.isAvailable)
+                      .map((cs) => (
+                        <span
+                          key={cs.id ?? cs.chapter}
+                          className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-50 border border-gray-300 rounded-full text-gray-400"
+                        >
+                          {cs.label ?? cs.chapter}
+                          <button
+                            type="button"
+                            onClick={() => handleUnblockChapterSlot(cs)}
+                            disabled={chapterWorking}
+                            className="ml-1 text-xs text-green-600 hover:text-green-700 font-medium disabled:opacity-50"
+                          >
+                            Unblock
+                          </button>
+                        </span>
+                      ))}
+                  </div>
                 </div>
               )}
             </Section>

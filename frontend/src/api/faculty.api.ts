@@ -33,7 +33,7 @@ export const createFaculty = async (
 };
 
 export const updateFaculty = async (id: string, payload: UpdateFacultyPayload) => {
-  const res = await axiosInstance.patch(`/faculties/${id}`, payload);
+  const res = await axiosInstance.put(`/faculties/${id}`, payload);
   return res.data;
 };
 
@@ -42,22 +42,44 @@ export const getFacultyById = async (id: string) => {
   return res.data.data; // assume backend returns { data: faculty }
 };
 
+/** Fetch only available (unbooked) time slots for a faculty — used in booking confirm flows */
+export const getFacultyAvailableSlots = async (
+  facultyId: string
+): Promise<{ id: string; time: string }[]> => {
+  const res = await axiosInstance.get(`/faculties/${facultyId}/available-slots`);
+  return res.data.data ?? [];
+};
+
 /* ── Time slot ─────────────────────────────── */
 export const addFacultySlot = async (
   facultyId: string,
-  payload: { time: string }
+  payload: { time: string } // time in "HH:MM" format
 ) => {
-  const res = await axiosInstance.post(`/faculties/${facultyId}/slots`, payload);
+  // Convert "HH:MM" → full ISO date string (backend expects a date object/ISO)
+  const [h, m] = payload.time.split(":").map(Number);
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  const res = await axiosInstance.post(`/faculties/${facultyId}/slots`, {
+    slots: [{ time: d.toISOString() }],
+  });
   return res.data;
 };
 
-export const removeFacultySlot = async (facultyId: string, slotId: string) => {
+export const setFacultySlotAvailability = async (
+  facultyId: string,
+  slotId: string,
+  isAvailable: boolean
+) => {
   const res = await axiosInstance.patch(
     `/faculties/${facultyId}/slots/${slotId}`,
-    { isAvailable: false }
+    { isAvailable }
   );
   return res.data;
 };
+
+/** @deprecated use setFacultySlotAvailability */
+export const removeFacultySlot = (facultyId: string, slotId: string) =>
+  setFacultySlotAvailability(facultyId, slotId, false);
 
 /* ── Chapter slot ───────────────────────────── */
 export const addFacultyChapterSlot = async (
@@ -65,20 +87,25 @@ export const addFacultyChapterSlot = async (
   payload: { chapter: string }
 ) => {
   const res = await axiosInstance.post(
-    `/faculties/${facultyId}/chapter-slots`,
-    payload
+    `/faculties/${facultyId}/chapterSlots`,
+    { chapterSlots: [{ chapter: payload.chapter }] }
   );
   return res.data;
 };
 
-export const removeFacultyChapterSlot = async (
+export const setFacultyChapterSlotAvailability = async (
   facultyId: string,
-  slotId: string
+  slotId: string,
+  isAvailable: boolean
 ) => {
   const res = await axiosInstance.patch(
     `/faculties/${facultyId}/chapter-slots/${slotId}`,
-    { isAvailable: false }
+    { isAvailable }
   );
   return res.data;
 };
+
+/** @deprecated use setFacultyChapterSlotAvailability */
+export const removeFacultyChapterSlot = (facultyId: string, slotId: string) =>
+  setFacultyChapterSlotAvailability(facultyId, slotId, false);
 

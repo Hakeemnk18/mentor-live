@@ -5,6 +5,7 @@ import FacultyPage from "../features/admin/pages/FacultyTable"
 import Home from "../features/admin/pages/Home"
 import SubjectPage from "../features/admin/pages/SubjectTable"
 import SyllabusPage from "../features/admin/pages/SyllabusTable"
+import BookingsPage from "../features/admin/pages/BookingsPage"
 import AdminDashboard from "../features/auth/pages/AdminDashboard"
 import LoginPage from "../features/auth/pages/LoginPage"
 
@@ -78,7 +79,14 @@ const adminRoutes = [
          
             
         )
+    },
+    {
+        path: "bookings",
+        element: (
+            <AdminBootstrap>
+                <BookingsPage />
+            </AdminBootstrap>
+        )
     }
 ]
-
 export default adminRoutes
