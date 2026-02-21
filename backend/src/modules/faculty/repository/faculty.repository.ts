@@ -720,9 +720,10 @@ export class FacultyRepository implements IFacultyRepository {
     slotId: string,
     session?: ClientSession,
   ): Promise<void> {
+    
     const result = await FacultyModel.updateOne(
       {
-        _id: new ObjectId(slotId),
+        _id: new ObjectId(facultyId),
         slots: {
           $elemMatch: {
             _id: new ObjectId(slotId),
@@ -740,10 +741,7 @@ export class FacultyRepository implements IFacultyRepository {
     );
 
     if (result.modifiedCount === 0) {
-      throw new CustomError(
-        ResponseMessages.SLOT_TIME_NOT_AVAILABLE,
-        HttpStatusCode.CONFLICT,
-      );
+      throw new Error("not matched document");
     }
   }
 
@@ -752,6 +750,7 @@ export class FacultyRepository implements IFacultyRepository {
     slotIds: string[],
     session?: ClientSession,
   ): Promise<void> {
+    
     const result = await FacultyModel.updateOne(
       {
         _id: facultyId,
@@ -776,10 +775,7 @@ export class FacultyRepository implements IFacultyRepository {
     );
 
     if (result.modifiedCount === 0) {
-      throw new CustomError(
-        ResponseMessages.SLOT_TIME_NOT_AVAILABLE,
-        HttpStatusCode.CONFLICT,
-      );
+      throw new Error("not matched document");
     }
   }
 
