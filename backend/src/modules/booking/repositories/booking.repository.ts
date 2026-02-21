@@ -42,7 +42,10 @@ export class BookingRepository implements IBookingRepository {
     return BookingMapper.toDomain(foundDocument);
   }
 
-  async save(bookingEntity: Booking): Promise<Booking> {
+  async save(
+    bookingEntity: Booking,
+    session?: ClientSession,
+  ): Promise<Booking> {
     if (!bookingEntity.id) {
       throw new CustomError(
         ResponseMessages.ID_MISSING,
@@ -55,7 +58,7 @@ export class BookingRepository implements IBookingRepository {
     const updatedDocument = await BookingModel.findByIdAndUpdate(
       bookingEntity.id,
       { $set: persistenceData },
-      { new: true },
+      { new: true, session: session ?? null },
     ).lean();
 
     if (!updatedDocument) {
@@ -840,8 +843,8 @@ export class BookingRepository implements IBookingRepository {
     session: ClientSession,
   ): Promise<void> {
     const { facultyId, slotIds, excludeBookingIds } = params;
-
-    await BookingModel.updateMany(
+    
+    const result = await BookingModel.updateMany(
       {
         facultyId,
         slotId: { $in: slotIds },
@@ -857,6 +860,8 @@ export class BookingRepository implements IBookingRepository {
       },
       session ? { session } : undefined,
     );
+
+    
   }
 
   async getBookingIds(params: GetBookingsFromSlotParams): Promise<string[]> {
@@ -918,7 +923,7 @@ export class BookingRepository implements IBookingRepository {
       },
       {
         $set: {
-          slotId: slotIds, 
+          slotId: slotIds,
         },
       },
       { session },
@@ -934,9 +939,12 @@ export class BookingRepository implements IBookingRepository {
     return BookingMapper.toDomain(foundDocument);
   }
 
-  async cancelBookingsByIds(bookingIds: string[], session: ClientSession): Promise<void> {
-    const result =await BookingModel.updateMany(
-      { 
+  async cancelBookingsByIds(
+    bookingIds: string[],
+    session: ClientSession,
+  ): Promise<void> {
+    const result = await BookingModel.updateMany(
+      {
         _id: { $in: bookingIds },
         status: { $ne: "cancelled" },
         isDeleted: false,
@@ -952,6 +960,5 @@ export class BookingRepository implements IBookingRepository {
     if (result.matchedCount === 0) {
       throw new Error("No bookings matched for  cancellation");
     }
-  } 
-
+  }
 }
