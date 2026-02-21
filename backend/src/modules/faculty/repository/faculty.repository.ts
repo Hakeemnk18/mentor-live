@@ -8,6 +8,7 @@ import { FacultyModel } from "../infrastructure/faculty.schema.js";
 import { FacultyMapper } from "../mapper/faculty.mapper.js";
 import type { IFacultyRepository } from "./faculty.repository.interface.js";
 import type {
+  AvailableSlots,
   ChapterSlotProps,
   FacultyChapterSearchFilters,
   FacultyClassAndSyllabusSearchFilters,
@@ -930,5 +931,22 @@ export class FacultyRepository implements IFacultyRepository {
     if (result.matchedCount === 0) {
       throw new Error("Faculty not found");
     }
+  }
+
+
+  async getAllAvailableSlots(facultyId: string): Promise<AvailableSlots[]> {
+    const faculty = await FacultyModel.findOne(
+      { _id: facultyId, isDeleted: false },
+      { slots: 1 },
+    ).lean();
+
+    if (!faculty || !faculty.slots || faculty.slots.length === 0) {
+      return [];
+    }
+
+    return faculty.slots.map((slot: any) => ({
+      id: slot._id.toString(),
+      time: slot.time,
+    }));
   }
 }

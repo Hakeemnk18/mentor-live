@@ -35,6 +35,7 @@ import type { ISetFacultySlotAvailabilityUseCase } from "../use-cases/interfaces
 import { availabilitySchema } from "../../../core/utils/validate.is-availble.js";
 import type { IBlockFacultyUseCase } from "../use-cases/interfaces/block.faculty.use-case.interface.js";
 import type { IUnblockFacultyUseCase } from "../use-cases/interfaces/unblock.faculty.interface.js";
+import type { IGetAvailableSlotsUseCase } from "../use-cases/interfaces/get.available.slots.use-case.interface.js";
 
 @injectable()
 export class FacultyController implements IFacultyController {
@@ -77,6 +78,9 @@ export class FacultyController implements IFacultyController {
 
     @inject("IUnblockFacultyUseCase")
     private readonly _unblockFacultyUseCase: IUnblockFacultyUseCase,
+
+    @inject("IGetAvailableSlotsUseCase")
+    private readonly _getAvailableSlotsUseCase: IGetAvailableSlotsUseCase,
 
     
   ) {}
@@ -340,6 +344,22 @@ export class FacultyController implements IFacultyController {
       });
     } catch (error) {
       console.log("Error in unblocking faculty:", error);
+      handleError(res, error);
+    }
+  }
+
+  async getAvailableSlots(req: Request, res: Response): Promise<void> {
+    try {
+      const facultyId = req.params.id;
+      validateObjectId(facultyId);
+      const availableSlots = await this._getAvailableSlotsUseCase.execute(facultyId!);  
+      res.status(HttpStatusCode.OK).json({
+        message: ResponseMessages.SUCCESS,
+        success: true,
+        data: availableSlots,
+      });
+    } catch (error) {
+      console.log("Error in getting available slots:", error);
       handleError(res, error);
     }
   }

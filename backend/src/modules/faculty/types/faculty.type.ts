@@ -138,3 +138,8 @@ export interface SetSlotAvailabilityDto {
   isAvailable: boolean;
 }
 
+export type AvailableSlots = {
+  id: string;
+  time: Date;
+}
+
