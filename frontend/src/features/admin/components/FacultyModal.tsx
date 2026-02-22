@@ -111,6 +111,8 @@ export default function FacultyModal({
   const [chapterWorking, setChapterWorking] = useState(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [slotError, setSlotError] = useState("");
+  const [chapterError, setChapterError] = useState("");
 
   /* ================================================================ */
   /* INIT on open                                                       */
@@ -162,7 +164,7 @@ export default function FacultyModal({
       setTimeSlots(
         (initialData.slots ?? []).map((s) => ({
           id: s.id,
-          time: s.time,
+          time: toHHMM(s.time),
           pool: s.pool ?? [],
           isAvailable: s.isAvailable !== false,
         }))
@@ -342,19 +344,34 @@ export default function FacultyModal({
     return h * 60 + m;
   };
 
-  const handleAddTimeSlot = async () => {
-    if (!newTime) return toast.error("Pick a time first");
-    if (timeSlots.some((s) => s.time === newTime))
-      return toast.error("Slot already added");
+  /** Convert any time value the API may return to "HH:MM" for display & toMinutes() */
+  const toHHMM = (raw: string): string => {
+    const d = new Date(raw);
+    if (!isNaN(d.getTime())) {
+      return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    }
+    // Already "HH:MM" or similar — return as-is
+    return raw;
+  };
 
-    const newMins = toMinutes(newTime);
+  const handleAddTimeSlot = async () => {
+    if (!newTime) {
+      setSlotError("Pick a time first");
+      return;
+    }
+    if (timeSlots.some((s) => s.time === newTime)) {
+      setSlotError("This slot is already added");
+      return;
+    }
+    const mins = toMinutes(newTime);
     const overlap = timeSlots.find(
-      (s) => Math.abs(toMinutes(s.time) - newMins) < 60
+      (s) => Math.abs(toMinutes(s.time) - mins) < 60
     );
-    if (overlap)
-      return toast.error(
-        `Overlaps with ${overlap.time} — slots must be at least 1 hour apart`
-      );
+    if (overlap) {
+      setSlotError(`Overlaps with ${overlap.time} — slots must be at least 1 hour apart`);
+      return;
+    }
+    setSlotError("");
 
     if (mode === "edit" && facultyId) {
       try {
@@ -365,10 +382,7 @@ export default function FacultyModal({
         setTimeSlots(
           (updated.slots ?? []).map((s: any) => ({
             id: s.id,
-            time: (() => {
-              const d = new Date(s.time);
-              return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-            })(),
+            time: toHHMM(s.time),
             pool: s.pool ?? [],
             isAvailable: s.isAvailable !== false,
           }))
@@ -433,9 +447,15 @@ export default function FacultyModal({
   /* ================================================================ */
 
   const handleAddChapterSlot = async () => {
-    if (!chapterId) return toast.error("Select a chapter first");
-    if (chapterSlots.some((c) => c.chapter === chapterId))
-      return toast.error("Chapter already added");
+    if (!chapterId) {
+      setChapterError("Select a chapter first");
+      return;
+    }
+    if (chapterSlots.some((c) => c.chapter === chapterId)) {
+      setChapterError("This chapter is already added");
+      return;
+    }
+    setChapterError("");
 
     const label = chapterOptions.find((c) => c._id === chapterId)?.name;
 
@@ -510,13 +530,35 @@ export default function FacultyModal({
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!name.trim()) e.name = "Name is required";
-    if (!qualifications.trim())
+    if (!name.trim()) {
+      e.name = "Name is required";
+    } else if (name.trim().length < 2) {
+      e.name = "Name must be at least 2 characters";
+    } else if (name.trim().length > 100) {
+      e.name = "Name must be under 100 characters";
+    }
+    if (!qualifications.trim()) {
       e.qualifications = "At least one qualification required";
-    if (!description.trim() || description.trim().length < 10)
+    } else if (qualifications.trim().length > 300) {
+      e.qualifications = "Qualifications must be under 300 characters";
+    }
+    if (!description.trim() || description.trim().length < 10) {
       e.description = "Description must be at least 10 characters";
-    if (!demoClass.trim()) e.demoClass = "Demo class URL is required";
-    if (!price || Number(price) <= 0) e.price = "Price must be greater than 0";
+    } else if (description.trim().length > 1000) {
+      e.description = "Description must be under 1000 characters";
+    }
+    if (!demoClass.trim()) {
+      e.demoClass = "Demo class URL is required";
+    } else {
+      try { new URL(demoClass.trim()); } catch {
+        e.demoClass = "Must be a valid URL (starting with https://)";
+      }
+    }
+    if (!price || Number(price) <= 0) {
+      e.price = "Price must be greater than 0";
+    } else if (Number(price) > 999999) {
+      e.price = "Price must be under ₹9,99,999";
+    }
     if (mode === "create" && !imageFile && !imagePayload)
       e.image = "Image is required";
     const allSelected = subjectGroups.flatMap((g) => g.selected);
@@ -528,6 +570,9 @@ export default function FacultyModal({
       e.chapters = "Add at least one chapter";
     return e;
   };
+
+  const clearFieldError = (field: string) =>
+    setErrors((prev) => { const next = { ...prev }; delete next[field]; return next; });
 
   /* ================================================================ */
   /* SUBMIT                                                             */
@@ -621,7 +666,8 @@ export default function FacultyModal({
               <Field label="Faculty Name" error={errors.name}>
                 <input
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => { setName(e.target.value); clearFieldError("name"); }}
+                  maxLength={100}
                   placeholder="Enter faculty name"
                   className={inp(!!errors.name)}
                 />
@@ -633,7 +679,8 @@ export default function FacultyModal({
               >
                 <input
                   value={qualifications}
-                  onChange={(e) => setQualifications(e.target.value)}
+                  onChange={(e) => { setQualifications(e.target.value); clearFieldError("qualifications"); }}
+                  maxLength={300}
                   placeholder="MSc Physics, B.Ed"
                   className={inp(!!errors.qualifications)}
                 />
@@ -641,17 +688,23 @@ export default function FacultyModal({
               <Field label="Description" error={errors.description}>
                 <textarea
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => { setDescription(e.target.value); clearFieldError("description"); }}
                   rows={3}
+                  maxLength={1000}
                   placeholder="Brief teaching background…"
                   className={inp(!!errors.description) + " resize-none"}
                 />
+                <div className="flex justify-end mt-0.5">
+                  <span className={`text-xs ${description.length > 950 ? "text-red-500" : "text-gray-400"}`}>
+                    {description.length}/1000
+                  </span>
+                </div>
               </Field>
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Demo Class URL" error={errors.demoClass}>
                   <input
                     value={demoClass}
-                    onChange={(e) => setDemoClass(e.target.value)}
+                    onChange={(e) => { setDemoClass(e.target.value); clearFieldError("demoClass"); }}
                     placeholder="https://youtu.be/..."
                     className={inp(!!errors.demoClass)}
                   />
@@ -660,11 +713,12 @@ export default function FacultyModal({
                   <input
                     type="number"
                     value={price}
-                    onChange={(e) =>
-                      setPrice(
-                        e.target.value === "" ? "" : Number(e.target.value)
-                      )
-                    }
+                    min={1}
+                    max={999999}
+                    onChange={(e) => {
+                      setPrice(e.target.value === "" ? "" : Number(e.target.value));
+                      clearFieldError("price");
+                    }}
                     placeholder="e.g. 1500"
                     className={inp(!!errors.price)}
                   />
@@ -701,11 +755,16 @@ export default function FacultyModal({
                   accept="image/*"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) {
-                      setImageFile(file);
-                      setImageUrl(URL.createObjectURL(file));
-                      setCropOpen(true);
+                    if (!file) return;
+                    if (file.size > 5 * 1024 * 1024) {
+                      setErrors((prev) => ({ ...prev, image: "Image must be under 5 MB" }));
+                      e.target.value = "";
+                      return;
                     }
+                    clearFieldError("image");
+                    setImageFile(file);
+                    setImageUrl(URL.createObjectURL(file));
+                    setCropOpen(true);
                   }}
                 />
               </div>
@@ -865,8 +924,8 @@ export default function FacultyModal({
                 <input
                   type="time"
                   value={newTime}
-                  onChange={(e) => setNewTime(e.target.value)}
-                  className={inp(false) + " flex-1"}
+                  onChange={(e) => { setNewTime(e.target.value); setSlotError(""); }}
+                  className={inp(!!slotError) + " flex-1"}
                 />
                 <button
                   type="button"
@@ -877,6 +936,9 @@ export default function FacultyModal({
                   {slotWorking ? "…" : "+ Add"}
                 </button>
               </div>
+              {slotError && (
+                <p className="text-xs text-red-500 mt-0.5">{slotError}</p>
+              )}
 
               {/* Active */}
               {timeSlots.some((s) => s.isAvailable) && (
@@ -980,7 +1042,7 @@ export default function FacultyModal({
                 <div className="flex gap-2 mt-2">
                   <select
                     value={chapterId}
-                    onChange={(e) => setChapterId(e.target.value)}
+                    onChange={(e) => { setChapterId(e.target.value); setChapterError(""); }}
                     className={sel() + " flex-1"}
                   >
                     <option value="">Select chapter</option>
@@ -999,6 +1061,9 @@ export default function FacultyModal({
                     {chapterWorking ? "…" : "+ Add"}
                   </button>
                 </div>
+              )}
+              {chapterError && (
+                <p className="text-xs text-red-500 mt-0.5">{chapterError}</p>
               )}
 
               {/* Active chapter slots */}

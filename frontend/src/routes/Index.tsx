@@ -3,8 +3,7 @@ import App from "../App";
 import UserLayout from "../shared/layouts/UserLayoutes";
 import adminRoutes from "./AdminRoute";
 import AdminLayout from "../shared/layouts/AdminLayoutes";
-import AdminBootstrap from "../features/admin/components/AdminBootstrap";
-import { Children } from "react";
+import NotFoundPage from "../shared/pages/NotFoundPage";
 
 
 const allRoutes = [
@@ -20,9 +19,11 @@ const allRoutes = [
         path: "admin",
         element: <AdminLayout />,
         children: [
-          ...adminRoutes
+          ...adminRoutes,
+          { path: "*", element: <NotFoundPage /> },
         ],
       },
+      { path: "*", element: <NotFoundPage /> },
     ],
   },
 ];

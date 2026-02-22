@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { logout } from "../../../shared/utils/logout";
 import { useLogout } from "../../auth/hooks/useLogout";
 import toast from "react-hot-toast";
@@ -11,6 +11,9 @@ const navItems = [
   { label: "Subjects", path: "/admin/subjects" },
   { label: "Chapters", path: "/admin/chapters" },
   { label: "Bookings", path: "/admin/bookings" },
+  { label: "Testimonials", path: "/admin/testimonials" },
+  { label: "Blogs", path: "/admin/blogs" },
+  { label: "Banners", path: "/admin/banners" },
   { label: "Students", path: "/admin/students" },
 ];
 
@@ -41,7 +44,7 @@ const AdminNavbar: React.FC = () => {
       <div className="flex items-center justify-between h-16 px-4 md:px-6">
 
         {/* Brand */}
-        <div className="flex items-center gap-3">
+        <Link to="/admin/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <div className="h-9 w-9 rounded bg-[#DB313E] text-white flex items-center justify-center font-bold">
             ML
           </div>
@@ -53,7 +56,7 @@ const AdminNavbar: React.FC = () => {
               Admin Panel
             </p>
           </div>
-        </div>
+        </Link>
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
