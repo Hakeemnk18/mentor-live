@@ -55,20 +55,32 @@ export default function AdminTable<T>({
 
                 {actions && (
                   <td className="px-4 py-3 text-right space-x-3">
-                    {actions.map((action) => (
-                      <button
-                        key={action.label}
-                        onClick={() => action.onClick(row)}
-                        className={`text-sm font-medium cursor-pointer transition-opacity
-                          ${
-                            action.variant === "danger"
-                              ? "text-red-600 hover:opacity-80"
-                              : "text-gray-600 hover:text-[#DB313E]"
-                          }`}
-                      >
-                        {action.label}
-                      </button>
-                    ))}
+                    {actions.map((action) => {
+                      const label =
+                        typeof action.label === "function"
+                          ? action.label(row)
+                          : action.label;
+                      const customClass =
+                        typeof action.className === "function"
+                          ? action.className(row)
+                          : action.className;
+                      return (
+                        <button
+                          key={label}
+                          onClick={() => action.onClick(row)}
+                          className={
+                            customClass ??
+                            `text-sm font-medium cursor-pointer transition-opacity ${
+                              action.variant === "danger"
+                                ? "text-red-600 hover:opacity-80"
+                                : "text-gray-600 hover:text-[#DB313E]"
+                            }`
+                          }
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
                   </td>
                 )}
               </tr>

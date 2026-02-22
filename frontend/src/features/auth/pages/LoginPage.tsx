@@ -32,17 +32,20 @@ const LoginPage = ({ role }: LoginPageProps) => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    setIsSubmitting(true)
     e.preventDefault();
-
     const newErrors: typeof errors = {};
 
-    if (!formData.email.includes("@")) {
-      newErrors.email = "Invalid email";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!emailRegex.test(formData.email.trim())) {
+      newErrors.email = "Enter a valid email address";
     }
 
-    if (formData.password.trim().length < 6) {
-      newErrors.password = "Min 6 characters";
+    if (!formData.password) {
+      newErrors.password = "Password is required";
+    } else if (formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
     }
 
     if (Object.keys(newErrors).length) {
@@ -50,6 +53,7 @@ const LoginPage = ({ role }: LoginPageProps) => {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await loginMutate({ data: formData, role });
 
@@ -61,10 +65,11 @@ const LoginPage = ({ role }: LoginPageProps) => {
     } catch (err: any) {
       const fieldErrors = handleApiError(err);
       if (fieldErrors) setErrors(fieldErrors);
-    }finally{
-      setIsSubmitting(false)
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
 
   const handleForgotPassword = async (email: string) => {
     //await forgotPasswordMutate({ email });
@@ -97,6 +102,7 @@ const LoginPage = ({ role }: LoginPageProps) => {
             placeholder="Email address"
             value={formData.email}
             onChange={handleChange}
+            maxLength={254}
             className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
               errors.email
                 ? "border-red-500 focus:ring-red-200"
@@ -118,6 +124,7 @@ const LoginPage = ({ role }: LoginPageProps) => {
             placeholder="Password"
             value={formData.password}
             onChange={handleChange}
+            maxLength={128}
             className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
               errors.password
                 ? "border-red-500 focus:ring-red-200"

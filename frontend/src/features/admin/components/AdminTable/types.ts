@@ -7,7 +7,8 @@ export type Column<T> = {
 };
 
 export type TableAction<T> = {
-  label: string;
+  label: string | ((row: T) => string);
   onClick: (row: T) => void;
   variant?: "primary" | "danger";
+  className?: string | ((row: T) => string);
 };

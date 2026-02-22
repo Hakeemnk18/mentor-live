@@ -6,6 +6,10 @@ import Home from "../features/admin/pages/Home"
 import SubjectPage from "../features/admin/pages/SubjectTable"
 import SyllabusPage from "../features/admin/pages/SyllabusTable"
 import BookingsPage from "../features/admin/pages/BookingsPage"
+import TestimonialsPage from "../features/admin/pages/TestimonialsPage"
+import BlogsPage from "../features/admin/pages/BlogsPage"
+import BannersPage from "../features/admin/pages/BannersPage"
+import StudentsPage from "../features/admin/pages/StudentsPage"
 import AdminDashboard from "../features/auth/pages/AdminDashboard"
 import LoginPage from "../features/auth/pages/LoginPage"
 
@@ -87,6 +91,38 @@ const adminRoutes = [
                 <BookingsPage />
             </AdminBootstrap>
         )
-    }
+    },
+    {
+        path: "testimonials",
+        element: (
+            <AdminBootstrap>
+                <TestimonialsPage />
+            </AdminBootstrap>
+        )
+    },
+    {
+        path: "blogs",
+        element: (
+            <AdminBootstrap>
+                <BlogsPage />
+            </AdminBootstrap>
+        )
+    },
+    {
+        path: "banners",
+        element: (
+            <AdminBootstrap>
+                <BannersPage />
+            </AdminBootstrap>
+        )
+    },
+    {
+        path: "students",
+        element: (
+            <AdminBootstrap>
+                <StudentsPage />
+            </AdminBootstrap>
+        )
+    },
 ]
 export default adminRoutes
