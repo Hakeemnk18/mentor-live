@@ -15,7 +15,7 @@ import type {
 export interface IBookingRepository {
   create(bookingEntity: Booking): Promise<Booking>;
   findById(id: string): Promise<Booking | null>;
-  save(bookingEntity: Booking): Promise<Booking>;
+  save(bookingEntity: Booking, session?: ClientSession): Promise<Booking>;
   findAllForUser(): Promise<{ id: string; status: string }[]>;
   countDocument(query: Record<string, any>): Promise<number>;
   findExistingBooking(props: ExistingBookingProps): Promise<boolean>;
