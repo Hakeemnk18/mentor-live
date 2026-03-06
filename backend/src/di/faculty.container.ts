@@ -29,6 +29,8 @@ import type { ISetFacultySlotAvailabilityUseCase } from "../modules/faculty/use-
 import { SetFacultySlotAvailabilityUseCase } from "../modules/faculty/use-cases/set.faculty.slot.availability.usecase.js";
 import type { IGetAvailableSlotsUseCase } from "../modules/faculty/use-cases/interfaces/get.available.slots.use-case.interface.js";
 import { GetAvailableSlotsUseCase } from "../modules/faculty/use-cases/get.available.slots.use-case.js";
+import type { IGetUserSlotDetailsUseCase } from "../modules/faculty/use-cases/interfaces/get.user.slot.details.interface.js";
+import { GetUserSlotDetailsUseCase } from "../modules/faculty/use-cases/get.user.slot.details.js";
 
 export const registerFacultyDependencies = () => {
   container.register<IFacultyRepository>("IFacultyRepository", {
@@ -89,5 +91,9 @@ export const registerFacultyDependencies = () => {
 
   container.register<IGetAvailableSlotsUseCase>("IGetAvailableSlotsUseCase", {
     useClass: GetAvailableSlotsUseCase,
+  });
+
+  container.register<IGetUserSlotDetailsUseCase>("IGetUserSlotDetailsUseCase", {
+    useClass: GetUserSlotDetailsUseCase,
   });
 };
