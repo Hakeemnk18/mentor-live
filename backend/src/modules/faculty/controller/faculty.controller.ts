@@ -36,6 +36,7 @@ import { availabilitySchema } from "../../../core/utils/validate.is-availble.js"
 import type { IBlockFacultyUseCase } from "../use-cases/interfaces/block.faculty.use-case.interface.js";
 import type { IUnblockFacultyUseCase } from "../use-cases/interfaces/unblock.faculty.interface.js";
 import type { IGetAvailableSlotsUseCase } from "../use-cases/interfaces/get.available.slots.use-case.interface.js";
+import type { IGetUserSlotDetailsUseCase } from "../use-cases/interfaces/get.user.slot.details.interface.js";
 
 @injectable()
 export class FacultyController implements IFacultyController {
@@ -82,8 +83,11 @@ export class FacultyController implements IFacultyController {
     @inject("IGetAvailableSlotsUseCase")
     private readonly _getAvailableSlotsUseCase: IGetAvailableSlotsUseCase,
 
-    
-  ) {}
+    @inject("IGetUserSlotDetailsUseCase")
+    private readonly _getUserSlotDetailsUseCase: IGetUserSlotDetailsUseCase,
+
+
+  ) { }
 
   async createFaculty(req: Request, res: Response): Promise<void> {
     try {
@@ -246,14 +250,9 @@ export class FacultyController implements IFacultyController {
       validateObjectId(req.params.id);
 
       const facultyId = req.params.id;
-      let slotId;
-      if (req.query.slotId) {
-        slotId = ObjectIdSchema.parse(req.query.slotId);
-      }
 
       const data = await this._getFacultyDetailsBySlotUseCase.execute(
         facultyId!,
-        slotId,
       );
       res.status(HttpStatusCode.OK).json({
         message: ResponseMessages.SUCCESS,
@@ -334,7 +333,7 @@ export class FacultyController implements IFacultyController {
   }
 
   async unblockFaculty(req: Request, res: Response): Promise<void> {
-    try { 
+    try {
       const facultyId = req.params.id;
       validateObjectId(facultyId);
       await this._unblockFacultyUseCase.execute(facultyId!);
@@ -352,7 +351,7 @@ export class FacultyController implements IFacultyController {
     try {
       const facultyId = req.params.id;
       validateObjectId(facultyId);
-      const availableSlots = await this._getAvailableSlotsUseCase.execute(facultyId!);  
+      const availableSlots = await this._getAvailableSlotsUseCase.execute(facultyId!);
       res.status(HttpStatusCode.OK).json({
         message: ResponseMessages.SUCCESS,
         success: true,
@@ -360,6 +359,25 @@ export class FacultyController implements IFacultyController {
       });
     } catch (error) {
       console.log("Error in getting available slots:", error);
+      handleError(res, error);
+    }
+  }
+
+  async getUserSlotDetails(req: Request, res: Response): Promise<void> {
+    try {
+      validateObjectId(req.params.id);
+      const facultyId = req.params.id;
+      const slotId = ObjectIdSchema.parse(req.query.slotId);
+
+      const slotDetails = await this._getUserSlotDetailsUseCase.execute(facultyId!, slotId!);
+
+      res.status(HttpStatusCode.OK).json({
+        message: ResponseMessages.SUCCESS,
+        success: true,
+        data: slotDetails,
+      });
+    } catch (error) {
+      console.log("Error in getting user slot details:", error);
       handleError(res, error);
     }
   }
