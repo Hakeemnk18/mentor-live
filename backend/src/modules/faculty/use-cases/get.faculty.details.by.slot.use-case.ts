@@ -11,21 +11,13 @@ export class GetFacultyDetailsBySlotUseCase implements IGetFacultyDetailsBySlotU
   constructor(
     @inject("IFacultyRepository")
     private readonly _facultyRepository: IFacultyRepository,
-  ) {}
+  ) { }
   async execute(
     facultyId: string,
-    slotId?: string,
   ): Promise<FacultyDetailsViewForUser> {
 
-    let faculty;
-    if (slotId) {
-      faculty = await this._facultyRepository.findFacultyFullByIdAndSlot(
-        facultyId,
-        slotId,
-      );
-    }else{
-        faculty = await this._facultyRepository.findFacultyByIdWithFirstSlot(facultyId)
-    }
+    const faculty = await this._facultyRepository.findFacultyByIdWithFirstSlot(facultyId)
+
 
     if (!faculty) {
       throw new CustomError(
