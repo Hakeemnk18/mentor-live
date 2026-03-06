@@ -75,7 +75,7 @@ router.patch(
 );
 
 router.get(
-  "/:id/slots-details",
+  "/:id/slot-details",
   (req, res) => facultyController.getUserSlotDetails(req, res),
 );
 
