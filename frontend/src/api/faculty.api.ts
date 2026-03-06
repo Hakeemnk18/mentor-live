@@ -25,6 +25,51 @@ export const getFaculties = async (params: {
   
   return res.data;
 };
+
+export type FacultyListParams = {
+  syllabusId: string;
+  classId: string;
+  subjectId?: string;
+  page?: number;
+  limit?: number;
+  sort?: string;
+  search?: string;
+};
+
+export type FacultyListItem = {
+  id: string;
+  name: string;
+  qualifications: string[];
+  description: string;
+  price: number;
+  image?: string;
+};
+
+export const getFacultiesList = async (
+  params: FacultyListParams
+): Promise<{ data: FacultyListItem[] }> => {
+  const res = await axiosInstance.get("/faculties/list", {
+    params: { type: "class", ...params },
+  });
+  return res.data;
+};
+
+export type FacultyByChapterParams = {
+  chapterId: string;
+  page?: number;
+  limit?: number;
+  sort?: string;
+  search?: string;
+};
+
+export const getFacultiesByChapter = async (
+  params: FacultyByChapterParams
+): Promise<{ data: FacultyListItem[] }> => {
+  const res = await axiosInstance.get("/faculties/list", {
+    params: { type: "chapter", ...params },
+  });
+  return res.data;
+};
 export const createFaculty = async (
   payload: CreateFacultyPayload
 ) => {

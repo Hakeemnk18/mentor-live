@@ -50,7 +50,7 @@ export const getSubjectVariants = async (
   const apiData = res.data;
 
   return apiData.data.map((v: SubjectVariantsForChapterApi) => ({
-    _id: v.id,
+    _id: v.subject.id,
     subjectName: v.subject.name,
   }));
 };
