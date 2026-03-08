@@ -254,7 +254,7 @@ export class FacultyRepository implements IFacultyRepository {
       qualifications: doc.qualifications,
       description: doc.description,
       demoClass: doc.demoClass,
-      image: doc.image.url,
+      image: doc.image,
       price: doc.price,
       isDeleted: doc.isDeleted,
 
@@ -720,7 +720,7 @@ export class FacultyRepository implements IFacultyRepository {
     slotId: string,
     session?: ClientSession,
   ): Promise<void> {
-    
+
     const result = await FacultyModel.updateOne(
       {
         _id: new ObjectId(facultyId),
@@ -750,7 +750,7 @@ export class FacultyRepository implements IFacultyRepository {
     slotIds: string[],
     session?: ClientSession,
   ): Promise<void> {
-    
+
     const result = await FacultyModel.updateOne(
       {
         _id: facultyId,
@@ -883,7 +883,7 @@ export class FacultyRepository implements IFacultyRepository {
 
   async setSlotAvailability(
     params: SetSlotAvailabilityDto,
-    
+
   ): Promise<void> {
     const { facultyId, mode, isAvailable } = params;
 
@@ -921,7 +921,7 @@ export class FacultyRepository implements IFacultyRepository {
     const result = await FacultyModel.updateOne(
       { _id: facultyId },
       updateQuery,
-      { arrayFilters},
+      { arrayFilters },
     );
 
     if (result.matchedCount === 0) {

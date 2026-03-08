@@ -65,7 +65,10 @@ export type FacultyView = Pick<
   | "price"
   | "isDeleted"
 > & {
-  image: string;
+  image: {
+    url: string;
+    publicId: string;
+  };
 };
 
 export type FacultySubjectOfferingView = SubjectVariantWithSubjectView;
@@ -133,8 +136,8 @@ export type SlotMode = "slot" | "chapter";
 export interface SetSlotAvailabilityDto {
   facultyId: string;
   mode: SlotMode;
-  slotId?: string;      
-  chapterId?: string;   
+  slotId?: string;
+  chapterId?: string;
   isAvailable: boolean;
 }
 
