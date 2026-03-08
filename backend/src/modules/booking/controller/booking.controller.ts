@@ -21,6 +21,7 @@ import type { IConfirmChapterPoolingBookingUseCase } from "../use-cases/interfac
 import { ConfirmChapterPoolingBookingSchema } from "../dto/confirm.chapter.pooling.dto.js";
 import type { IRemoveStudentFromPoolingUseCase } from "../use-cases/interfaces/remove.student.from.pooling.use-case.interface.js";
 import { RemoveUserFromPoolSchema } from "../dto/remove.student.from.pooling.dto.js";
+import { log } from "node:console";
 
 @injectable()
 export class BookingController implements IBookingController {
@@ -55,9 +56,11 @@ export class BookingController implements IBookingController {
 
   async createBooking(req: Request, res: Response): Promise<void> {
     try {
+      console.log(req.body);
       const dto = CreateBookingSchema.parse(req.body);
+      console.log(dto);
       await this._createBookingUseCase.execute(dto);
-
+      console.log("booking created successfully");
       res.status(HttpStatusCode.OK).json({
         message: ResponseMessages.BOOKING_CREATED,
         success: true,

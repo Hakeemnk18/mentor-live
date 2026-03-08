@@ -4,7 +4,7 @@ import { Link, NavLink } from "react-router-dom";
 const navItems = [
   { label: "Home", path: "/" },
   { label: "Blogs", path: "/blogs" },
-  { label: "How it Works", path: "/how-it-works" },
+  { label: "How it Works", path: "/#how-it-works" },
 ];
 
 const UserNavbar: React.FC = () => {

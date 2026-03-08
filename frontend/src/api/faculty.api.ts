@@ -87,12 +87,31 @@ export const getFacultyById = async (id: string) => {
   return res.data.data; // assume backend returns { data: faculty }
 };
 
+/** Fetch faculty details for a specific chapter */
+export const getFacultyByChapter = async (facultyId: string, chapterId: string) => {
+  const res = await axiosInstance.get(`/faculties/${facultyId}/chapter`, {
+    params: { chapterId },
+  });
+  return res.data.data;
+};
+
 /** Fetch only available (unbooked) time slots for a faculty — used in booking confirm flows */
 export const getFacultyAvailableSlots = async (
   facultyId: string
 ): Promise<{ id: string; time: string }[]> => {
   const res = await axiosInstance.get(`/faculties/${facultyId}/available-slots`);
   return res.data.data ?? [];
+};
+
+/** Fetch slot details (pool info, price, etc.) for a specific slot */
+export const getFacultySlotDetails = async (
+  facultyId: string,
+  slotId: string
+) => {
+  const res = await axiosInstance.get(`/faculties/${facultyId}/slot-details`, {
+    params: { slotId },
+  });
+  return res.data.data;
 };
 
 /* ── Time slot ─────────────────────────────── */

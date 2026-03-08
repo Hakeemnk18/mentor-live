@@ -135,6 +135,7 @@ const ChapterFacultyPage: React.FC = () => {
                   qualifications={f.qualifications}
                   description={f.description}
                   image={f.image}
+                  chapterId={chapterId}
                 />
               ))}
             </div>

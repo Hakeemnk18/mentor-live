@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import heroImage from "/hero-image.png";
 import { getFaculties } from "../../../api/faculty.api";
@@ -16,6 +17,19 @@ const stats = [
 ];
 
 const LandingPage: React.FC = () => {
+  const { hash } = useLocation();
+
+  useEffect(() => {
+    if (hash) {
+      const element = document.getElementById(hash.substring(1));
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [hash]);
+
   return (
     <div>
 
@@ -266,7 +280,7 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* ─── How Learning Works Section ─── */}
-      <section className="bg-[#F3F3F3]">
+      <section id="how-it-works" className="bg-[#F3F3F3]">
         <div className="max-w-7xl mx-auto px-5 md:px-8 py-16 md:py-24">
           {/* Heading */}
           <div className="text-center mb-14">
@@ -457,10 +471,10 @@ const BLOGS_PER_PAGE = 3;
 const BlogSection: React.FC = () => {
   const { data, isLoading } = useQuery({
     queryKey: ["landing-blogs"],
-    queryFn: getBlogs,
+    queryFn: () => getBlogs({ limit: 9 }),
   });
 
-  const blogs = (data ?? []).filter((b) => !b.isDeleted);
+  const blogs = (data?.data ?? []).filter((b) => !b.isDeleted);
   const [page, setPage] = useState(0);
   const totalPages = Math.max(1, Math.ceil(blogs.length / BLOGS_PER_PAGE));
   const visible = blogs.slice(
@@ -530,7 +544,7 @@ const BlogSection: React.FC = () => {
               {visible.map((b) => (
                 <BlogCard
                   key={b.id}
-                  slug={b.slug}
+                  id={b.id}
                   heading={b.heading}
                   description={b.description}
                   author={b.author}

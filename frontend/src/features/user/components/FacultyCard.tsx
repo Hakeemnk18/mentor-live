@@ -6,6 +6,7 @@ type FacultyCardProps = {
   qualifications: string[];
   description: string;
   image?: { url: string; publicId: string } | string;
+  chapterId?: string;
 };
 
 const FacultyCard: React.FC<FacultyCardProps> = ({
@@ -14,6 +15,7 @@ const FacultyCard: React.FC<FacultyCardProps> = ({
   qualifications,
   description,
   image,
+  chapterId,
 }) => {
   const navigate = useNavigate();
   const imgUrl =
@@ -22,7 +24,9 @@ const FacultyCard: React.FC<FacultyCardProps> = ({
       : image?.url ?? "";
 
   const handleClick = () => {
-    navigate("/faculty-details", { state: { facultyId: id } });
+    navigate("/faculty-details", {
+      state: { facultyId: id, ...(chapterId ? { chapterId } : {}) },
+    });
   };
 
   return (

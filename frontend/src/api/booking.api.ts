@@ -1,5 +1,39 @@
 import axiosInstance from "./axios.instance";
 
+/* ── User-side booking creation ─────────────────────────── */
+export interface CreateBookingUserPayload {
+  name: string;
+  class: string;
+  place: string;
+  phoneNumber: string;
+  school: string;
+  syllabus: string;
+}
+
+export interface CreateBookingPayload {
+  user: CreateBookingUserPayload;
+  booking: {
+    facultyId: string;
+    type: "oneToOne" | "pooling";
+    mode: "slot" | "chapter";
+    slotId?: string[];
+    chapterId?: string;
+  };
+}
+
+export const createBooking = async (payload: CreateBookingPayload) => {
+  try {
+    const res = await axiosInstance.post("/bookings", payload);
+    return res.data;
+  } catch (err: any) {
+    // Re-throw with the server's error body so the modal can parse it
+    if (err.response?.data) {
+      throw err.response.data;
+    }
+    throw err;
+  }
+};
+
 /* ── Shared filter params ─────────────────────────────── */
 export interface BookingFilters {
   search?: string;

@@ -1,12 +1,19 @@
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { getFacultyById, getFacultyAvailableSlots } from "../../../api/faculty.api";
+import {
+  getFacultyById,
+  getFacultyByChapter,
+  getFacultyAvailableSlots,
+  getFacultySlotDetails,
+} from "../../../api/faculty.api";
+import BookingModal from "../components/BookingModal";
 
 type SlotData = {
   id: string;
   isAvailable: boolean;
-  time: string;
+  time?: string;
+  chapter?: { id: string; name: string };
   pool: any[];
   poolLimit: number;
 };
@@ -33,36 +40,64 @@ const formatTime = (iso: string) => {
 
 const FacultyDetailsPage: React.FC = () => {
   const location = useLocation();
-  const { facultyId = "" } = (location.state ?? {}) as { facultyId?: string };
+  const { facultyId = "", chapterId } = (location.state ?? {}) as {
+    facultyId?: string;
+    chapterId?: string;
+  };
 
+  const isChapterMode = !!chapterId;
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const [bookingType, setBookingType] = useState<"oneToOne" | "pooling">("pooling");
 
-  /* ── Fetch faculty details ── */
-  const { data: faculty, isLoading, isError } = useQuery<FacultyData>({
-    queryKey: ["faculty-detail", facultyId],
-    queryFn: () => getFacultyById(facultyId),
+  /* ── Fetch faculty details (slot-based or chapter-based) ── */
+  const {
+    data: faculty,
+    isLoading,
+    isError,
+  } = useQuery<FacultyData>({
+    queryKey: isChapterMode
+      ? ["faculty-detail-chapter", facultyId, chapterId]
+      : ["faculty-detail", facultyId],
+    queryFn: () =>
+      isChapterMode
+        ? getFacultyByChapter(facultyId, chapterId!)
+        : getFacultyById(facultyId),
     enabled: !!facultyId,
+    refetchOnWindowFocus: false,
   });
 
-  /* ── Fetch available slots ── */
+  /* ── Fetch available slots (only in slot mode) ── */
   const { data: slots } = useQuery({
     queryKey: ["faculty-slots", facultyId],
     queryFn: () => getFacultyAvailableSlots(facultyId),
-    enabled: !!facultyId,
+    enabled: !!facultyId && !isChapterMode,
+    refetchOnWindowFocus: false,
+  });
+
+  /* ── Fetch selected slot details (only in slot mode) ── */
+  const { data: selectedSlotData } = useQuery({
+    queryKey: ["slot-details", facultyId, selectedSlotId],
+    queryFn: () => getFacultySlotDetails(facultyId, selectedSlotId!),
+    enabled: !!facultyId && !!selectedSlotId && !isChapterMode,
+    refetchOnWindowFocus: false,
   });
 
   const availableSlots = slots ?? [];
-  const currentSlot = faculty?.slot;
-  const poolCount = currentSlot?.pool?.length ?? 0;
-  const poolLimit = currentSlot?.poolLimit ?? 5;
+
+  // Use selected slot data if available, otherwise fall back to initial slot from faculty
+  const activeSlot = selectedSlotData ?? faculty?.slot;
+  const poolCount = activeSlot?.pool?.length ?? 0;
+  const poolLimit = activeSlot?.poolLimit ?? 5;
+  const slotPrice = faculty?.price ?? 0;
 
   // Price tiers for pooling visualization
   const priceTiers = [
-    { count: 1, label: `${faculty?.price ?? 0}`, suffix: "/each" },
-    { count: 2, label: `${Math.round((faculty?.price ?? 0) / 2)}`, suffix: "/each" },
-    { count: 3, label: `${Math.round((faculty?.price ?? 0) / 3)}`, suffix: "/each" },
-    { count: 4, label: `${Math.round((faculty?.price ?? 0) / 4)}`, suffix: "/each" },
-    { count: 5, label: `${Math.round((faculty?.price ?? 0) / 5)}`, suffix: "/each" },
+    { count: 1, label: `${slotPrice}`, suffix: "/each" },
+    { count: 2, label: `${Math.round(slotPrice / 2)}`, suffix: "/each" },
+    { count: 3, label: `${Math.round(slotPrice / 3)}`, suffix: "/each" },
+    { count: 4, label: `${Math.round(slotPrice / 4)}`, suffix: "/each" },
+    { count: 5, label: `${Math.round(slotPrice / 5)}`, suffix: "/each" },
   ];
 
   if (isLoading) {
@@ -128,9 +163,11 @@ const FacultyDetailsPage: React.FC = () => {
               <span className="bg-[#DB313E] text-white text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
                 {faculty.qualifications[0] ?? "Faculty"}
               </span>
-              {/* <span className="text-gray-400 text-sm">
-                {faculty.description?.match(/\d+\s*years?/i)?.[0] ?? ""} experience
-              </span> */}
+              {isChapterMode && activeSlot?.chapter && (
+                <span className="bg-gray-700 text-white text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
+                  {activeSlot.chapter.name}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -195,36 +232,53 @@ const FacultyDetailsPage: React.FC = () => {
               </div>
             )}
 
-            {/* Available Slots */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-1 h-6 bg-[#DB313E] rounded-full" />
-                <h2 className="text-base font-extrabold text-gray-900 uppercase tracking-wide">
-                  Available Slots
-                </h2>
+            {/* Available Slots — only in slot mode */}
+            {!isChapterMode && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-6 bg-[#DB313E] rounded-full" />
+                  <h2 className="text-base font-extrabold text-gray-900 uppercase tracking-wide">
+                    Available Slots
+                  </h2>
+                </div>
+                <div className="flex flex-wrap gap-2 pl-3">
+                  {availableSlots.length === 0 && (
+                    <p className="text-gray-400 text-sm">No available slots at the moment.</p>
+                  )}
+                  {availableSlots.map((s) => {
+                    const isSelected = selectedSlotId === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        onClick={() => setSelectedSlotId(s.id)}
+                        className={`px-4 py-2 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-[#DB313E] text-white shadow-sm"
+                            : "bg-[#DB313E]/10 text-[#DB313E] hover:bg-[#DB313E]/20"
+                        }`}
+                      >
+                        {formatTime(s.time)}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2 pl-3">
-                {availableSlots.length === 0 && (
-                  <p className="text-gray-400 text-sm">No available slots at the moment.</p>
-                )}
-                {availableSlots.map((s) => {
-                  const isSelected = selectedSlotId === s.id;
-                  return (
-                    <button
-                      key={s.id}
-                      onClick={() => setSelectedSlotId(s.id)}
-                      className={`px-4 py-2 text-xs font-bold rounded-md transition-all cursor-pointer ${
-                        isSelected
-                          ? "bg-[#DB313E] text-white shadow-sm"
-                          : "bg-[#DB313E]/10 text-[#DB313E] hover:bg-[#DB313E]/20"
-                      }`}
-                    >
-                      {formatTime(s.time)}
-                    </button>
-                  );
-                })}
+            )}
+
+            {/* Chapter info — only in chapter mode */}
+            {isChapterMode && activeSlot?.chapter && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-6 bg-[#DB313E] rounded-full" />
+                  <h2 className="text-base font-extrabold text-gray-900 uppercase tracking-wide">
+                    Chapter
+                  </h2>
+                </div>
+                <p className="text-gray-600 text-sm font-medium pl-3">
+                  {activeSlot.chapter.name}
+                </p>
               </div>
-            </div>
+            )}
           </div>
 
           {/* RIGHT COLUMN — Pooling Card (2/5) */}
@@ -274,11 +328,32 @@ const FacultyDetailsPage: React.FC = () => {
               )}
 
               {/* Action buttons */}
+              {(!isChapterMode && !selectedSlotId) && (
+                <p className="text-[#DB313E] text-xs font-bold text-center mb-3">
+                  Please select a time slot to proceed.
+                </p>
+              )}
               <div className="space-y-3">
-                <button className="w-full py-3 bg-[#DB313E] text-white text-sm font-bold rounded-md hover:bg-[#c12a36] transition cursor-pointer">
-                  Book This Tutor for ₹{faculty.price}/hr
+                <button
+                  onClick={() => { setBookingType("oneToOne"); setBookingModalOpen(true); }}
+                  disabled={!isChapterMode && !selectedSlotId}
+                  className={`w-full py-3 text-sm font-bold rounded-md transition ${
+                    !isChapterMode && !selectedSlotId
+                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      : "bg-[#111] text-white hover:bg-black cursor-pointer"
+                  }`}
+                >
+                  Book One-on-One — ₹{slotPrice}/hr
                 </button>
-                <button className="w-full py-3 border-2 border-[#DB313E] text-[#DB313E] text-sm font-bold rounded-md hover:bg-[#DB313E]/5 transition cursor-pointer">
+                <button
+                  onClick={() => { setBookingType("pooling"); setBookingModalOpen(true); }}
+                  disabled={!isChapterMode && !selectedSlotId}
+                  className={`w-full py-3 text-sm font-bold rounded-md transition ${
+                    !isChapterMode && !selectedSlotId
+                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      : "bg-[#DB313E] text-white hover:bg-[#c12a36] cursor-pointer"
+                  }`}
+                >
                   Join For Pooling
                 </button>
               </div>
@@ -286,6 +361,16 @@ const FacultyDetailsPage: React.FC = () => {
           </div>
         </div>
       </div>
+      {/* Booking Modal */}
+      <BookingModal
+        isOpen={bookingModalOpen}
+        onClose={() => setBookingModalOpen(false)}
+        bookingType={bookingType}
+        mode={isChapterMode ? "chapter" : "slot"}
+        facultyId={facultyId}
+        slotId={isChapterMode ? undefined : selectedSlotId}
+        chapterId={chapterId}
+      />
     </div>
   );
 };

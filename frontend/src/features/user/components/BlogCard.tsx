@@ -1,21 +1,27 @@
+import { Link } from "react-router-dom";
+
 type BlogCardProps = {
-  slug: string;
+  id: string;
   heading: string;
   description: string;
   author: string;
 };
 
 const BlogCard: React.FC<BlogCardProps> = ({
-  slug,
+  id,
   heading,
   description,
   author,
 }) => {
   return (
-    <div className="bg-white rounded-md shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col min-w-0">
-      {/* Thumbnail placeholder – grey with icon */}
-      <div className="h-48 bg-gray-200 flex items-center justify-center">
-        <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" strokeWidth={1.2} viewBox="0 0 48 48">
+    <div className="bg-white rounded-md shadow-sm border border-gray-100 overflow-hidden flex flex-col min-w-0 transition hover:shadow-md">
+      {/* Thumbnail placeholder */}
+      <div className="relative h-48 bg-slate-800 flex items-center justify-center">
+        {/* Red Education Badge */}
+        <div className="absolute top-4 left-4 bg-[#DB313E] text-white text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-sm">
+          Education
+        </div>
+        <svg className="w-12 h-12 text-slate-600" fill="none" stroke="currentColor" strokeWidth={1.2} viewBox="0 0 48 48">
           <rect x="6" y="8" width="36" height="32" rx="4" />
           <circle cx="18" cy="20" r="4" />
           <path d="M6 34l10-8 6 5 10-10 10 8" strokeLinejoin="round" />
@@ -23,28 +29,27 @@ const BlogCard: React.FC<BlogCardProps> = ({
       </div>
 
       {/* Content */}
-      <div className="p-5 flex flex-col flex-1">
-        <p className="text-[#DB313E] text-xs font-bold uppercase tracking-wider mb-2">
-          {author}
-        </p>
+      <div className="px-6 py-5 flex flex-col flex-1">
+        <Link to={`/blogs/${id}`} className="group outline-none">
+          <h3 className="text-[17px] font-bold text-gray-900 leading-snug mb-3 line-clamp-2 group-hover:text-[#DB313E] transition-colors">
+            {heading}
+          </h3>
+        </Link>
 
-        <h3 className="text-base font-bold text-gray-900 leading-snug mb-1 line-clamp-2">
-          {heading}
-        </h3>
-
-        <p className="text-gray-400 text-[13px] leading-relaxed line-clamp-3 mb-4 flex-1">
+        <p className="text-gray-500 text-[13px] leading-relaxed line-clamp-3 mb-6 flex-1">
           {description}
         </p>
 
-        <a
-          href={`/blogs/${slug}`}
-          className="inline-flex items-center gap-1 text-[#DB313E] text-sm font-semibold hover:underline mt-auto"
-        >
-          Read More
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
-        </a>
+        {/* Footer (Author & Read time) */}
+        <div className="mt-auto flex items-center gap-3 pt-4 border-t border-gray-100">
+          <p className="text-[11px] font-bold text-gray-800 uppercase tracking-widest truncate">
+            {author}
+          </p>
+          <span className="text-gray-300">•</span>
+          <p className="text-[11px] font-medium text-gray-500 flex-shrink-0">
+            5 min read
+          </p>
+        </div>
       </div>
     </div>
   );
