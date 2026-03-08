@@ -88,7 +88,7 @@ export class FacultyMapper {
       qualifications: raw.qualifications ?? [],
       description: raw.description,
       demoClass: raw.demoClass,
-      image: raw.image?.url,
+      image: raw.image,
       price: raw.price,
       isDeleted: raw.isDeleted ?? false,
     };
