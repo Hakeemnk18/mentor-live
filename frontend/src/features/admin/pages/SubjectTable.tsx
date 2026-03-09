@@ -9,6 +9,7 @@ import {
 } from "../../../api/subject.api";
 import toast from "react-hot-toast";
 import TopLoader from "../../../shared/components/TopLoader";
+import Pagination from "../../../shared/components/Pagination";
 import type { Column } from "../components/AdminTable";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import { getSyllabus } from "../../../api/syllabus.api";
@@ -296,32 +297,7 @@ export default function SubjectPage() {
         />
       )}
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between pt-4">
-        <p className="text-sm text-gray-600">
-          Page {page} of {totalPages}
-        </p>
-
-        <div className="flex gap-2">
-          <button
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1 text-sm border rounded
-              disabled:opacity-50 cursor-pointer hover:bg-gray-100"
-          >
-            Prev
-          </button>
-
-          <button
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1 text-sm border rounded
-              disabled:opacity-50 cursor-pointer hover:bg-gray-100"
-          >
-            Next
-          </button>
-        </div>
-      </div>
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
       {/* Modal */}
       <SubjectFormModal
