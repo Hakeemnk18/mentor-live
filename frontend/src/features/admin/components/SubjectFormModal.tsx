@@ -25,7 +25,7 @@ type Props = {
   onUpdateName: (data: { _id: string; name: string }) => void;
   onAddVariants: (data: {
     _id: string;
-    syllabusAndClass: SyllabusAndClassPayload[];
+    variants: VariantRow[];
   }) => void;
 
   loading?: boolean;
