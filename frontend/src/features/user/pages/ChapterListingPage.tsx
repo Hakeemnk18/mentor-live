@@ -127,6 +127,8 @@ const ChapterListingPage: React.FC = () => {
                 price={c.price}
                 icon={c.icon}
                 subjectName=""
+                syllabusId={syllabusId}
+                classId={classId}
               />
             ))}
           </div>

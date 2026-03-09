@@ -6,6 +6,8 @@ type ChapterCardProps = {
   price: number;
   icon?: string;
   subjectName: string;
+  syllabusId?: string;
+  classId?: string;
 };
 
 const ChapterCard: React.FC<ChapterCardProps> = ({
@@ -14,11 +16,13 @@ const ChapterCard: React.FC<ChapterCardProps> = ({
   price,
   icon,
   subjectName,
+  syllabusId,
+  classId,
 }) => {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate("/chapter-faculty", { state: { chapterId: id, chapterName: name } });
+    navigate("/chapter-faculty", { state: { chapterId: id, chapterName: name, syllabusId, classId } });
   };
 
   return (

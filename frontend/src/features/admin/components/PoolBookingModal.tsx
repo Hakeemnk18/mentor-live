@@ -44,7 +44,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed }: Prop
 
   // For chapter-mode: pick time slots from faculty
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
-  const [selectedSlotIds, setSelectedSlotIds] = useState<string[]>([]);
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
   const [confirming, setConfirming] = useState(false);
@@ -57,7 +57,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed }: Prop
     // 1. Fetch student list
     setLoadingDetail(true);
     setDetail(null);
-    setSelectedSlotIds([]);
+    setSelectedSlotId(null);
     const params: Parameters<typeof getPoolStudents>[0] = {
       facultyId: booking.faculty.id,
       mode: booking.mode,
@@ -90,14 +90,12 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed }: Prop
   if (!booking) return null;
 
   const toggleSlot = (id: string) =>
-    setSelectedSlotIds((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
+    setSelectedSlotId((prev) => (prev === id ? null : id));
 
   /* ── confirm ── */
   const handleConfirm = async () => {
-    if (booking.mode === "chapter" && selectedSlotIds.length === 0) {
-      toast.error("Select at least one time slot");
+    if (booking.mode === "chapter" && !selectedSlotId) {
+      toast.error("Select a time slot");
       return;
     }
     try {
@@ -110,7 +108,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed }: Prop
       } else {
         await confirmChapterPooling({
           facultyId: booking.faculty.id,
-          slotId: selectedSlotIds,
+          slotId: [selectedSlotId!],
           chapterId: booking.chapter!.id,
         });
       }
@@ -249,7 +247,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed }: Prop
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {availableSlots.map((s) => {
-                      const selected = selectedSlotIds.includes(s.id);
+                      const selected = selectedSlotId === s.id;
                       return (
                         <button
                           key={s.id}
@@ -283,7 +281,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed }: Prop
               onClick={handleConfirm}
               disabled={
                 confirming ||
-                (booking.mode === "chapter" && selectedSlotIds.length === 0)
+                (booking.mode === "chapter" && !selectedSlotId)
               }
               className="px-4 py-2 text-sm font-medium bg-[#DB313E] text-white rounded-md hover:bg-[#c02535] disabled:opacity-50 transition-colors"
             >

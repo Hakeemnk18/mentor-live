@@ -158,6 +158,8 @@ const FacultyListingPage: React.FC = () => {
                   qualifications={f.qualifications}
                   description={f.description}
                   image={f.image}
+                  syllabusId={syllabusId}
+                  classId={classId}
                 />
               ))}
             </div>

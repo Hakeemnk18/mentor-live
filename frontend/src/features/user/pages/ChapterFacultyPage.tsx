@@ -9,9 +9,11 @@ const LIMIT = 8;
 
 const ChapterFacultyPage: React.FC = () => {
   const location = useLocation();
-  const { chapterId = "", chapterName = "" } = (location.state ?? {}) as {
+  const { chapterId = "", chapterName = "", syllabusId = "", classId = "" } = (location.state ?? {}) as {
     chapterId?: string;
     chapterName?: string;
+    syllabusId?: string;
+    classId?: string;
   };
 
   const [search, setSearch] = useState("");
@@ -136,6 +138,8 @@ const ChapterFacultyPage: React.FC = () => {
                   description={f.description}
                   image={f.image}
                   chapterId={chapterId}
+                  syllabusId={syllabusId}
+                  classId={classId}
                 />
               ))}
             </div>

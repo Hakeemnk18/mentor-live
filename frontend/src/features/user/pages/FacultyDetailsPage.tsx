@@ -40,9 +40,11 @@ const formatTime = (iso: string) => {
 
 const FacultyDetailsPage: React.FC = () => {
   const location = useLocation();
-  const { facultyId = "", chapterId } = (location.state ?? {}) as {
+  const { facultyId = "", chapterId, syllabusId = "", classId = "" } = (location.state ?? {}) as {
     facultyId?: string;
     chapterId?: string;
+    syllabusId?: string;
+    classId?: string;
   };
 
   const isChapterMode = !!chapterId;
@@ -370,6 +372,8 @@ const FacultyDetailsPage: React.FC = () => {
         facultyId={facultyId}
         slotId={isChapterMode ? undefined : selectedSlotId}
         chapterId={chapterId}
+        defaultSyllabusId={syllabusId}
+        defaultClassId={classId}
       />
     </div>
   );

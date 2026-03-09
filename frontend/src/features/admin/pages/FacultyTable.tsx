@@ -29,7 +29,7 @@ type FacultyRow = {
   qualifications: string[];
   description: string;
   demoClass: string;
-  image: string;
+  image: string | { url: string; publicId: string };
   price: number;
   isDeleted: boolean;
   slots: { time: string }[];
@@ -76,7 +76,7 @@ export default function FacultyPage() {
       render: (f) => (
         <div className="flex items-center gap-3">
           <img
-            src={f.image}
+            src={typeof f.image === "string" ? f.image : f.image?.url}
             alt={f.name}
             className="w-10 h-10 rounded-full object-cover border"
           />

@@ -38,7 +38,7 @@ export type FacultyModalData = {
   description: string;
   demoClass: string;
   price: number;
-  image?: string | null;
+  image?: string | { url: string; publicId: string } | null;
   subjectOffering?: {
     id: string;
     subject: { id: string; name: string };
@@ -154,10 +154,17 @@ export default function FacultyModal({
       setDescription(initialData.description ?? "");
       setDemoClass(initialData.demoClass ?? "");
       setPrice(initialData.price ?? "");
-      setImageUrl(initialData.image ?? null);
+
+      const initImageUrl = typeof initialData.image === "object" && initialData.image !== null 
+        ? initialData.image.url 
+        : (initialData.image as string);
+        
+      setImageUrl(initImageUrl ?? null);
       setImageFile(null);
       setImagePayload(
-        initialData.image ? { url: initialData.image, publicId: "" } : null
+        initialData.image 
+          ? (typeof initialData.image === "object" ? initialData.image : { url: initialData.image as string, publicId: "" }) 
+          : null
       );
 
       // Time slots — load ALL, preserving isAvailable state

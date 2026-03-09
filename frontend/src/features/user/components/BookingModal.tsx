@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { getSyllabus } from "../../../api/syllabus.api";
-import { getClasses } from "../../../api/class.api";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { createBooking } from "../../../api/booking.api";
 import { sendOtp, resendOtp, verifyOtp } from "../../../api/auth.api";
 
@@ -13,13 +12,8 @@ type BookingModalProps = {
   facultyId: string;
   slotId?: string | null;
   chapterId?: string;
-};
-
-/* Reusable custom chevron for selects (matching BookTutorPage) */
-const selectChevron = {
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23111' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
-  backgroundRepeat: "no-repeat" as const,
-  backgroundPosition: "right 12px center",
+  defaultSyllabusId?: string;
+  defaultClassId?: string;
 };
 
 const BookingModal: React.FC<BookingModalProps> = ({
@@ -30,14 +24,18 @@ const BookingModal: React.FC<BookingModalProps> = ({
   facultyId,
   slotId,
   chapterId,
+  defaultSyllabusId,
+  defaultClassId,
 }) => {
+  const queryClient = useQueryClient();
+
   /* ── Form state ── */
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("+91");
   const [place, setPlace] = useState("");
   const [school, setSchool] = useState("");
-  const [syllabusId, setSyllabusId] = useState("");
-  const [classId, setClassId] = useState("");
+  const [syllabusId, setSyllabusId] = useState(defaultSyllabusId ?? "");
+  const [classId, setClassId] = useState(defaultClassId ?? "");
 
   /* ── Phone verification state ── */
   const [otpSent, setOtpSent] = useState(false);
@@ -49,36 +47,26 @@ const BookingModal: React.FC<BookingModalProps> = ({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  /* ── Fetch syllabus ── */
-  const { data: syllabusData, isLoading: syllabusLoading } = useQuery({
-    queryKey: ["booking-syllabus"],
-    queryFn: () => getSyllabus({ page: 1, limit: 100, isDeleted: false }),
-    enabled: isOpen,
-    refetchOnWindowFocus: false,
-  });
-
-  /* ── Fetch classes ── */
-  const { data: classData, isLoading: classLoading } = useQuery({
-    queryKey: ["booking-classes", syllabusId],
-    queryFn: () => getClasses({ page: 1, limit: 100, isDeleted: false }),
-    enabled: isOpen && !!syllabusId,
-    refetchOnWindowFocus: false,
-  });
-
-  const syllabuses = syllabusData?.rows ?? [];
-  const classes = classData?.rows ?? [];
-
   /* ── Booking mutation ── */
   const bookingMutation = useMutation({
     mutationFn: createBooking,
-    onSuccess: () => {
-      setSuccessMsg("Booking submitted successfully!");
+    onSuccess: (data: any) => {
+      const msg = data?.message || "Booking submitted successfully!";
+      setSuccessMsg(msg);
+      toast.success(msg);
       setApiError(null);
       setFieldErrors({});
+      
+      // Invalidate existing faculty details and slots so the page behind updates
+      queryClient.invalidateQueries({ queryKey: ["faculty-detail"] });
+      queryClient.invalidateQueries({ queryKey: ["faculty-detail-chapter"] });
+      queryClient.invalidateQueries({ queryKey: ["faculty-slots"] });
+      queryClient.invalidateQueries({ queryKey: ["slot-details"] });
+
       setTimeout(() => {
         resetForm();
         onClose();
-      }, 1500);
+      }, 2500);
     },
     onError: (err: any) => {
       setSuccessMsg(null);
@@ -100,8 +88,8 @@ const BookingModal: React.FC<BookingModalProps> = ({
     setPhone("+91");
     setPlace("");
     setSchool("");
-    setSyllabusId("");
-    setClassId("");
+    setSyllabusId(defaultSyllabusId ?? "");
+    setClassId(defaultClassId ?? "");
     setOtpSent(false);
     setOtp("");
     setPhoneVerified(false);
@@ -399,57 +387,6 @@ const BookingModal: React.FC<BookingModalProps> = ({
             </div>
           </div>
 
-          {/* Syllabus + Class in a 2-column grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-800 mb-2">
-                Syllabus
-              </label>
-              <select
-                value={syllabusId}
-                onChange={(e) => { setSyllabusId(e.target.value); setClassId(""); }}
-                className="w-full bg-white border-2 border-black rounded-none px-4 py-3 text-sm text-gray-700 focus:outline-none focus:border-[#DB313E] transition appearance-none cursor-pointer"
-                style={selectChevron}
-              >
-                <option value="">
-                  {syllabusLoading ? "Loading..." : "Select Syllabus"}
-                </option>
-                {syllabuses.map((s) => (
-                  <option key={s._id} value={s._id}>{s.name}</option>
-                ))}
-              </select>
-              {getFieldError("syllabus") && (
-                <p className="text-[#DB313E] text-[11px] font-semibold mt-1">{getFieldError("syllabus")}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-800 mb-2">
-                Class / Grade
-              </label>
-              <select
-                value={classId}
-                onChange={(e) => setClassId(e.target.value)}
-                disabled={!syllabusId}
-                className={`w-full border-2 rounded-none px-4 py-3 text-sm focus:outline-none transition appearance-none ${
-                  syllabusId
-                    ? "bg-white border-black text-gray-700 focus:border-[#DB313E] cursor-pointer"
-                    : "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
-                }`}
-                style={selectChevron}
-              >
-                <option value="">
-                  {!syllabusId ? "Select syllabus first" : classLoading ? "Loading..." : "Select Class"}
-                </option>
-                {classes.map((c) => (
-                  <option key={c._id} value={c._id}>{c.name}</option>
-                ))}
-              </select>
-              {getFieldError("class") && (
-                <p className="text-[#DB313E] text-[11px] font-semibold mt-1">{getFieldError("class")}</p>
-              )}
-            </div>
-          </div>
-
           {/* Phone not verified hint */}
           {allFieldsFilled && !phoneVerified && (
             <p className="text-center text-[11px] text-amber-600 font-bold uppercase tracking-wider">
@@ -460,9 +397,9 @@ const BookingModal: React.FC<BookingModalProps> = ({
           {/* Submit */}
           <button
             onClick={handleSubmit}
-            disabled={!canSubmit}
+            disabled={!canSubmit || bookingMutation.isSuccess}
             className={`w-full py-3.5 text-sm font-bold uppercase tracking-wider rounded-none transition ${
-              canSubmit
+              canSubmit && !bookingMutation.isSuccess
                 ? "bg-[#DB313E] text-white hover:bg-[#c12a36] cursor-pointer"
                 : "bg-[#DB313E]/40 text-white/70 cursor-not-allowed"
             }`}
@@ -475,6 +412,8 @@ const BookingModal: React.FC<BookingModalProps> = ({
                 </svg>
                 Submitting...
               </span>
+            ) : bookingMutation.isSuccess ? (
+              "Success!"
             ) : bookingType === "oneToOne" ? (
               "Confirm One-on-One Booking"
             ) : (
