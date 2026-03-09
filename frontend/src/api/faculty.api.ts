@@ -25,6 +25,51 @@ export const getFaculties = async (params: {
   
   return res.data;
 };
+
+export type FacultyListParams = {
+  syllabusId: string;
+  classId: string;
+  subjectId?: string;
+  page?: number;
+  limit?: number;
+  sort?: string;
+  search?: string;
+};
+
+export type FacultyListItem = {
+  id: string;
+  name: string;
+  qualifications: string[];
+  description: string;
+  price: number;
+  image?: string;
+};
+
+export const getFacultiesList = async (
+  params: FacultyListParams
+): Promise<{ data: FacultyListItem[] }> => {
+  const res = await axiosInstance.get("/faculties/list", {
+    params: { type: "class", ...params },
+  });
+  return res.data;
+};
+
+export type FacultyByChapterParams = {
+  chapterId: string;
+  page?: number;
+  limit?: number;
+  sort?: string;
+  search?: string;
+};
+
+export const getFacultiesByChapter = async (
+  params: FacultyByChapterParams
+): Promise<{ data: FacultyListItem[] }> => {
+  const res = await axiosInstance.get("/faculties/list", {
+    params: { type: "chapter", ...params },
+  });
+  return res.data;
+};
 export const createFaculty = async (
   payload: CreateFacultyPayload
 ) => {
@@ -42,12 +87,31 @@ export const getFacultyById = async (id: string) => {
   return res.data.data; // assume backend returns { data: faculty }
 };
 
+/** Fetch faculty details for a specific chapter */
+export const getFacultyByChapter = async (facultyId: string, chapterId: string) => {
+  const res = await axiosInstance.get(`/faculties/${facultyId}/chapter`, {
+    params: { chapterId },
+  });
+  return res.data.data;
+};
+
 /** Fetch only available (unbooked) time slots for a faculty — used in booking confirm flows */
 export const getFacultyAvailableSlots = async (
   facultyId: string
 ): Promise<{ id: string; time: string }[]> => {
   const res = await axiosInstance.get(`/faculties/${facultyId}/available-slots`);
   return res.data.data ?? [];
+};
+
+/** Fetch slot details (pool info, price, etc.) for a specific slot */
+export const getFacultySlotDetails = async (
+  facultyId: string,
+  slotId: string
+) => {
+  const res = await axiosInstance.get(`/faculties/${facultyId}/slot-details`, {
+    params: { slotId },
+  });
+  return res.data.data;
 };
 
 /* ── Time slot ─────────────────────────────── */

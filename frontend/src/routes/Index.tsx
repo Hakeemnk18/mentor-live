@@ -4,6 +4,7 @@ import UserLayout from "../shared/layouts/UserLayoutes";
 import adminRoutes from "./AdminRoute";
 import AdminLayout from "../shared/layouts/AdminLayoutes";
 import NotFoundPage from "../shared/pages/NotFoundPage";
+import UserNotFoundPage from "../features/user/pages/UserNotFoundPage";
 
 
 const allRoutes = [
@@ -13,7 +14,10 @@ const allRoutes = [
     children: [
       {
         element: <UserLayout />,
-        children: [...userRoutes],
+        children: [
+          ...userRoutes,
+          { path: "*", element: <UserNotFoundPage /> },
+        ],
       },
       {
         path: "admin",
@@ -23,7 +27,6 @@ const allRoutes = [
           { path: "*", element: <NotFoundPage /> },
         ],
       },
-      { path: "*", element: <NotFoundPage /> },
     ],
   },
 ];

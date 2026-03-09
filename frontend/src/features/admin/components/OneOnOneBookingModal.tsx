@@ -41,14 +41,14 @@ interface Props {
 /* ───── component ───────────────────────────────────────── */
 export default function OneOnOneBookingModal({ booking, onClose, onConfirmed }: Props) {
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
-  const [selectedSlotIds, setSelectedSlotIds] = useState<string[]>([]);
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
   /* fetch faculty slots when chapter booking opens */
   useEffect(() => {
     if (!booking || booking.mode !== "chapter") return;
-    setSelectedSlotIds([]);
+    setSelectedSlotId(null);
     setLoadingSlots(true);
     getFacultyAvailableSlots(booking.faculty.id)
       .then((raw) => {
@@ -74,20 +74,18 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed }: 
 
   /* toggle slot selection */
   const toggleSlot = (id: string) =>
-    setSelectedSlotIds((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
+    setSelectedSlotId((prev) => (prev === id ? null : id));
 
   /* confirm handler */
   const handleConfirm = async () => {
-    if (booking.mode === "chapter" && selectedSlotIds.length === 0) {
-      toast.error("Please select at least one time slot");
+    if (booking.mode === "chapter" && !selectedSlotId) {
+      toast.error("Please select a time slot");
       return;
     }
     try {
       setConfirming(true);
       if (booking.mode === "chapter") {
-        await confirmChapterBooking(booking.id, selectedSlotIds);
+        await confirmChapterBooking(booking.id, [selectedSlotId!]);
       } else {
         await confirmSlotBooking(booking.id);
       }
@@ -231,7 +229,7 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed }: 
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {availableSlots.map((s) => {
-                      const selected = selectedSlotIds.includes(s.id);
+                      const selected = selectedSlotId === s.id;
                       return (
                         <button
                           key={s.id}
@@ -266,7 +264,7 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed }: 
                 onClick={handleConfirm}
                 disabled={
                   confirming ||
-                  (booking.mode === "chapter" && selectedSlotIds.length === 0)
+                  (booking.mode === "chapter" && !selectedSlotId)
                 }
                 className="px-4 py-2 text-sm font-medium bg-[#DB313E] text-white rounded-md hover:bg-[#c02535] disabled:opacity-50 transition-colors"
               >

@@ -1,0 +1,141 @@
+import { useState } from "react";
+import { useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { getChaptersList, getSubjectVariants } from "../../../api/chapter.api";
+import ChapterCard from "../components/ChapterCard";
+import SubjectPills from "../components/SubjectPills";
+import SearchInput from "../components/SearchInput";
+
+const ChapterListingPage: React.FC = () => {
+  const location = useLocation();
+  const { syllabusId = "", classId = "" } = (location.state ?? {}) as {
+    syllabusId?: string;
+    classId?: string;
+  };
+
+  const [search, setSearch] = useState("");
+  const [subjectId, setSubjectId] = useState<string | undefined>();
+
+  /* ── Fetch subject variants for filter pills ── */
+  const { data: subjectData } = useQuery({
+    queryKey: ["subject-variants", syllabusId, classId],
+    queryFn: () => getSubjectVariants({ syllabusId, classId }),
+    enabled: !!syllabusId && !!classId,
+  });
+
+  const subjects = (subjectData ?? []) as unknown as { _id: string; subjectName: string }[];
+
+  /* ── Fetch chapters list ── */
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["chapter-listing", syllabusId, classId, subjectId],
+    queryFn: () =>
+      getChaptersList({
+        syllabusId,
+        classId,
+        subjectId: subjectId || undefined,
+      }),
+    enabled: !!syllabusId && !!classId,
+  });
+
+  // Client-side search filter
+  const allChapters = data ?? [];
+  const chapters = search
+    ? allChapters.filter((c) =>
+        c.name.toLowerCase().includes(search.toLowerCase())
+      )
+    : allChapters;
+
+  return (
+    <div className="min-h-[80vh] bg-[#F5F5F5]">
+      {/* Page header */}
+      <div className="bg-[#111] py-12 text-center">
+        <h1 className="text-2xl md:text-3xl font-extrabold text-white mb-2">
+          Available Chapters
+        </h1>
+        <p className="text-sm text-gray-400 max-w-md mx-auto">
+          Browse chapters and pick what you'd like to learn from our curated collection
+        </p>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-5 md:px-8 py-8">
+        {/* Controls */}
+        <div className="flex flex-col gap-5 mb-8">
+          {/* Search */}
+          <div className="flex justify-end">
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Search chapters..."
+            />
+          </div>
+
+          {/* Subject filter pills */}
+          {subjects.length > 0 && (
+            <SubjectPills
+              items={subjects}
+              activeId={subjectId}
+              onSelect={setSubjectId}
+            />
+          )}
+        </div>
+
+        {/* Loading skeleton */}
+        {isLoading && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="bg-white rounded-xl shadow-sm animate-pulse">
+                <div className="h-40 bg-gray-200 rounded-t-xl" />
+                <div className="p-4 space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-3/4" />
+                  <div className="h-3 bg-gray-200 rounded w-1/3" />
+                  <div className="h-4 bg-gray-200 rounded w-1/4" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Error */}
+        {!isLoading && isError && (
+          <div className="text-center py-20">
+            <p className="text-gray-500 text-lg font-medium">Something went wrong</p>
+            <p className="text-gray-400 text-sm mt-1">We couldn't load chapters right now.</p>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!isLoading && !isError && chapters.length === 0 && (
+          <div className="text-center py-20">
+            <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+              </svg>
+            </div>
+            <p className="text-gray-500 text-lg font-medium">No chapters found</p>
+            <p className="text-gray-400 text-sm mt-1">Try adjusting your filters or search term.</p>
+          </div>
+        )}
+
+        {/* Chapter grid */}
+        {chapters.length > 0 && !isError && !isLoading && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+            {chapters.map((c) => (
+              <ChapterCard
+                key={c._id}
+                id={c._id}
+                name={c.name}
+                price={c.price}
+                icon={c.icon}
+                subjectName=""
+                syllabusId={syllabusId}
+                classId={classId}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ChapterListingPage;

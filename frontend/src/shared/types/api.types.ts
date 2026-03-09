@@ -198,6 +198,7 @@ export type GetChaptersResult = {
 export type GetChaptersListParams = {
   syllabusId: string;
   classId: string;
+  subjectId?: string;
 };
 
 export type ChapterListItem = {

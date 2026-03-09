@@ -16,9 +16,29 @@ export interface BlogPayload {
   content: string;
 }
 
-export const getBlogs = async (): Promise<Blog[]> => {
-  const res = await axiosInstance.get("/blogs");
-  return res.data.data ?? [];
+export interface GetBlogsParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  isDeleted?: boolean;
+}
+
+export interface GetBlogsResponse {
+  data: Blog[];
+  totalPage: number;
+}
+
+export const getBlogs = async (params?: GetBlogsParams): Promise<GetBlogsResponse> => {
+  const res = await axiosInstance.get("/blogs/list", { params });
+  return {
+    data: res.data.data ?? [],
+    totalPage: res.data.totalPage ?? 1,
+  };
+};
+
+export const getBlogById = async (id: string): Promise<Blog & { content?: string }> => {
+  const res = await axiosInstance.get(`/blogs/${id}`);
+  return res.data.data;
 };
 
 export const createBlog = async (payload: BlogPayload): Promise<void> => {
