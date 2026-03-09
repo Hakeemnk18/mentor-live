@@ -95,8 +95,6 @@ export default function AdminDashboard() {
             getBanners(),
           ]);
 
-        console.log("Dashboard API Results:", results);
-
         const [oto, otoUncontacted, pool, students, blogs, testimonials, bannersData] = results;
 
         setStats({
