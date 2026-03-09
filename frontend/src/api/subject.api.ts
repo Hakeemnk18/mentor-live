@@ -1,12 +1,10 @@
 import type {
-  CreateOrUpdateSubjectPayload,
   CreateSubjectPayload,
   EditSubjectNamePayload,
   GetSubjectByIdApiResponse,
   GetSubjectsApiResponse,
   GetSubjectsParams,
   GetSubjectsResult,
-  SubjectVariantPayload,
   SyllabusAndClassPayload,
 } from "../shared/types/api.types";
 import axiosInstance from "./axios.instance";
@@ -66,9 +64,15 @@ export const updateSubject = async (
   return res.data;
 };
 
-// export const addVariantSubject = async()
+export const addSubjectVariants = async (
+  id: string,
+  variants: { classId: string; syllabusId: string }[]
+) => {
+  const res = await axiosInstance.post(`/subjects/${id}`, { variants });
+  return res.data;
+};
 export const mapVariantsToSyllabusAndClass = (
-  variants: SubjectVariantPayload[]
+  variants: { syllabusId: string; classId: string }[]
 ): SyllabusAndClassPayload[] => {
   const map = new Map<string, Set<string>>();
 

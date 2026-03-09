@@ -6,6 +6,7 @@ import {
   updateSubject,
   getSubjects,
   getSubjectById,
+  addSubjectVariants,
 } from "../../../api/subject.api";
 import toast from "react-hot-toast";
 import TopLoader from "../../../shared/components/TopLoader";
@@ -195,9 +196,13 @@ export default function SubjectPage() {
     try {
       setSubmitting(true);
 
-      // await addSubjectVariants(data._id, data.variants);
+      const res = await addSubjectVariants(data._id, data.variants);
 
-      toast.success("Variants added successfully");
+      toast.success(res?.message || "Variants added successfully");
+
+      setModalOpen(false);
+      setEditingSubject(undefined);
+      setMode("create");
 
       await fetchSubjects();
     } catch (err: any) {
@@ -238,7 +243,7 @@ export default function SubjectPage() {
         </div>
 
         {/* Status Filter */}
-        <div className="flex flex-col gap-1 w-full md:w-auto">
+        {/* <div className="flex flex-col gap-1 w-full md:w-auto">
           <label className="text-xs font-medium text-gray-600">Status</label>
           <select
             value={
@@ -256,7 +261,7 @@ export default function SubjectPage() {
             <option value="active">Active</option>
             <option value="deleted">Inactive</option>
           </select>
-        </div>
+        </div> */}
 
         {/* Entries per page */}
         <div className="flex flex-col gap-1 w-full md:w-auto">
