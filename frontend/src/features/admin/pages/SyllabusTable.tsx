@@ -108,8 +108,8 @@ export default function SyllabusPage() {
       setModalOpen(false);
       setMode("create");
       setEditing(undefined);
-    } catch {
-      toast.error("Something went wrong");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Something went wrong");
     } finally {
       setSubmitting(false);
       await fetchSyllabus();
@@ -133,7 +133,7 @@ export default function SyllabusPage() {
           <label className="text-xs font-medium text-gray-600">Search</label>
           <input
             type="text"
-            placeholder="Search classes..."
+            placeholder="Search syllabuses..."
             value={search}
             onChange={(e) => {
               setPage(1);
@@ -145,7 +145,7 @@ export default function SyllabusPage() {
         </div>
 
         {/* Filter */}
-        <div className="flex flex-col gap-1 w-full md:w-auto">
+        {/* <div className="flex flex-col gap-1 w-full md:w-auto">
           <label className="text-xs font-medium text-gray-600">Status</label>
           <select
             value={
@@ -163,7 +163,7 @@ export default function SyllabusPage() {
             <option value="active">Active</option>
             <option value="deleted">Inactive</option>
           </select>
-        </div>
+        </div> */}
 
         {/* Entries per page */}
         <div className="flex flex-col gap-1 w-full md:w-auto">

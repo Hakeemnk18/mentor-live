@@ -31,6 +31,23 @@ export default function Pagination({
           Prev
         </button>
 
+        {/* Page Numbers */}
+        <div className="flex gap-1">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            <button
+              key={p}
+              onClick={() => onPageChange(p)}
+              className={`px-3 py-1 text-sm border rounded cursor-pointer transition-colors ${
+                page === p
+                  ? "border-red-500 bg-red-500 text-white"
+                  : "border-gray-300 hover:bg-gray-100"
+              }`}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+
         <button
           disabled={page === totalPages}
           onClick={() => onPageChange(page + 1)}

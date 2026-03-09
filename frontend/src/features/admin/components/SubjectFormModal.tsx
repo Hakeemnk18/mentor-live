@@ -47,9 +47,7 @@ export default function SubjectFormModal({
 }: Props) {
   console.log("initial data recieved ", initialData);
   const [name, setName] = useState("");
-  const [variants, setVariants] = useState<VariantRow[]>([
-    { syllabusId: "", classId: "" },
-  ]);
+  
   const [existingVariants, setExistingVariants] = useState<VariantRow[]>([]);
   const [newVariants, setNewVariants] = useState<VariantRow[]>([
     { syllabusId: "", classId: "" },
