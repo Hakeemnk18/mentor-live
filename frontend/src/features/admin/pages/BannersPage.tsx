@@ -9,6 +9,7 @@ import type { Column } from "../components/AdminTable";
 import type { Banner, BannerPayload } from "../../../api/banner.api";
 import { getBanners, createBanner, updateBanner, deleteBanner } from "../../../api/banner.api";
 import BannerModal from "../components/BannerModal";
+import { handleApiError } from "../../../shared/utils/handle.api.error";
 
 /* ── columns ─────────────────────────────────────────────── */
 const columns: Column<Banner>[] = [
@@ -81,7 +82,7 @@ export default function BannersPage() {
       data.sort((a, b) => a.priority - b.priority);
       setBanners(data);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to load banners");
+      handleApiError(err);
     } finally {
       setLoading(false);
     }
@@ -126,7 +127,7 @@ export default function BannersPage() {
       toast.success("Banner deleted");
       fetchAll();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to delete");
+      handleApiError(err);
     }
   };
 
@@ -144,7 +145,7 @@ export default function BannersPage() {
       setEditing(undefined);
       fetchAll();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Something went wrong");
+      handleApiError(err);
     } finally {
       setSubmitting(false);
     }

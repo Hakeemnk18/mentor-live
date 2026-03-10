@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import ImageCropModal from "../../../shared/components/ImageCropModal/ImageCropModal";
 import { getSubjectVariants } from "../../../api/chapter.api";
 import { uploadToCloudinary } from "../../../shared/utils/cloudinary";
+import { handleApiError } from "../../../shared/utils/handle.api.error";
 
 /* ---------------- TYPES ---------------- */
 
@@ -152,8 +153,8 @@ export default function ChapterFormModal({
       try {
         const res = await getSubjectVariants({ syllabusId, classId });
         setSubjectVariants(res);
-      } catch {
-        toast.error("Failed to load subject variants");
+      } catch (err) {
+        handleApiError(err);
       }
     };
 
@@ -234,7 +235,7 @@ export default function ChapterFormModal({
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error("Operation failed");
+      handleApiError(err)
     } finally {
       setUploading(false);
       setIsSubmitting(false); // 🔓 unlock only at the very end
@@ -269,15 +270,17 @@ export default function ChapterFormModal({
               <p className="text-xs text-red-500">Chapter name is required</p>
             )}
 
-            <input
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(Number(e.target.value))}
-              placeholder="Price"
-              className={`w-full px-3 py-2 text-sm border rounded
+           <input
+  type="number"
+  value={price}
+  onChange={(e) => setPrice(Number(e.target.value))}
+  onFocus={(e) => { if (price === 0) setPrice('' as any) }}
+  onBlur={(e) => { if (e.target.value === '') setPrice(0) }}
+  placeholder="Price"
+  className={`w-full px-3 py-2 text-sm border rounded
     ${submitAttempted && validationErrors.price ? "border-red-400" : ""}
   `}
-            />
+/>
 
             {submitAttempted && validationErrors.price && (
               <p className="text-xs text-red-500">

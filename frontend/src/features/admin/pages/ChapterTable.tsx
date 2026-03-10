@@ -16,6 +16,7 @@ import {
 import { getClasses } from "../../../api/class.api";
 import { getSyllabus } from "../../../api/syllabus.api";
 import { getSubjects } from "../../../api/subject.api";
+import { handleApiError } from "../../../shared/utils/handle.api.error";
 import ChapterFormModal from "../components/ChapterFormModal";
 
 type ChapterRow = {
@@ -106,8 +107,8 @@ export default function ChapterPage() {
       });
       setChapters(res.rows);
       setTotalPages(res.totalPages);
-    } catch {
-      toast.error("Failed to load chapters");
+    } catch (err) {
+      handleApiError(err);
     } finally {
       setLoading(false);
     }
@@ -142,7 +143,7 @@ export default function ChapterPage() {
         setSyllabusList(s.rows);
         setSubjectList(sub.rows);
       })
-      .catch(() => toast.error("Failed to load filters"));
+      .catch(handleApiError);
   }, []);
 
   /* ---------------- CREATE / EDIT ---------------- */
@@ -166,10 +167,9 @@ export default function ChapterPage() {
       toast.success("Chapter created");
       setFormOpen(false);
       fetchChapters();
-    } catch {
-            console.log("error creating chapter ",err);
-
-    toast.error(err?.response?.data?.message || "Failed to create chapter");
+    } catch (err: any) {
+      console.log("error creating chapter ", err);
+      handleApiError(err);
     } finally {
       setSaving(false);
     }
@@ -195,7 +195,7 @@ export default function ChapterPage() {
   } catch (err: any) {
     console.log("error updating chapter ",err);
     
-    toast.error(err?.response?.data?.message || "Failed to update chapter");
+    handleApiError(err);
   } finally {
     setSaving(false);
   }

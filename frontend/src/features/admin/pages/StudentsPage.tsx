@@ -11,6 +11,7 @@ import type { Student } from "../../../api/student.api";
 import { getStudents, blockStudent, unblockStudent } from "../../../api/student.api";
 import { getClasses } from "../../../api/class.api";
 import { getSyllabus } from "../../../api/syllabus.api";
+import { handleApiError } from "../../../shared/utils/handle.api.error";
 
 /* ── types ─────────────────────────────────────────────────── */
 type ClassOption = { _id: string; name: string };
@@ -192,7 +193,7 @@ export default function StudentsPage() {
       setTotalPages(res.totalPages);
       setTotal(res.total);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to load students");
+      handleApiError(err);
     } finally {
       setLoading(false);
     }
@@ -214,7 +215,7 @@ export default function StudentsPage() {
       }
       fetchStudents();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Action failed");
+      handleApiError(err);
     }
   };
 

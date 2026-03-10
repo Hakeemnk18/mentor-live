@@ -12,6 +12,7 @@ import type { Column } from "../components/AdminTable";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
 import TopLoader from "../../../shared/components/TopLoader";
+import { handleApiError } from "../../../shared/utils/handle.api.error";
 
 type SyllabusRow = {
   _id: string;
@@ -65,8 +66,8 @@ export default function SyllabusPage() {
       });
       setSyllabus(res.rows);
       setTotalPages(res.totalPages);
-    } catch {
-      toast.error("Failed to load syllabus");
+    } catch (err) {
+      handleApiError(err);
     } finally {
       setLoading(false);
     }
@@ -109,7 +110,7 @@ export default function SyllabusPage() {
       setMode("create");
       setEditing(undefined);
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Something went wrong");
+      handleApiError(error);
     } finally {
       setSubmitting(false);
       await fetchSyllabus();

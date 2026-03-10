@@ -13,6 +13,7 @@ import TopLoader from "../../../shared/components/TopLoader";
 import Pagination from "../../../shared/components/Pagination";
 import type { Column } from "../components/AdminTable";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
+import { handleApiError } from "../../../shared/utils/handle.api.error";
 import { getSyllabus } from "../../../api/syllabus.api";
 import { getClasses } from "../../../api/class.api";
 import SubjectFormModal from "../components/SubjectFormModal";
@@ -93,7 +94,7 @@ export default function SubjectPage() {
       setTotalPages(res.totalPages);
     } catch (err: any) {
       console.log("error fetching subjects ", err);
-      toast.error(err?.response?.data?.message || "Failed to load subjects");
+      handleApiError(err);
     } finally {
       setLoading(false);
     }
@@ -112,8 +113,8 @@ export default function SubjectPage() {
 
         setSyllabuses(syllabusRes.rows);
         setClasses(classRes.rows);
-      } catch {
-        toast.error("Failed to load syllabus / classes");
+      } catch (err) {
+        handleApiError(err);
       }
     };
 
@@ -142,8 +143,8 @@ export default function SubjectPage() {
       });
 
       setModalOpen(true);
-    } catch {
-      toast.error("Failed to load subject details");
+    } catch (err) {
+      handleApiError(err);
     }
   };
 
@@ -164,7 +165,7 @@ export default function SubjectPage() {
 
     await fetchSubjects();
   } catch (err: any) {
-    toast.error(getErrorMessage(err, "Failed to create subject"));
+    handleApiError(err);
   } finally {
     setSubmitting(false);
   }
@@ -184,7 +185,7 @@ export default function SubjectPage() {
 
       await fetchSubjects();
     } catch (err: any) {
-      toast.error(getErrorMessage(err, "Failed to update subject name"));
+      handleApiError(err);
     } finally {
       setSubmitting(false);
     }
@@ -206,7 +207,7 @@ export default function SubjectPage() {
 
       await fetchSubjects();
     } catch (err: any) {
-      toast.error(getErrorMessage(err, "Failed to add variants"));
+      handleApiError(err);
     } finally {
       setSubmitting(false);
     }

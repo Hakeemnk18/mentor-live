@@ -8,6 +8,7 @@ import {
   removeStudentFromPool,
 } from "../../../api/booking.api";
 import { getFacultyAvailableSlots } from "../../../api/faculty.api";
+import { handleApiError } from "../../../shared/utils/handle.api.error";
 
 /* ───── helpers ─────────────────────────────────────────── */
 const fmtTime = (iso: string) => {
@@ -67,7 +68,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed }: Prop
     };
     getPoolStudents(params)
       .then(setDetail)
-      .catch(() => toast.error("Failed to load students"))
+      .catch(handleApiError)
       .finally(() => setLoadingDetail(false));
 
     // 2. For chapter mode also fetch faculty time slots for confirm
@@ -82,7 +83,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed }: Prop
             }))
           );
         })
-        .catch(() => toast.error("Failed to load faculty slots"))
+        .catch(handleApiError)
         .finally(() => setLoadingSlots(false));
     }
   }, [booking?.faculty.id, booking?.mode, booking?.chapter?.id, booking?.slot?.id]);
@@ -116,7 +117,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed }: Prop
       onConfirmed();
       onClose();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to confirm");
+      handleApiError(err);
     } finally {
       setConfirming(false);
     }
@@ -142,7 +143,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed }: Prop
           : prev
       );
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to remove student");
+      handleApiError(err);
     } finally {
       setRemovingId(null);
     }

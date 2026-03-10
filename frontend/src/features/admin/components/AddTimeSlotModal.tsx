@@ -1,5 +1,6 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { handleApiError } from "../../../shared/utils/handle.api.error";
 
 type Props = {
   facultyId: string;
@@ -26,8 +27,8 @@ export function AddTimeSlotModal({ facultyId, onSuccess }: Props) {
       toast.success("Slot added");
       setOpen(false);
       onSuccess();
-    } catch {
-      toast.error("Failed to add slot");
+    } catch (err) {
+      handleApiError(err);
     }
   };
 
