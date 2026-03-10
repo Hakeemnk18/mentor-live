@@ -187,6 +187,9 @@ export type ChapterRow = {
   className: string;
   syllabusName: string;
   subjectName: string;
+  classId: string;
+  syllabusId: string;
+  subjectVariantId: string;
 };
 
 export type GetChaptersResult = {

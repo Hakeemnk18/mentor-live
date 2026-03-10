@@ -10,7 +10,6 @@ import {
   createChapter,
 //   updateChapter,
   getChapters,
-  getSubjectVariants,
   updateChapter,
 } from "../../../api/chapter.api";
 import { getClasses } from "../../../api/class.api";
@@ -18,22 +17,7 @@ import { getSyllabus } from "../../../api/syllabus.api";
 import { getSubjects } from "../../../api/subject.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 import ChapterFormModal from "../components/ChapterFormModal";
-
-type ChapterRow = {
-  _id: string;
-  name: string;
-  price: number;
-  icon?: string;
-  isDeleted: boolean;
-  className: string;
-  syllabusName: string;
-  subjectName: string;
-
-  // 🔴 REQUIRED FOR EDIT
-  classId: string;
-  syllabusId: string;
-  subjectVariantId: string;
-};
+import type { ChapterRow } from "../../../shared/types/api.types";
 
 export default function ChapterPage() {
   const [chapters, setChapters] = useState<ChapterRow[]>([]);
@@ -114,20 +98,6 @@ export default function ChapterPage() {
     }
   };
 
-  const fetchSubjectVariants = async ({
-    syllabusId,
-    classId,
-  }: {
-    syllabusId: string;
-    classId: string;
-  }) => {
-    const res = await getSubjectVariants({ syllabusId, classId });
-    return res.rows.map((v) => ({
-      _id: v._id,
-      subjectName: v.subject.name,
-    }));
-  };
-
   useEffect(() => {
     fetchChapters();
   }, [page, limit, search, isDeleted, classId, syllabusId, subjectId]);
@@ -181,7 +151,7 @@ export default function ChapterPage() {
     name: string;
     price: number;
     subjectVariant: string;
-    icon: string | null;
+    icon: { url: string; publicId: string };
   }
 ) => {
   try {
@@ -211,6 +181,22 @@ export default function ChapterPage() {
         actions={[{ label: "Create Chapter", onClick: openCreate }]}
       />
       <div className="flex flex-col md:flex-row md:items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+
+  {/* Search */}
+  <div className="flex flex-col gap-1 w-full md:w-auto">
+    <label className="text-xs font-medium text-gray-600">Search</label>
+    <input
+      type="text"
+      placeholder="Search chapters..."
+      value={search}
+      onChange={(e) => {
+        setPage(1);
+        setSearch(e.target.value);
+      }}
+      className="w-full md:w-64 px-3 py-2 text-sm border border-gray-300 rounded
+        focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
+    />
+  </div>
 
   {/* Syllabus */}
   <div className="flex flex-col gap-1 w-full md:w-auto">
@@ -338,7 +324,6 @@ export default function ChapterPage() {
         loading={saving}
         syllabuses={syllabusList}
         classes={classesList}
-        fetchSubjectVariants={fetchSubjectVariants}
         onCreate={handleCreate}
         onUpdate={handleUpdate}
       />
