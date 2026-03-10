@@ -4,6 +4,7 @@ import { uploadToCloudinary } from "../../../shared/utils/cloudinary";
 import type { CloudinaryUploadResult } from "../../../shared/utils/cloudinary";
 import type { Banner, BannerPayload } from "../../../api/banner.api";
 import toast from "react-hot-toast";
+import { handleApiError } from "../../../shared/utils/handle.api.error";
 
 interface Props {
   open: boolean;
@@ -135,9 +136,9 @@ export default function BannerModal({
         description: description.trim(),
         priority: Number(priority),
       });
-    } catch {
+    } catch (err) {
       setUploading(false);
-      toast.error("Upload failed");
+      handleApiError(err);
     }
   };
 

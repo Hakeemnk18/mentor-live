@@ -10,6 +10,7 @@ import type { Column } from "../components/AdminTable";
 import { getClasses } from "../../../api/class.api";
 import { getSyllabus } from "../../../api/syllabus.api";
 import { getSubjects } from "../../../api/subject.api";
+import { handleApiError } from "../../../shared/utils/handle.api.error";
 import {
   createFaculty,
   updateFaculty,
@@ -128,8 +129,8 @@ export default function FacultyPage() {
       });
       setFaculties(res.data);
       setTotalPages(Math.ceil(res.total / limit));
-    } catch {
-      toast.error("Failed to load faculties");
+    } catch (err) {
+      handleApiError(err);
     } finally {
       setLoading(false);
     }
@@ -150,7 +151,7 @@ export default function FacultyPage() {
         setSyllabusList(s.rows);
         setSubjectList(sub.rows);
       })
-      .catch(() => toast.error("Failed to load filters"));
+      .catch(handleApiError);
   }, []);
 
   /* ---------------- MODAL HANDLERS ---------------- */
@@ -168,8 +169,8 @@ export default function FacultyPage() {
       setEditingFaculty(data);
       setModalMode("edit");
       setModalOpen(true);
-    } catch {
-      toast.error("Failed to load faculty details");
+    } catch (err) {
+      handleApiError(err);
     } finally {
       setSaving(false);
     }
@@ -188,7 +189,7 @@ export default function FacultyPage() {
       setModalOpen(false);
       fetchFaculties();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Operation failed");
+      handleApiError(err);
       throw err; // Let modal stop loading spinner
     } finally {
       setSaving(false);

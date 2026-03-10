@@ -6,6 +6,7 @@ import {
   confirmSlotBooking,
 } from "../../../api/booking.api";
 import { getFacultyAvailableSlots } from "../../../api/faculty.api";
+import { handleApiError } from "../../../shared/utils/handle.api.error";
 
 /* ───── helpers ─────────────────────────────────────────── */
 const fmtDate = (iso: string) =>
@@ -64,7 +65,7 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed }: 
           })
         );
       })
-      .catch(() => toast.error("Failed to load faculty slots"))
+      .catch(handleApiError)
       .finally(() => setLoadingSlots(false));
   }, [booking?.id]);
 
@@ -93,7 +94,7 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed }: 
       onConfirmed();
       onClose();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to confirm booking");
+      handleApiError(err);
     } finally {
       setConfirming(false);
     }

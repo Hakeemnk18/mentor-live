@@ -3,6 +3,7 @@ import { AdminTable } from "../components/AdminTable";
 import { AdminPageActions } from "../components/AdminPageActions";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
+import { handleApiError } from "../../../shared/utils/handle.api.error";
 import TopLoader from "../../../shared/components/TopLoader";
 import toast from "react-hot-toast";
 import type { Column } from "../components/AdminTable";
@@ -76,7 +77,7 @@ export default function TestimonialsPage() {
       const data = await getTestimonials();
       setTestimonials(data);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to load testimonials");
+      handleApiError(err);
     } finally {
       setLoading(false);
     }
@@ -123,7 +124,7 @@ export default function TestimonialsPage() {
       toast.success("Testimonial deleted");
       fetchAll();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to delete");
+      handleApiError(err);
     }
   };
 
@@ -141,7 +142,7 @@ export default function TestimonialsPage() {
       setEditing(undefined);
       fetchAll();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Something went wrong");
+      handleApiError(err);
     } finally {
       setSubmitting(false);
     }

@@ -4,6 +4,7 @@ import { AdminPageActions } from "../components/AdminPageActions";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
 import TopLoader from "../../../shared/components/TopLoader";
+import { handleApiError } from "../../../shared/utils/handle.api.error";
 import toast from "react-hot-toast";
 import type { Column } from "../components/AdminTable";
 import type { Blog, BlogPayload } from "../../../api/blog.api";
@@ -84,7 +85,7 @@ export default function BlogsPage() {
       const response = await getBlogs();
       setBlogs(response.data);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to load blogs");
+      handleApiError(err);
     } finally {
       setLoading(false);
     }
@@ -137,7 +138,7 @@ export default function BlogsPage() {
       }
       fetchAll();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Action failed");
+      handleApiError(err);
     }
   };
 
@@ -155,7 +156,7 @@ export default function BlogsPage() {
       setEditing(undefined);
       fetchAll();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Something went wrong");
+      handleApiError(err);
     } finally {
       setSubmitting(false);
     }

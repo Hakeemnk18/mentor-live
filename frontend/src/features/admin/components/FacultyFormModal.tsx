@@ -8,6 +8,7 @@ import {
 } from "../../../api/chapter.api";
 import { getSubjects } from "../../../api/subject.api";
 import { uploadToCloudinary } from "../../../shared/utils/cloudinary";
+import { handleApiError } from "../../../shared/utils/handle.api.error";
 
 /* ---------------- TYPES ---------------- */
 
@@ -275,7 +276,7 @@ export default function FacultyFormModal({
           })),
         );
       })
-      .catch(() => toast.error("Failed to load subjects"));
+      .catch(handleApiError);
   }, [subjectSyllabusId, subjectClassId]);
 
   /* ---------------- FETCH CHAPTERS ---------------- */
@@ -288,7 +289,7 @@ export default function FacultyFormModal({
 
     getChapters({ syllabusId, classId, subjectId, page: 1, limit: 100 })
       .then((res) => setChapters(res.rows))
-      .catch(() => toast.error("Failed to load chapters"));
+      .catch(handleApiError);
   }, [syllabusId, classId, subjectId]);
   /* ---------------- FETCH SUBJECTS (FOR SUBJECT SELECTION) ---------------- */
 
@@ -321,7 +322,7 @@ export default function FacultyFormModal({
       classId: chapterClassId,
     })
       .then(setChapters)
-      .catch(() => toast.error("Failed to load chapters"));
+      .catch(handleApiError);
   }, [chapterSyllabusId, chapterClassId]);
 
   if (!open) return null;
@@ -454,7 +455,7 @@ export default function FacultyFormModal({
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error("Operation failed");
+      handleApiError(err);
     } finally {
       setUploading(false);
       setIsSubmitting(false);

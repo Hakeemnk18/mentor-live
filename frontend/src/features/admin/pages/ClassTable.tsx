@@ -8,6 +8,7 @@ import Pagination from "../../../shared/components/Pagination";
 import type { Column } from "../components/AdminTable";
 import NameFormModal from "../components/NameFormModal/NameFormModal";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
+import { handleApiError } from "../../../shared/utils/handle.api.error";
 type ClassRow = {
   _id: string;
   name: string;
@@ -107,7 +108,7 @@ export default function ClassPage() {
 
       await fetchClasses();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Something went wrong");
+      handleApiError(err);
     } finally {
       setSubmitting(false);
     }

@@ -16,6 +16,7 @@ import { getClasses } from "../../../api/class.api";
 import { getSyllabus } from "../../../api/syllabus.api";
 import OneOnOneBookingModal from "../components/OneOnOneBookingModal";
 import PoolBookingModal from "../components/PoolBookingModal";
+import { handleApiError } from "../../../shared/utils/handle.api.error";
 
 /* ─── helpers ─────────────────────────────────────────── */
 const fmtDate = (iso: string) =>
@@ -166,7 +167,7 @@ export default function BookingsPage() {
         setClassesList(c.rows);
         setSyllabusList(s.rows);
       })
-      .catch(() => toast.error("Failed to load filters"));
+      .catch(handleApiError);
   }, []);
 
   /* fetch bookings */
@@ -190,7 +191,7 @@ export default function BookingsPage() {
           setOneOnOneData(r.data);
           setTotal(r.total);
         })
-        .catch(() => toast.error("Failed to load bookings"))
+        .catch(handleApiError)
         .finally(() => setLoading(false));
     } else {
       getPoolBookings(filters)
@@ -198,7 +199,7 @@ export default function BookingsPage() {
           setPoolData(r.data);
           setTotal(r.total);
         })
-        .catch(() => toast.error("Failed to load bookings"))
+        .catch(handleApiError)
         .finally(() => setLoading(false));
     }
   }, [bookingType, page, limit, search, mode, classId, syllabusId, isContacted, refreshKey]);

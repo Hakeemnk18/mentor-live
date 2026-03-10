@@ -10,6 +10,7 @@ import {
   setFacultyChapterSlotAvailability,
   getFacultyById,
 } from "../../../api/faculty.api";
+import { handleApiError } from "../../../shared/utils/handle.api.error";
 
 /* ================================================================== */
 /* TYPES                                                                */
@@ -261,7 +262,7 @@ export default function FacultyModal({
       .then((items) =>
         setChapterOptions(items.map((c) => ({ _id: c._id, name: c.name })))
       )
-      .catch(() => toast.error("Failed to load chapters"));
+      .catch(handleApiError);
   }, [chapterSyllabusId, chapterClassId]);
 
   if (!open) return null;
@@ -317,8 +318,8 @@ export default function FacultyModal({
         setSubjectGroups((prev) =>
           prev.map((g) => (g.id === id ? { ...g, variants } : g))
         );
-      } catch {
-        toast.error("Failed to load subjects");
+      } catch (err) {
+        handleApiError(err);
       }
     }
   };
@@ -396,8 +397,8 @@ export default function FacultyModal({
         );
         toast.success("Slot added");
         setNewTime("");
-      } catch {
-        toast.error("Failed to add slot");
+      } catch (err) {
+        handleApiError(err);
       } finally {
         setSlotWorking(false);
       }
@@ -421,8 +422,8 @@ export default function FacultyModal({
           prev.map((s) => (s.id === slot.id ? { ...s, isAvailable: false } : s))
         );
         toast.success("Slot blocked");
-      } catch {
-        toast.error("Failed to block slot");
+      } catch (err) {
+        handleApiError(err);
       } finally {
         setSlotWorking(false);
       }
@@ -442,8 +443,8 @@ export default function FacultyModal({
         prev.map((s) => (s.id === slot.id ? { ...s, isAvailable: true } : s))
       );
       toast.success("Slot unblocked");
-    } catch {
-      toast.error("Failed to unblock slot");
+    } catch (err) {
+      handleApiError(err);
     } finally {
       setSlotWorking(false);
     }
@@ -483,8 +484,8 @@ export default function FacultyModal({
         );
         toast.success("Chapter added");
         setChapterId("");
-      } catch {
-        toast.error("Failed to add chapter slot");
+      } catch (err) {
+        handleApiError(err);
       } finally {
         setChapterWorking(false);
       }
@@ -504,8 +505,8 @@ export default function FacultyModal({
           prev.map((c) => (c.chapter === cs.chapter ? { ...c, isAvailable: false } : c))
         );
         toast.success("Chapter slot blocked");
-      } catch {
-        toast.error("Failed to block chapter slot");
+      } catch (err) {
+        handleApiError(err);
       } finally {
         setChapterWorking(false);
       }
@@ -524,8 +525,8 @@ export default function FacultyModal({
         prev.map((c) => (c.chapter === cs.chapter ? { ...c, isAvailable: true } : c))
       );
       toast.success("Chapter slot unblocked");
-    } catch {
-      toast.error("Failed to unblock chapter slot");
+    } catch (err) {
+      handleApiError(err);
     } finally {
       setChapterWorking(false);
     }

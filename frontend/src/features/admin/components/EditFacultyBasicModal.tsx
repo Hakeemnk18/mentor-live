@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import ImageCropModal from "../../../shared/components/ImageCropModal/ImageCropModal";
 import { uploadToCloudinary } from "../../../shared/utils/cloudinary";
 import { getSubjectVariants } from "../../../api/chapter.api";
+import { handleApiError } from "../../../shared/utils/handle.api.error";
 
 type SubjectOfferingUI = {
   syllabusId: string;
@@ -91,8 +92,8 @@ useEffect(() => {
       try {
         const res = await getSubjectVariants({ syllabusId, classId });
         setSubjectVariants(res);
-      } catch {
-        toast.error("Failed to load subject variants");
+      } catch (err) {
+        handleApiError(err);
       }
     };
 
@@ -106,7 +107,7 @@ useEffect(() => {
 
     getSubjectVariants({ syllabusId, classId })
       .then(setSubjectVariants)
-      .catch(() => toast.error("Failed to load subjects"));
+      .catch(handleApiError);
   }, [syllabusId, classId]);
 
   /* ---------------- GUARD ---------------- */
@@ -159,8 +160,8 @@ useEffect(() => {
       toast.success("Faculty updated");
       onSuccess();
       onClose();
-    } catch {
-      toast.error("Update failed");
+    } catch (err) {
+      handleApiError(err);
     } finally {
       setSaving(false);
     }
