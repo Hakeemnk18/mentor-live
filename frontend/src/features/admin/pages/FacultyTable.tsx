@@ -336,8 +336,8 @@ export default function FacultyPage() {
           columns={columns}
           actions={[
             { label: "Edit", onClick: openEdit },
-            { label: "+ Slot", onClick: (row) => setSlotFacultyId(row.id) },
-            { label: "+ Chapter", onClick: (row) => setChapterFacultyId(row.id) },
+            // { label: "+ Slot", onClick: (row) => setSlotFacultyId(row.id) },
+            // { label: "+ Chapter", onClick: (row) => setChapterFacultyId(row.id) },
           ]}
           getRowId={(row) => row.id}
         />

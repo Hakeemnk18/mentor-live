@@ -610,7 +610,13 @@ export default function FacultyModal({
         const [h, m] = time.split(":").map(Number);
         const d = new Date();
         d.setHours(h, m, 0, 0);
-        return { time: d.toISOString() };
+
+        // Adjust for local timezone offset before converting to ISO
+        const localIsoDate = new Date(
+          d.getTime() - d.getTimezoneOffset() * 60000,
+        );
+
+        return { time: localIsoDate.toISOString() };
       });
 
       const payload: any = {

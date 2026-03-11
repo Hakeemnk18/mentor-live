@@ -37,6 +37,7 @@ import type { IBlockFacultyUseCase } from "../use-cases/interfaces/block.faculty
 import type { IUnblockFacultyUseCase } from "../use-cases/interfaces/unblock.faculty.interface.js";
 import type { IGetAvailableSlotsUseCase } from "../use-cases/interfaces/get.available.slots.use-case.interface.js";
 import type { IGetUserSlotDetailsUseCase } from "../use-cases/interfaces/get.user.slot.details.interface.js";
+import { log } from "console";
 
 @injectable()
 export class FacultyController implements IFacultyController {
@@ -91,6 +92,7 @@ export class FacultyController implements IFacultyController {
 
   async createFaculty(req: Request, res: Response): Promise<void> {
     try {
+      console.log("req.body", req.body);
       const dto: CreateFacultyRequestDto = CreateFacultySchema.parse(req.body);
 
       await this._createFacultyUseCase.execute(dto);
