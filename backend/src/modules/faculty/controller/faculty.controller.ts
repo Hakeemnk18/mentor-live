@@ -146,7 +146,7 @@ export class FacultyController implements IFacultyController {
     try {
       const facultyId = req.params.id;
       validateObjectId(facultyId);
-
+      console.log("faculty id and body ", req.body)
       const dto = EditFacultySchema.parse(req.body);
       await this._editFacultyUseCase.execute(facultyId!, dto);
 
