@@ -92,7 +92,7 @@ export class FacultyController implements IFacultyController {
 
   async createFaculty(req: Request, res: Response): Promise<void> {
     try {
-      console.log("req.body", req.body);
+
       const dto: CreateFacultyRequestDto = CreateFacultySchema.parse(req.body);
 
       await this._createFacultyUseCase.execute(dto);
@@ -110,7 +110,6 @@ export class FacultyController implements IFacultyController {
   async GetAllFacultyForAdmin(req: Request, res: Response): Promise<void> {
     try {
       const dto = FindByClassSyllabusQuerySchema.parse(parseListQuery(req));
-
       const { data, total } =
         await this._getAllFacultyForAdminUseCase.execute(dto);
 
@@ -148,7 +147,7 @@ export class FacultyController implements IFacultyController {
     try {
       const facultyId = req.params.id;
       validateObjectId(facultyId);
-      console.log("faculty id and body ", req.body)
+     
       const dto = EditFacultySchema.parse(req.body);
       await this._editFacultyUseCase.execute(facultyId!, dto);
 
@@ -166,6 +165,7 @@ export class FacultyController implements IFacultyController {
     try {
       const facultyId = req.params.id;
       validateObjectId(facultyId);
+     
       const dto = AddSlotSchema.parse(req.body);
       await this._facultyAddSlotUseCase.execute(facultyId!, dto);
       res.status(HttpStatusCode.OK).json({
