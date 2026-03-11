@@ -2,9 +2,9 @@ export type ISlots = {
   time: Date;
 };
 
-export  const toMinutes = (iso: Date) => {
+export const toMinutes = (iso: Date) => {
   const d = new Date(iso);
-  return d.getHours() * 60 + d.getMinutes();
+  return d.getUTCHours() * 60 + d.getUTCMinutes();
 };
 
 export  const validateTime = (prev: number | null, curr: number) => {
@@ -12,6 +12,7 @@ export  const validateTime = (prev: number | null, curr: number) => {
   const DAY_END = 24 * 60;
 
   const currEnd = curr + ONE_HOUR;
+
 
   if (currEnd > DAY_END) {
     console.log("slot must end before 24:00");
@@ -27,6 +28,7 @@ export  const validateTime = (prev: number | null, curr: number) => {
 };
 
 export  const validateOnCreate = (slots: ISlots[]) => {
+  
   const minutes = slots.map((s) => toMinutes(s.time)).sort((a, b) => a - b);
 
   for (let i = 0; i < minutes.length; i++) {
