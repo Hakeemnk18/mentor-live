@@ -8,6 +8,7 @@ export interface IListQueryParseResult {
   classId: string;
   subjectId: string;
   syllabusId: string;
+  isDeleted?: string | boolean;
 }
 
 export function parseListQuery(req: Request): IListQueryParseResult {
@@ -18,6 +19,7 @@ export function parseListQuery(req: Request): IListQueryParseResult {
     sortValue: (req.query.sort as string) ?? "createdAt",
     classId: req.query.classId as string,
     syllabusId:req.query.syllabusId as string,
-    subjectId: req.query.subjectId as string
+    subjectId: req.query.subjectId as string,
+    isDeleted: req.query.isDeleted as string ,
   };
 }
