@@ -113,10 +113,10 @@ export default function ChapterFormModal({
       setName(initialData.name);
       setPrice(initialData.price);
 
-      // dropdowns intentionally reset
-      setSyllabusId("");
-      setClassId("");
-      setSubjectVariantId("");
+      // Populate dropdowns from initialData on edit
+      setSyllabusId(initialData.syllabusId);
+      setClassId(initialData.classId);
+      setSubjectVariantId(initialData.subjectVariantId);
 
       setIcon(initialData.icon ?? null);
       setIconPreview(initialData.icon?.url ?? null);
@@ -145,7 +145,8 @@ export default function ChapterFormModal({
   useEffect(() => {
     if (!syllabusId || !classId) {
       setSubjectVariants([]);
-      setSubjectVariantId("");
+      // Only reset the variant ID if it's the user actively changing fields, 
+      // not during initial data population if it already matches.
       return;
     }
 
@@ -153,13 +154,27 @@ export default function ChapterFormModal({
       try {
         const res = await getSubjectVariants({ syllabusId, classId });
         setSubjectVariants(res);
+        
+        // If we are in edit mode and the fetched variants contain our initial variant, 
+        // we make sure it stays selected. Otherwise, we clear it.
+        if (
+          mode === "edit" && 
+          initialData?.subjectVariantId &&
+          initialData.syllabusId === syllabusId &&
+          initialData.classId === classId
+        ) {
+          setSubjectVariantId(initialData.subjectVariantId);
+        } else {
+           setSubjectVariantId("");
+        }
+
       } catch (err) {
         handleApiError(err);
       }
     };
 
     fetchVariants();
-  }, [syllabusId, classId]);
+  }, [syllabusId, classId, mode, initialData]);
 
   if (!open) return null;
 
