@@ -1,3 +1,4 @@
+import { timeStringToISOSlot } from "../features/admin/components/FacultyModal";
 import type { CreateFacultyPayload } from "../shared/types/api.types";
 import axiosInstance from "./axios.instance";
 
@@ -115,16 +116,28 @@ export const getFacultySlotDetails = async (
 };
 
 /* ── Time slot ─────────────────────────────── */
-export const addFacultySlot = async (
+export const  addFacultySlot = async (
   facultyId: string,
   payload: { time: string } // time in "HH:MM" format
 ) => {
   // Convert "HH:MM" → full ISO date string (backend expects a date object/ISO)
+  console.log(payload);
+  
   const [h, m] = payload.time.split(":").map(Number);
   const d = new Date();
   d.setHours(h, m, 0, 0);
   const res = await axiosInstance.post(`/faculties/${facultyId}/slots`, {
     slots: [{ time: d.toISOString() }],
+  });
+  return res.data;
+};
+// faculty.api.ts
+export const addFacultySlotIST = async (
+  facultyId: string,
+  payload: { time: string }
+) => {
+  const res = await axiosInstance.post(`/faculties/${facultyId}/slots`, {
+    slots: [timeStringToISOSlot(payload.time)], // uses the helper with correct IST offset
   });
   return res.data;
 };

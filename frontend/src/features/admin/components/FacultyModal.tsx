@@ -64,7 +64,13 @@ type Props = {
 };
 
 let groupCounter = 0;
-
+export const timeStringToISOSlot = (time: string): { time: string } => {
+  const [h, m] = time.split(":").map(Number);
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  const localIsoDate = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  return { time: localIsoDate.toISOString() };
+};
 /* ================================================================== */
 /* COMPONENT                                                            */
 /* ================================================================== */
@@ -351,7 +357,8 @@ export default function FacultyModal({
     const [h, m] = t.split(":").map(Number);
     return h * 60 + m;
   };
-
+// utils/time.helper.ts
+ 
   /** Convert any time value the API may return to "HH:MM" for display & toMinutes() */
   const toHHMM = (raw: string): string => {
     const d = new Date(raw);
@@ -371,6 +378,8 @@ export default function FacultyModal({
       setSlotError("This slot is already added");
       return;
     }
+    console.log("new time ",newTime);
+    
     const mins = toMinutes(newTime);
     const overlap = timeSlots.find(
       (s) => Math.abs(toMinutes(s.time) - mins) < 60
@@ -383,9 +392,10 @@ export default function FacultyModal({
 
     if (mode === "edit" && facultyId) {
       try {
+        console.log("mode edit add time slot");
+        
         setSlotWorking(true);
-        await addFacultySlot(facultyId, { time: newTime });
-        // Backend returns no slot ID — re-fetch to get fresh slots with real IDs
+await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend returns no slot ID — re-fetch to get fresh slots with real IDs
         const updated = await getFacultyById(facultyId);
         setTimeSlots(
           (updated.slots ?? []).map((s: any) => ({
@@ -574,8 +584,8 @@ export default function FacultyModal({
       e.subjects = "Select at least one subject variant";
     if (mode === "create" && timeSlots.length === 0)
       e.slots = "Add at least one time slot";
-    if (mode === "create" && chapterSlots.length === 0)
-      e.chapters = "Add at least one chapter";
+    // if (mode === "create" && chapterSlots.length === 0)
+    //   e.chapters = "Add at least one chapter";
     return e;
   };
 
@@ -606,18 +616,7 @@ export default function FacultyModal({
         setUploading(false);
       }
 
-      const slotsPayload = timeSlots.map(({ time }) => {
-        const [h, m] = time.split(":").map(Number);
-        const d = new Date();
-        d.setHours(h, m, 0, 0);
-
-        // Adjust for local timezone offset before converting to ISO
-        const localIsoDate = new Date(
-          d.getTime() - d.getTimezoneOffset() * 60000,
-        );
-
-        return { time: localIsoDate.toISOString() };
-      });
+      const slotsPayload = timeSlots.map(({ time }) => timeStringToISOSlot(time));
 
       const payload: any = {
         name: name.trim(),

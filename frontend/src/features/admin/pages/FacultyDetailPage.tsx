@@ -1,0 +1,808 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import toast from "react-hot-toast";
+import AdminPageContainer from "../../../shared/components/AdminPageContainer";
+import {
+  getFacultyById,
+  addFacultySlot,
+  setFacultySlotAvailability,
+  addFacultyChapterSlot,
+  setFacultyChapterSlotAvailability,
+  addFacultySlotIST,
+} from "../../../api/faculty.api";
+import { getChaptersList } from "../../../api/chapter.api";
+import { getClasses } from "../../../api/class.api";
+import { getSyllabus } from "../../../api/syllabus.api";
+import EditFacultyBasicModal from "../components/EditFacultyBasicModal";
+import PoolBookingModal from "../components/PoolBookingModal";
+import type { PoolBooking } from "../../../api/booking.api";
+import { handleApiError } from "../../../shared/utils/handle.api.error";
+import TopLoader from "../../../shared/components/TopLoader";
+import { timeStringToISOSlot } from "../components/FacultyModal";
+
+/* ================================================================== */
+/* TYPES                                                                */
+/* ================================================================== */
+
+type SubjectOffering = {
+  id: string;
+  class: { id: string; name: string };
+  syllabus: { id: string; name: string };
+  subject: { id: string; name: string };
+};
+
+type TimeSlot = {
+  id: string;
+  time: string;
+  isAvailable: boolean;
+  pool: any[];
+  poolLimit: number;
+};
+
+type ChapterSlot = {
+  id: string;
+  chapter: string | { id: string; name: string };
+  isAvailable: boolean;
+  pool: any[];
+};
+
+type FacultyData = {
+  id: string;
+  name: string;
+  qualifications: string[];
+  description: string;
+  demoClass: string;
+  image: string | { url: string; publicId: string };
+  price: number;
+  isDeleted: boolean;
+  slots: TimeSlot[];
+  chapterSlots: ChapterSlot[];
+  subjectOffering: SubjectOffering[];
+};
+
+/* ================================================================== */
+/* HELPERS                                                              */
+/* ================================================================== */
+
+// const timeStringToISOSlot = (time: string): string => {
+//   const [h, m] = time.split(":").map(Number);
+//   const d = new Date();
+//   d.setHours(h, m, 0, 0);
+//   const localIsoDate = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+//   return localIsoDate.toISOString();
+// };
+
+/** Extract YouTube video ID from various URL formats */
+const getYoutubeId = (url: string): string | null => {
+  if (!url) return null;
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=)([\w-]{11})/,
+    /(?:youtu\.be\/)([\w-]{11})/,
+    /(?:youtube\.com\/embed\/)([\w-]{11})/,
+    /(?:youtube\.com\/v\/)([\w-]{11})/,
+  ];
+  for (const p of patterns) {
+    const match = url.match(p);
+    if (match) return match[1];
+  }
+  return null;
+};
+
+/* ================================================================== */
+/* COMPONENT                                                            */
+/* ================================================================== */
+
+export default function FacultyDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
+  /* ---------- State ---------- */
+  const [faculty, setFaculty] = useState<FacultyData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Edit basic info modal
+  const [editOpen, setEditOpen] = useState(false);
+  const [syllabusList, setSyllabusList] = useState<{ _id: string; name: string }[]>([]);
+  const [classesList, setClassesList] = useState<{ _id: string; name: string }[]>([]);
+
+  // Time slot add
+  const [newTime, setNewTime] = useState("");
+  const [slotWorking, setSlotWorking] = useState(false);
+
+  // Chapter slot add
+  const [chapterSyllabusId, setChapterSyllabusId] = useState("");
+  const [chapterClassId, setChapterClassId] = useState("");
+  const [chapterOptions, setChapterOptions] = useState<{ _id: string; name: string }[]>([]);
+  const [chapterId, setChapterId] = useState("");
+  const [chapterWorking, setChapterWorking] = useState(false);
+
+  // Pool booking modal
+  const [selectedPoolBooking, setSelectedPoolBooking] = useState<PoolBooking | null>(null);
+
+  /* ---------- Fetch faculty data ---------- */
+  const fetchFaculty = async () => {
+    if (!id) return;
+    try {
+      setLoading(true);
+      const data = await getFacultyById(id);
+      setFaculty(data);
+    } catch (err) {
+      handleApiError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFaculty();
+  }, [id]);
+
+  /* Fetch syllabuses and classes for edit modal & chapter add */
+  useEffect(() => {
+    Promise.all([
+      getSyllabus({ page: 1, limit: 100 }),
+      getClasses({ page: 1, limit: 100 }),
+    ])
+      .then(([s, c]) => {
+        setSyllabusList(s.rows);
+        setClassesList(c.rows);
+      })
+      .catch(handleApiError);
+  }, []);
+
+  /* Fetch chapter options when syllabus + class selected */
+  useEffect(() => {
+    if (!chapterSyllabusId || !chapterClassId) {
+      setChapterOptions([]);
+      setChapterId("");
+      return;
+    }
+    getChaptersList({ syllabusId: chapterSyllabusId, classId: chapterClassId })
+      .then((items) => setChapterOptions(items.map((c) => ({ _id: c._id, name: c.name }))))
+      .catch(handleApiError);
+  }, [chapterSyllabusId, chapterClassId]);
+
+  /* ================================================================ */
+  /* TIME SLOT ACTIONS                                                  */
+  /* ================================================================ */
+
+  const handleAddTimeSlot = async () => {
+    if (!newTime || !id) return;
+    try {
+      setSlotWorking(true);
+      console.log("new time",newTime);
+      
+      await addFacultySlotIST(id,  {time:newTime} );
+      toast.success("Time slot added");
+      setNewTime("");
+      await fetchFaculty();
+    } catch (err) {
+      console.log("error in handle add time slot",err);
+      
+      handleApiError(err);
+    } finally {
+      setSlotWorking(false);
+    }
+  };
+
+  const handleToggleSlot = async (slot: TimeSlot) => {
+    if (!id) return;
+    try {
+      setSlotWorking(true);
+      await setFacultySlotAvailability(id, slot.id, !slot.isAvailable);
+      toast.success(slot.isAvailable ? "Slot blocked" : "Slot unblocked");
+      await fetchFaculty();
+    } catch (err) {
+      handleApiError(err);
+    } finally {
+      setSlotWorking(false);
+    }
+  };
+
+  /* ================================================================ */
+  /* CHAPTER SLOT ACTIONS                                               */
+  /* ================================================================ */
+
+  const handleAddChapterSlot = async () => {
+    if (!chapterId || !id) return;
+    try {
+      setChapterWorking(true);
+      await addFacultyChapterSlot(id, { chapter: chapterId });
+      toast.success("Chapter slot added");
+      setChapterId("");
+      await fetchFaculty();
+    } catch (err) {
+      handleApiError(err);
+    } finally {
+      setChapterWorking(false);
+    }
+  };
+
+  const handleToggleChapterSlot = async (cs: ChapterSlot) => {
+    if (!id) return;
+    const slotId = typeof cs.chapter === "string" ? cs.chapter : cs.chapter.id;
+    try {
+      setChapterWorking(true);
+      await setFacultyChapterSlotAvailability(id, slotId, !cs.isAvailable);
+      toast.success(cs.isAvailable ? "Chapter blocked" : "Chapter unblocked");
+      await fetchFaculty();
+    } catch (err) {
+      handleApiError(err);
+    } finally {
+      setChapterWorking(false);
+    }
+  };
+
+  /* ================================================================ */
+  /* RENDER                                                             */
+  /* ================================================================ */
+
+  if (loading) {
+    const pulse = "animate-pulse bg-gray-200 rounded";
+    return (
+      <AdminPageContainer>
+        {/* Header skeleton */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div className="flex items-center gap-4">
+            <div className={`${pulse} w-12 h-5`} />
+            <div>
+              <div className={`${pulse} h-7 w-40 mb-1.5`} />
+              <div className={`${pulse} h-4 w-24`} />
+            </div>
+          </div>
+          <div className={`${pulse} h-6 w-16 rounded-full`} />
+        </div>
+
+        {/* Basic Info skeleton */}
+        <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <div className={`${pulse} h-5 w-36`} />
+            <div className={`${pulse} h-9 w-20 rounded-lg`} />
+          </div>
+          <div className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+              <div className={`${pulse} w-20 h-20 sm:w-28 sm:h-28 rounded-xl flex-shrink-0`} />
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i}>
+                    <div className={`${pulse} h-3 w-16 mb-2`} />
+                    <div className={`${pulse} h-4 w-32`} />
+                  </div>
+                ))}
+                <div className="sm:col-span-2">
+                  <div className={`${pulse} h-3 w-20 mb-2`} />
+                  <div className={`${pulse} h-4 w-full max-w-md`} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Time Slots skeleton */}
+        <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <div className={`${pulse} h-5 w-28`} />
+          </div>
+          <div className="p-4 sm:p-6 space-y-3">
+            <div className="flex flex-wrap gap-3 mb-2">
+              <div className={`${pulse} h-10 w-full sm:w-40 rounded-lg`} />
+              <div className={`${pulse} h-10 w-28 rounded-lg`} />
+            </div>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-100">
+                <div className="flex items-center gap-4">
+                  <div className={`${pulse} h-5 w-14`} />
+                  <div className={`${pulse} h-5 w-16 rounded`} />
+                </div>
+                <div className={`${pulse} h-8 w-16 rounded-lg`} />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Chapter Slots skeleton */}
+        <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-8">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <div className={`${pulse} h-5 w-32`} />
+          </div>
+          <div className="p-4 sm:p-6 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i}>
+                  <div className={`${pulse} h-3 w-14 mb-1.5`} />
+                  <div className={`${pulse} h-10 w-full rounded-lg`} />
+                </div>
+              ))}
+              <div className="flex items-end">
+                <div className={`${pulse} h-10 w-28 rounded-lg`} />
+              </div>
+            </div>
+            {[1, 2].map((i) => (
+              <div key={i} className="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-100">
+                <div className="flex items-center gap-4">
+                  <div className={`${pulse} h-5 w-28`} />
+                  <div className={`${pulse} h-5 w-16 rounded`} />
+                </div>
+                <div className={`${pulse} h-8 w-16 rounded-lg`} />
+              </div>
+            ))}
+          </div>
+        </section>
+      </AdminPageContainer>
+    );
+  }
+
+  if (!faculty) {
+    return (
+      <AdminPageContainer>
+        <div className="py-20 text-center">
+          <p className="text-gray-500 text-lg">Faculty not found</p>
+          <button
+            onClick={() => navigate("/admin/faculty")}
+            className="mt-4 text-sm text-[#DB313E] hover:underline"
+          >
+            ← Back to Faculty List
+          </button>
+        </div>
+      </AdminPageContainer>
+    );
+  }
+
+  return (
+    <AdminPageContainer>
+      {/* ── HEADER ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate("/admin/faculty")}
+            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back
+          </button>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{faculty.name}</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Faculty Details</p>
+          </div>
+        </div>
+        <span
+          className={`self-start sm:self-auto px-3 py-1 rounded-full text-xs font-medium ${
+            faculty.isDeleted
+              ? "bg-red-100 text-red-600"
+              : "bg-green-100 text-green-600"
+          }`}
+        >
+          {faculty.isDeleted ? "Inactive" : "Active"}
+        </span>
+      </div>
+
+      {/* ── BASIC INFO CARD ── */}
+      <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+          <h2 className="text-base font-semibold text-gray-800">Basic Information</h2>
+          <button
+            onClick={() => setEditOpen(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#DB313E] rounded-lg hover:bg-[#c22935] transition-colors shadow-sm"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+            Edit
+          </button>
+        </div>
+
+        <div className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+            {/* Image */}
+            <img
+              src={typeof faculty.image === "object" ? faculty.image.url : faculty.image}
+              alt={faculty.name}
+              className="w-20 h-20 sm:w-28 sm:h-28 rounded-xl object-cover border border-gray-200 shadow-sm flex-shrink-0"
+            />
+
+            {/* Details */}
+            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 sm:gap-y-4">
+              <InfoItem label="Name" value={faculty.name} />
+              <InfoItem label="Price" value={`₹${faculty.price}`} />
+              <InfoItem label="Qualifications" value={faculty.qualifications.join(", ")} />
+              <div className="hidden sm:block" />{/* spacer for grid alignment */}
+              <div className="sm:col-span-2">
+                <InfoItem label="Description" value={faculty.description} />
+              </div>
+            </div>
+          </div>
+
+          {/* Demo Class Preview */}
+          {faculty.demoClass && (() => {
+            const videoId = getYoutubeId(faculty.demoClass);
+            return (
+              <div className="mt-5 pt-5 border-t border-gray-100">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+                  Demo Class
+                </p>
+                {videoId ? (
+                  <a
+                    href={faculty.demoClass}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group relative inline-block rounded-xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <img
+                      src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
+                      alt="Demo class thumbnail"
+                      className="w-64 h-36 object-cover"
+                    />
+                    {/* Play button overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+                      <div className="w-12 h-12 rounded-full bg-[#DB313E] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </a>
+                ) : (
+                  <a
+                    href={faculty.demoClass}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-[#DB313E] hover:underline"
+                  >
+                    {faculty.demoClass}
+                  </a>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Subjects */}
+          {faculty.subjectOffering.length > 0 && (
+            <div className="mt-6 pt-5 border-t border-gray-100">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+                Subject Offerings
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {faculty.subjectOffering.map((so) => (
+                  <span
+                    key={so.id}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-full bg-[#DB313E]/8 text-[#DB313E] border border-[#DB313E]/15"
+                  >
+                    {so.subject.name}
+                    <span className="text-gray-400">·</span>
+                    <span className="text-gray-500">{so.class.name}</span>
+                    <span className="text-gray-400">·</span>
+                    <span className="text-gray-500">{so.syllabus.name}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── TIME SLOTS CARD ── */}
+      <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+          <h2 className="text-base font-semibold text-gray-800">
+            Time Slots
+            <span className="ml-2 text-xs font-normal text-gray-400">
+              ({faculty.slots.length} total)
+            </span>
+          </h2>
+        </div>
+
+        <div className="p-4 sm:p-6">
+          {/* Add slot row */}
+          <div className="flex flex-wrap items-center gap-3 mb-5">
+            <input
+              type="time"
+              value={newTime}
+              onChange={(e) => setNewTime(e.target.value)}
+              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30 w-full sm:w-40"
+            />
+            <button
+              onClick={handleAddTimeSlot}
+              disabled={!newTime || slotWorking}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#DB313E] rounded-lg hover:bg-[#c22935] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {slotWorking ? "Adding…" : "+ Add Slot"}
+            </button>
+          </div>
+
+          {/* Slot list */}
+          {faculty.slots.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-6">No time slots added yet</p>
+          ) : (
+            <div className="space-y-2">
+              {faculty.slots.map((slot) => (
+                <div
+                  key={slot.id}
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4 py-3 rounded-lg border transition-colors ${
+                    slot.isAvailable
+                      ? "bg-white border-gray-200 hover:border-gray-300"
+                      : "bg-gray-50 border-gray-200 opacity-70"
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+                    <span className="text-sm font-mono font-semibold text-gray-800">
+                      {slot.time}
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        slot.isAvailable
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-600"
+                      }`}
+                    >
+                      {slot.isAvailable ? "Available" : "Blocked"}
+                    </span>
+                    {slot.pool.length > 0 && (
+                      <span className="text-xs text-gray-400">
+                        {slot.pool.length}/{slot.poolLimit} booked
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {slot.pool.length > 0 && (
+                      <button
+                        onClick={() =>
+                          setSelectedPoolBooking({
+                            faculty: { id: faculty.id, name: faculty.name },
+                            mode: "slot",
+                            class: faculty.subjectOffering[0]?.class ?? { id: "", name: "" },
+                            syllabus: faculty.subjectOffering[0]?.syllabus ?? { id: "", name: "" },
+                            slot: { id: slot.id, time: slot.time },
+                            totalStudents: slot.pool.length,
+                            hasPendingContact: false,
+                            createdAt: "",
+                          })
+                        }
+                        className="px-3 py-1.5 text-xs font-medium rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors"
+                      >
+                        View Pool
+                      </button>
+                    )}
+
+                  <button
+                    onClick={() => handleToggleSlot(slot)}
+                    disabled={slotWorking || (slot.isAvailable && slot.pool.length > 0)}
+                    title={
+                      slot.isAvailable && slot.pool.length > 0
+                        ? "Cannot block — has active bookings"
+                        : ""
+                    }
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                      slot.isAvailable
+                        ? "text-red-600 bg-red-50 hover:bg-red-100 border border-red-200"
+                        : "text-green-600 bg-green-50 hover:bg-green-100 border border-green-200"
+                    }`}
+                  >
+                    {slot.isAvailable ? "Block" : "Unblock"}
+                  </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── CHAPTER SLOTS CARD ── */}
+      <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-8">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+          <h2 className="text-base font-semibold text-gray-800">
+            Chapter Slots
+            <span className="ml-2 text-xs font-normal text-gray-400">
+              ({faculty.chapterSlots.length} total)
+            </span>
+          </h2>
+        </div>
+
+        <div className="p-4 sm:p-6">
+          {/* Add chapter row */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-5 items-end">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-gray-500">Syllabus</label>
+              <select
+                value={chapterSyllabusId}
+                onChange={(e) => {
+                  setChapterSyllabusId(e.target.value);
+                  setChapterClassId("");
+                }}
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg w-full"
+              >
+                <option value="">Select</option>
+                {syllabusList.map((s) => (
+                  <option key={s._id} value={s._id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-gray-500">Class</label>
+              <select
+                value={chapterClassId}
+                onChange={(e) => setChapterClassId(e.target.value)}
+                disabled={!chapterSyllabusId}
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg w-full disabled:bg-gray-100"
+              >
+                <option value="">{chapterSyllabusId ? "Select" : "Pick syllabus"}</option>
+                {classesList.map((c) => (
+                  <option key={c._id} value={c._id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-gray-500">Chapter</label>
+              <select
+                value={chapterId}
+                onChange={(e) => setChapterId(e.target.value)}
+                disabled={!chapterClassId}
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg w-full disabled:bg-gray-100"
+              >
+                <option value="">
+                  {!chapterClassId
+                    ? "Pick class first"
+                    : chapterOptions.length === 0
+                      ? "No chapters found"
+                      : "Select chapter"}
+                </option>
+                {chapterOptions.map((c) => (
+                  <option key={c._id} value={c._id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={handleAddChapterSlot}
+              disabled={!chapterId || chapterWorking}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#DB313E] rounded-lg hover:bg-[#c22935] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {chapterWorking ? "Adding…" : "+ Add Chapter"}
+            </button>
+          </div>
+
+          {/* Chapter slot list */}
+          {faculty.chapterSlots.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-6">No chapter slots added yet</p>
+          ) : (
+            <div className="space-y-2">
+              {faculty.chapterSlots.map((cs) => {
+                const chapterName =
+                  typeof cs.chapter === "object" ? cs.chapter.name : cs.chapter;
+                const chapterKey =
+                  typeof cs.chapter === "object" ? cs.chapter.id : cs.chapter;
+
+                return (
+                  <div
+                    key={chapterKey}
+                    className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4 py-3 rounded-lg border transition-colors ${
+                      cs.isAvailable
+                        ? "bg-white border-gray-200 hover:border-gray-300"
+                        : "bg-gray-50 border-gray-200 opacity-70"
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+                      <span className="text-sm font-medium text-gray-800">{chapterName}</span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          cs.isAvailable
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-600"
+                        }`}
+                      >
+                        {cs.isAvailable ? "Available" : "Blocked"}
+                      </span>
+                      {cs.pool?.length > 0 && (
+                        <span className="text-xs text-gray-400">
+                          {cs.pool.length} booked
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      {cs.pool?.length > 0 && (
+                        <button
+                          onClick={() => {
+                            const chapterObj =
+                              typeof cs.chapter === "object"
+                                ? cs.chapter
+                                : { id: cs.chapter, name: cs.chapter };
+                            setSelectedPoolBooking({
+                              faculty: { id: faculty.id, name: faculty.name },
+                              mode: "chapter",
+                              class: faculty.subjectOffering[0]?.class ?? { id: "", name: "" },
+                              syllabus: faculty.subjectOffering[0]?.syllabus ?? { id: "", name: "" },
+                              chapter: chapterObj,
+                              totalStudents: cs.pool.length,
+                              hasPendingContact: false,
+                              createdAt: "",
+                            });
+                          }}
+                          className="px-3 py-1.5 text-xs font-medium rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors"
+                        >
+                          View Pool
+                        </button>
+                      )}
+
+                    <button
+                      onClick={() => handleToggleChapterSlot(cs)}
+                      disabled={chapterWorking || (cs.isAvailable && cs.pool?.length > 0)}
+                      title={
+                        cs.isAvailable && cs.pool?.length > 0
+                          ? "Cannot block — has active bookings"
+                          : ""
+                      }
+                      className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                        cs.isAvailable
+                          ? "text-red-600 bg-red-50 hover:bg-red-100 border border-red-200"
+                          : "text-green-600 bg-green-50 hover:bg-green-100 border border-green-200"
+                      }`}
+                    >
+                      {cs.isAvailable ? "Block" : "Unblock"}
+                    </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── EDIT BASIC INFO MODAL ── */}
+      {editOpen && (
+        <EditFacultyBasicModal
+          open={editOpen}
+          facultyId={faculty.id}
+          initialData={faculty}
+          syllabuses={syllabusList}
+          classes={classesList}
+          onClose={() => setEditOpen(false)}
+          onSuccess={() => {
+            setEditOpen(false);
+            fetchFaculty();
+          }}
+        />
+      )}
+
+      {/* ── POOL BOOKING MODAL ── */}
+      <PoolBookingModal
+        booking={selectedPoolBooking}
+        onClose={() => {
+          setSelectedPoolBooking(null);
+          fetchFaculty();
+        }}
+        onConfirmed={() => {
+          setSelectedPoolBooking(null);
+          fetchFaculty();
+        }}
+      />
+    </AdminPageContainer>
+  );
+}
+
+/* ================================================================== */
+/* SMALL HELPER COMPONENT                                               */
+/* ================================================================== */
+
+function InfoItem({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div>
+      <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
+        {label}
+      </p>
+      <div className="text-sm text-gray-800">{value || "—"}</div>
+    </div>
+  );
+}

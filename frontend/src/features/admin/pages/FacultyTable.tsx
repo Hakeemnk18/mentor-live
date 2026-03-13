@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AdminTable } from "../components/AdminTable";
 import { AdminPageActions } from "../components/AdminPageActions";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
@@ -13,13 +14,10 @@ import { getSubjects } from "../../../api/subject.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 import {
   createFaculty,
-  updateFaculty,
   getFaculties,
-  getFacultyById,
 } from "../../../api/faculty.api";
 
 import FacultyModal from "../components/FacultyModal";
-import type { FacultyModalData } from "../components/FacultyModal";
 import { AddTimeSlotModal } from "../components/AddTimeSlotModal";
 import { AddChapterSlotModal } from "../components/AddChapterSlotModal";
 
@@ -41,6 +39,7 @@ type FacultyRow = {
 /* ---------------- COMPONENT ---------------- */
 
 export default function FacultyPage() {
+  const navigate = useNavigate();
   const [faculties, setFaculties] = useState<FacultyRow[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -61,8 +60,6 @@ export default function FacultyPage() {
 
   /* Modal state */
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
-  const [editingFaculty, setEditingFaculty] = useState<FacultyModalData | undefined>();
   const [saving, setSaving] = useState(false);
 
   /* Slot modals */
@@ -157,40 +154,19 @@ export default function FacultyPage() {
   /* ---------------- MODAL HANDLERS ---------------- */
 
   const openCreate = () => {
-    setEditingFaculty(undefined);
-    setModalMode("create");
     setModalOpen(true);
-  };
-
-  const openEdit = async (row: FacultyRow) => {
-    try {
-      setSaving(true);
-      const data = await getFacultyById(row.id);
-      setEditingFaculty(data);
-      setModalMode("edit");
-      setModalOpen(true);
-    } catch (err) {
-      handleApiError(err);
-    } finally {
-      setSaving(false);
-    }
   };
 
   const handleSubmit = async (payload: any) => {
     try {
       setSaving(true);
-      if (modalMode === "create") {
-        await createFaculty(payload);
-        toast.success("Faculty created");
-      } else {
-        await updateFaculty(editingFaculty!.id, payload);
-        toast.success("Faculty updated");
-      }
+      await createFaculty(payload);
+      toast.success("Faculty created");
       setModalOpen(false);
       fetchFaculties();
     } catch (err: any) {
       handleApiError(err);
-      throw err; // Let modal stop loading spinner
+      throw err;
     } finally {
       setSaving(false);
     }
@@ -335,9 +311,7 @@ export default function FacultyPage() {
           data={faculties}
           columns={columns}
           actions={[
-            { label: "Edit", onClick: openEdit },
-            // { label: "+ Slot", onClick: (row) => setSlotFacultyId(row.id) },
-            // { label: "+ Chapter", onClick: (row) => setChapterFacultyId(row.id) },
+            { label: "View", onClick: (row) => navigate(`/admin/faculty/${row.id}`) },
           ]}
           getRowId={(row) => row.id}
         />
@@ -346,12 +320,10 @@ export default function FacultyPage() {
       {/* PAGINATION */}
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
-      {/* FACULTY MODAL (create + edit) */}
+      {/* FACULTY MODAL (create only) */}
       <FacultyModal
         open={modalOpen}
-        mode={modalMode}
-        initialData={editingFaculty}
-        facultyId={editingFaculty?.id}
+        mode={"create"}
         syllabuses={syllabusList}
         classes={classesList}
         saving={saving}
