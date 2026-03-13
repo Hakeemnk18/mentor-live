@@ -2,6 +2,7 @@ import AdminBootstrap from "../features/admin/components/AdminBootstrap"
 import ChapterPage from "../features/admin/pages/ChapterTable"
 import ClassPage from "../features/admin/pages/ClassTable"
 import FacultyPage from "../features/admin/pages/FacultyTable"
+import FacultyDetailPage from "../features/admin/pages/FacultyDetailPage"
 import Home from "../features/admin/pages/Home"
 import SubjectPage from "../features/admin/pages/SubjectTable"
 import SyllabusPage from "../features/admin/pages/SyllabusTable"
@@ -42,6 +43,14 @@ const adminRoutes = [
         </AdminBootstrap>
          
             
+        )
+    },
+    {
+        path:"faculty/:id",
+        element:(
+        <AdminBootstrap>
+            <FacultyDetailPage/>
+        </AdminBootstrap>
         )
     },
      {
