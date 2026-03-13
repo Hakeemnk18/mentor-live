@@ -145,4 +145,3 @@ export type AvailableSlots = {
   id: string;
   time: Date;
 }
-
