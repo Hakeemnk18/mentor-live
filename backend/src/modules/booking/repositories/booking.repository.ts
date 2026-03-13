@@ -11,6 +11,7 @@ import type {
   AdminBookingView,
   AdminPoolingStudentRaw,
   AdminPoolingView,
+  BookingStudentView,
   ExistingBookingProps,
   ExpireOtherBookingsForSlotParams,
   GetBookingsFromSlotParams,
@@ -19,6 +20,8 @@ import type { IBookingRepository } from "./booking.repository.interface.js";
 import type { GetOneToOneBookingUseCase } from "../use-cases/get.one.to.one.booking.use-case.js";
 import type { GetAdminPoolingStudentsDto } from "../dto/get.pooling.students.dto.js";
 import type { ClientSession } from "mongoose";
+import type { GetSlotBookingDetailsDto } from "../dto/slot.booking.details.dto.js";
+import type { GetChapterBookingDetailsDto } from "../dto/chapter.booking.details.dto.js";
 const { ObjectId } = Types;
 
 export class BookingRepository implements IBookingRepository {
@@ -843,7 +846,7 @@ export class BookingRepository implements IBookingRepository {
     session: ClientSession,
   ): Promise<void> {
     const { facultyId, slotIds, excludeBookingIds } = params;
-    
+
     const result = await BookingModel.updateMany(
       {
         facultyId,
@@ -861,7 +864,7 @@ export class BookingRepository implements IBookingRepository {
       session ? { session } : undefined,
     );
 
-    
+
   }
 
   async getBookingIds(params: GetBookingsFromSlotParams): Promise<string[]> {
@@ -960,5 +963,47 @@ export class BookingRepository implements IBookingRepository {
     if (result.matchedCount === 0) {
       throw new Error("No bookings matched for  cancellation");
     }
+  }
+
+  async getSlotBookingDetails(params: GetSlotBookingDetailsDto): Promise<BookingStudentView[]> {
+    const { facultyId, slotId, bookingType } = params;
+
+    const query: Record<string, any> = {
+      facultyId,
+      slotId,
+      mode: 'slot',
+      type: bookingType,
+      status: "interested",
+      isDeleted: false,
+    };
+
+    const docs = await BookingModel.find(query)
+      .populate({
+        path: "userId",
+        select: "name phoneNumber",
+      })
+      .lean();
+    return docs.map(BookingMapper.mapSlotBookingDetailsView);
+  }
+
+  async getChapterBookingDetails(params: GetChapterBookingDetailsDto): Promise<BookingStudentView[]> {
+    const { facultyId, chapterId, bookingType } = params;
+
+    const query: Record<string, any> = {
+      facultyId,
+      chapterId,
+      mode: 'chapter',
+      type: bookingType,
+      status: "interested",
+      isDeleted: false,
+    };
+
+    const docs = await BookingModel.find(query)
+      .populate({
+        path: "userId",
+        select: "name phoneNumber",
+      })
+      .lean();
+    return docs.map(BookingMapper.mapSlotBookingDetailsView);
   }
 }

@@ -15,19 +15,19 @@ const bookingController = container.resolve(BookingController)
 
 
 router.post('/',
-  (req,res) => bookingController.createBooking(req, res)
+  (req, res) => bookingController.createBooking(req, res)
 )
 
 router.get('/one-to-one',
-  (req,res)=> bookingController.getAllOneToOneBooking(req, res)
+  (req, res) => bookingController.getAllOneToOneBooking(req, res)
 )
 
 router.get('/pooling',
-  (req,res)=> bookingController.getAllPoolingBooking(req, res)
+  (req, res) => bookingController.getAllPoolingBooking(req, res)
 )
 
 router.get('/pooling/students',
-  (req,res)=> bookingController.getPoolingStudents(req, res)
+  (req, res) => bookingController.getPoolingStudents(req, res)
 )
 
 router.patch(
@@ -55,5 +55,15 @@ router.patch(
   "/pooling/remove-student",
   (req, res) => bookingController.removeStudentFromPooling(req, res)
 );
+
+router.get(
+  "/slot/details",
+  (req, res) => bookingController.getSlotBookingDetails(req, res)
+)
+
+router.get(
+  "/chapter/details",
+  (req, res) => bookingController.getChapterBookingDetails(req, res)
+)
 
 export default router;

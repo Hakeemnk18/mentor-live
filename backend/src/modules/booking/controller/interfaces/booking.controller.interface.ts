@@ -10,4 +10,6 @@ export interface IBookingController {
   confirmChapterOneToOneBooking(req: Request, res: Response): Promise<void>;
   confirmChapterPoolingBooking(req: Request, res: Response): Promise<void>;
   removeStudentFromPooling(req: Request, res: Response): Promise<void>;
+  getSlotBookingDetails(req: Request, res: Response): Promise<void>;
+  getChapterBookingDetails(req: Request, res: Response): Promise<void>;
 }

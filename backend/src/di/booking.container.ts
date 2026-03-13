@@ -19,9 +19,13 @@ import type { IConfirmChapterPoolingBookingUseCase } from "../modules/booking/us
 import { ConfirmChapterPoolingBookingUseCase } from "../modules/booking/use-cases/confirm.chapter.pooling.booking.js";
 import type { IRemoveStudentFromPoolingUseCase } from "../modules/booking/use-cases/interfaces/remove.student.from.pooling.use-case.interface.js";
 import { RemoveStudentFromPoolingUseCase } from "../modules/booking/use-cases/remove.student.from.pooling.use-case.js";
+import type { IGetSlotBookingDetailsUseCase } from "../modules/booking/use-cases/interfaces/get.slot.booking.details.use-case.interface.js";
+import { GetSlotBookingDetailsUseCase } from "../modules/booking/use-cases/get.slot.booking.details.use-case.js";
+import type { IGetChapterBookingDetailsUseCase } from "../modules/booking/use-cases/interfaces/get.chapter.booking.details.use-case.interface.js";
+import { GetChapterBookingDetailsUseCase } from "../modules/booking/use-cases/get.chapter.booking.details.use-case.js";
 
 export const registerBookingDependencies = () => {
-  
+
     container.register<IBookingRepository>("IBookingRepository", {
         useClass: BookingRepository,
     });
@@ -51,14 +55,22 @@ export const registerBookingDependencies = () => {
     });
 
     container.register<IConfirmPoolingBookingUseCase>("IConfirmPoolingBookingUseCase",
-        { useClass: ConfirmPoolingBookingUseCase}
+        { useClass: ConfirmPoolingBookingUseCase }
     )
 
     container.register<IConfirmChapterPoolingBookingUseCase>("IConfirmChapterPoolingBookingUseCase",
-        { useClass: ConfirmChapterPoolingBookingUseCase}
+        { useClass: ConfirmChapterPoolingBookingUseCase }
     )
 
     container.register<IRemoveStudentFromPoolingUseCase>("IRemoveStudentFromPoolingUseCase",
-        { useClass: RemoveStudentFromPoolingUseCase}
+        { useClass: RemoveStudentFromPoolingUseCase }
+    )
+
+    container.register<IGetSlotBookingDetailsUseCase>("IGetSlotBookingDetailsUseCase",
+        { useClass: GetSlotBookingDetailsUseCase }
+    )
+
+    container.register<IGetChapterBookingDetailsUseCase>("IGetChapterBookingDetailsUseCase",
+        { useClass: GetChapterBookingDetailsUseCase }
     )
 };
