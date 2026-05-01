@@ -12,14 +12,21 @@ export class UserRepository implements IUserRepository {
     const created = await UserModel.create(persistenceData);
     const domainUser = UserMapper.toDomain(created);
     if (!domainUser) {
-      throw new CustomError(ResponseMessages.FAILED_TO_MAP,HttpStatusCode.INTERNAL_SERVER_ERROR);
+      throw new CustomError(
+        ResponseMessages.FAILED_TO_MAP,
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
+      );
     }
 
     return domainUser;
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    const foundDocument = await UserModel.findOne({ email: email.toLowerCase() }).lean();
+    const users = await UserModel.find({}).lean();
+    console.log("users", users);
+    const foundDocument = await UserModel.findOne({
+      email: email.toLowerCase(),
+    }).lean();
     return UserMapper.toDomain(foundDocument);
   }
 
@@ -29,25 +36,32 @@ export class UserRepository implements IUserRepository {
   }
 
   async save(user: User): Promise<User> {
-    
     if (!user.id) {
-      throw new CustomError(ResponseMessages.ID_MISSING, HttpStatusCode.INTERNAL_SERVER_ERROR);
+      throw new CustomError(
+        ResponseMessages.ID_MISSING,
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
+      );
     }
     const persistenceData = UserMapper.toPersistence(user);
     const updatedDocument = await UserModel.findByIdAndUpdate(
       user.id,
       { $set: persistenceData },
-      { new: true } 
+      { new: true },
     ).lean();
 
-    
     if (!updatedDocument) {
-      throw new CustomError(ResponseMessages.USER_NOT_FOUND, HttpStatusCode.NOT_FOUND);
+      throw new CustomError(
+        ResponseMessages.USER_NOT_FOUND,
+        HttpStatusCode.NOT_FOUND,
+      );
     }
 
     const domainUser = UserMapper.toDomain(updatedDocument);
     if (!domainUser) {
-      throw new CustomError(ResponseMessages.FAILED_TO_MAP, HttpStatusCode.INTERNAL_SERVER_ERROR);
+      throw new CustomError(
+        ResponseMessages.FAILED_TO_MAP,
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
+      );
     }
 
     return domainUser;

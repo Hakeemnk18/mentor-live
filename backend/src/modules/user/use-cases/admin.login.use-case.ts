@@ -12,9 +12,10 @@ import { ITokenService } from "../../../core/ports/token.service.interface.js";
 @injectable()
 export class AdminLoginUseCase implements IAdminLoginUseCase {
   constructor(
-    @inject("IUserRepository") private readonly _userRepository: IUserRepository,
+    @inject("IUserRepository")
+    private readonly _userRepository: IUserRepository,
     @inject("IHashingService") private readonly _hashService: IHashingService,
-    @inject('ITokenService') private readonly _tokenService: ITokenService
+    @inject("ITokenService") private readonly _tokenService: ITokenService,
   ) {}
 
   async execute(dto: LoginRequestDto): Promise<{
@@ -22,49 +23,61 @@ export class AdminLoginUseCase implements IAdminLoginUseCase {
     accessToken: string;
     refreshToken: string;
   }> {
+    console.log("email", dto.email);
+
     const user = await this._userRepository.findByEmail(dto.email);
+
+    console.log("user", user);
 
     if (!user) {
       throw new CustomError(
         ResponseMessages.INVALID_CREDENTIALS,
-        HttpStatusCode.BAD_REQUEST
+        HttpStatusCode.BAD_REQUEST,
       );
     }
 
-    const isValid = await this._hashService.compare(dto.password, user.password!)
+    const isValid = await this._hashService.compare(
+      dto.password,
+      user.password!,
+    );
 
-    if(!isValid){
+    if (!isValid) {
       throw new CustomError(
         ResponseMessages.INVALID_CREDENTIALS,
-        HttpStatusCode.BAD_REQUEST
-      )
+        HttpStatusCode.BAD_REQUEST,
+      );
     }
 
-    if(!user.isVerified){
+    if (!user.isVerified) {
       throw new CustomError(
         ResponseMessages.USER_NOT_VERIFIED,
-        HttpStatusCode.BAD_REQUEST
-      )
+        HttpStatusCode.BAD_REQUEST,
+      );
     }
 
-    if(user.isBlocked){
+    if (user.isBlocked) {
       throw new CustomError(
         ResponseMessages.ACCESS_DENIED,
-        HttpStatusCode.BAD_REQUEST
-      )
+        HttpStatusCode.BAD_REQUEST,
+      );
     }
 
-    if(user.role !== 'admin'){
-        throw new CustomError(
+    if (user.role !== "admin") {
+      throw new CustomError(
         ResponseMessages.UNAUTHORIZED,
-        HttpStatusCode.BAD_REQUEST
-      )
+        HttpStatusCode.BAD_REQUEST,
+      );
     }
 
     const tokenPayload = { id: user.id!, role: user.role };
-    const refreshTokenPlayLoad = { id: user.id!, role: user.role, tokenVersion: user.tokenVersion }
+    const refreshTokenPlayLoad = {
+      id: user.id!,
+      role: user.role,
+      tokenVersion: user.tokenVersion,
+    };
     const accessToken = await this._tokenService.signAccessToken(tokenPayload);
-    const refreshToken = await this._tokenService.signRefreshToken(refreshTokenPlayLoad);
+    const refreshToken =
+      await this._tokenService.signRefreshToken(refreshTokenPlayLoad);
 
     const responseData: LoginResponseDto = {
       user: {
@@ -75,6 +88,6 @@ export class AdminLoginUseCase implements IAdminLoginUseCase {
       },
     };
 
-    return { userData: responseData, accessToken, refreshToken }
+    return { userData: responseData, accessToken, refreshToken };
   }
 }
