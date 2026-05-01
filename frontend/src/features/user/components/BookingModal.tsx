@@ -96,6 +96,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
     setApiError(null);
     setFieldErrors({});
     setSuccessMsg(null);
+    bookingMutation.reset();
   };
 
   /* ── Phone verification logic ── */
