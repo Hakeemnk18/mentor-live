@@ -26,6 +26,8 @@ import type { IGetSlotBookingDetailsUseCase } from "../use-cases/interfaces/get.
 import { GetSlotBookingDetailsSchema } from "../dto/slot.booking.details.dto.js";
 import type { IGetChapterBookingDetailsUseCase } from "../use-cases/interfaces/get.chapter.booking.details.use-case.interface.js";
 import { GetChapterBookingDetailsSchema } from "../dto/chapter.booking.details.dto.js";
+import { GetAllBookingSchema } from "../dto/get.all.booking.dto.js";
+import type { IGetAllBookingUseCase } from "../use-cases/interfaces/get.all.booking.use.case.interface.js";
 
 @injectable()
 export class BookingController implements IBookingController {
@@ -62,11 +64,13 @@ export class BookingController implements IBookingController {
 
     @inject("IGetChapterBookingDetailsUseCase")
     private readonly _getChapterBookingDetailsUseCase: IGetChapterBookingDetailsUseCase,
-  ) { }
+
+    @inject("IGetAllBookingUseCase")
+    private readonly _getAllBookingUseCase: IGetAllBookingUseCase,
+  ) {}
 
   async createBooking(req: Request, res: Response): Promise<void> {
     try {
-
       const dto = CreateBookingSchema.parse(req.body);
 
       await this._createBookingUseCase.execute(dto);
@@ -115,6 +119,26 @@ export class BookingController implements IBookingController {
       console.log("error in get all pooling booking ", error);
     }
   }
+  async getAllBookings(req: Request, res: Response): Promise<void> {
+    try {
+      const dto = GetAllBookingSchema.parse(req.query);
+
+      const result = await this._getAllBookingUseCase.execute(dto);
+
+      res.status(HttpStatusCode.OK).json({
+        message: ResponseMessages.SUCCESS,
+        success: true,
+        data: result.data,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+      });
+    } catch (error) {
+      handleError(res, error);
+      console.log("error in get all bookings", error);
+    }
+  }
 
   async getPoolingStudents(req: Request, res: Response): Promise<void> {
     try {
@@ -146,7 +170,10 @@ export class BookingController implements IBookingController {
     }
   }
 
-  async confirmChapterOneToOneBooking(req: Request, res: Response,): Promise<void> {
+  async confirmChapterOneToOneBooking(
+    req: Request,
+    res: Response,
+  ): Promise<void> {
     try {
       const dto = ConfirmChapterOneToOneBookingSchema.parse({
         bookingId: req.params.bookingId,
@@ -177,7 +204,10 @@ export class BookingController implements IBookingController {
     }
   }
 
-  async confirmChapterPoolingBooking(req: Request, res: Response,): Promise<void> {
+  async confirmChapterPoolingBooking(
+    req: Request,
+    res: Response,
+  ): Promise<void> {
     try {
       const dto = ConfirmChapterPoolingBookingSchema.parse(req.body);
       await this._confirmChapterPoolingBookingUseCase.execute(dto);
@@ -203,7 +233,6 @@ export class BookingController implements IBookingController {
       console.log("error in remove student from pooling ", error);
       handleError(res, error);
     }
-
   }
 
   async getSlotBookingDetails(req: Request, res: Response): Promise<void> {

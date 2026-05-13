@@ -129,11 +129,12 @@ export const ResponseMessages = {
   FACULTY_RESTORE_FAILED: "Failed to restore faculty",
   INVALID_FACULTY_LIST_TYPE: "Invalid faculty list type",
   CHAPTER_SLOT_NOT_FOUND: "Chapter slot not found",
-  FACULTY_BLOCKED:" Faculty is blocked",
+  FACULTY_BLOCKED: " Faculty is blocked",
 
   SLOT_ALREADY_BLOCKED: "Slot is already blocked",
   SLOT_ALREADY_UNBLOCKED: "Slot is already unblocked",
-  SLOT_POOL_NOT_EMPTY:"Cannot block slot as there are students in the pooling list",
+  SLOT_POOL_NOT_EMPTY:
+    "Cannot block slot as there are students in the pooling list",
 
   SLOT_TIME_NOT_VALID: "Slot times are not valid",
   SLOT_ADDED_SUCCESS: "Slot added successfully",
@@ -274,5 +275,8 @@ export const ResponseMessages = {
   BLOG_DELETED: "Blog deleted successfully",
 
   BLOG_LIST_FETCH_FAILED: "Failed to fetch blogs",
-  BLOG_SEARCH_FAILED: "Failed to search blogs"
+  BLOG_SEARCH_FAILED: "Failed to search blogs",
+
+  ANALYSIS_TABLE_FETCH_FAILED: "Failed to fetch analysis table",
+  ANALYSIS_TABLE_FETCHED: "Analysis table fetched successfully",
 };
