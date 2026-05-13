@@ -1,14 +1,6 @@
-import type {
-  CreateSubjectPayload,
-  EditSubjectNamePayload,
-  GetSubjectByIdApiResponse,
-  GetSubjectsApiResponse,
-  GetSubjectsParams,
-  GetSubjectsResult,
-  SyllabusAndClassPayload,
-} from "../shared/types/api.types";
 import axiosInstance from "./axios.instance";
 
+import type { GetSubjectsParams, GetSubjectsApiResponse, GetSubjectsResult, GetSubjectByIdApiResponse, SyllabusAndClassPayload, CreateSubjectPayload, EditSubjectNamePayload } from "../shared/types/subject.types";
 export const getSubjects = async (
   params: GetSubjectsParams
 ): Promise<GetSubjectsResult> => {

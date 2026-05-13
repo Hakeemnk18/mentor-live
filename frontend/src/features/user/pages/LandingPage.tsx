@@ -9,6 +9,10 @@ import FacultyCard from "../components/FacultyCard";
 import BlogCard from "../components/BlogCard";
 import TestimonialCard from "../components/TestimonialCard";
 
+import type { Student } from "../../../shared/types/student.types";
+import type { Banner } from "../../../shared/types/banner.types";
+import type { Blog } from "../../../shared/types/blog.types";
+import type { Testimonial } from "../../../shared/types/testimonial.types";
 const stats = [
   { value: "500+", label: "QUALIFIED TUTORS" },
   { value: "50+", label: "SUBJECTS COVERED" },

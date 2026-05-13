@@ -1,15 +1,6 @@
 import { useEffect, useState } from "react";
 import { mapVariantsToSyllabusAndClass } from "../../../api/subject.api";
-import type {
-  CreateSubjectPayload,
-  SyllabusAndClassPayload,
-} from "../../../shared/types/api.types";
-
-type VariantRow = {
-  syllabusId: string;
-  classId: string;
-};
-
+import type { SyllabusAndClassPayload, CreateSubjectPayload, VariantRow } from "../../../shared/types/subject.types";
 type Props = {
   open: boolean;
   mode: "create" | "edit";

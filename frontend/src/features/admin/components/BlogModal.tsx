@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Blog, BlogPayload } from "../../../api/blog.api";
-
+import type { Blog, BlogPayload } from "../../../shared/types/blog.types";
 interface Props {
   open: boolean;
   mode: "create" | "edit";

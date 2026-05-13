@@ -7,7 +7,6 @@ import { handleApiError } from "../../../shared/utils/handle.api.error";
 import TopLoader from "../../../shared/components/TopLoader";
 import toast from "react-hot-toast";
 import type { Column } from "../components/AdminTable";
-import type { Testimonial, TestimonialPayload } from "../../../api/testimonial.api";
 import {
   getTestimonials,
   createTestimonial,
@@ -16,6 +15,7 @@ import {
 } from "../../../api/testimonial.api";
 import TestimonialModal from "../components/TestimonialModal";
 
+import type { Testimonial, TestimonialPayload } from "../../../shared/types/testimonial.types";
 /* ── columns ─────────────────────────────────────────────── */
 const columns: Column<Testimonial>[] = [
   {

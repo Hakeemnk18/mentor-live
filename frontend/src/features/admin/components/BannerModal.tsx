@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import ImageCropModal from "../../../shared/components/ImageCropModal/ImageCropModal";
 import { uploadToCloudinary } from "../../../shared/utils/cloudinary";
-import type { CloudinaryUploadResult } from "../../../shared/utils/cloudinary";
-import type { Banner, BannerPayload } from "../../../api/banner.api";
 import toast from "react-hot-toast";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
+import type { CloudinaryUploadResult } from "../../../shared/types/common.types";
+import type { Banner, BannerPayload } from "../../../shared/types/banner.types";
 interface Props {
   open: boolean;
   mode: "create" | "edit";

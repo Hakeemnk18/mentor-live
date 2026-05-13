@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import type { PoolBooking, PoolStudent, PoolStudentsResponse } from "../../../api/booking.api";
 import {
   getPoolStudents,
   confirmSlotPooling,
@@ -10,6 +9,7 @@ import {
 import { getFacultyAvailableSlots } from "../../../api/faculty.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
+import type { PoolBooking, PoolStudent, PoolStudentsResponse, AvailableSlot } from "../../../shared/types/booking.types";
 /* ───── helpers ─────────────────────────────────────────── */
 const fmtTime = (iso: string) => {
   const d = new Date(iso);
@@ -30,8 +30,6 @@ const Detail = ({ label, value }: { label: string; value: React.ReactNode }) => 
 );
 
 /* ───── types ───────────────────────────────────────────── */
-interface AvailableSlot { id: string; time: string; }
-
 interface Props {
   booking: PoolBooking | null;
   onClose: () => void;

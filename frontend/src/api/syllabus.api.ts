@@ -1,6 +1,6 @@
-import type { GetSyllabusApiResponse, GetSyllabusParams, GetSyllabusResult, SyllabusResponse } from "../shared/types/api.types";
 import axiosInstance from "./axios.instance";
 
+import type { SyllabusResponse, GetSyllabusParams, GetSyllabusResult, GetSyllabusApiResponse } from "../shared/types/syllabus.types";
 export const getSyllabus = async (
   params: GetSyllabusParams
 ): Promise<GetSyllabusResult> => {

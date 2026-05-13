@@ -9,6 +9,7 @@ import {
 } from "../../../api/faculty.api";
 import BookingModal from "../components/BookingModal";
 
+import type { FacultyData } from "../../../shared/types/faculty.types";
 type SlotData = {
   id: string;
   isAvailable: boolean;
@@ -16,17 +17,6 @@ type SlotData = {
   chapter?: { id: string; name: string };
   pool: any[];
   poolLimit: number;
-};
-
-type FacultyData = {
-  id: string;
-  name: string;
-  qualifications: string[];
-  description: string;
-  demoClass?: string;
-  image?: string;
-  price: number;
-  slot?: SlotData;
 };
 
 const formatTime = (iso: string) => {

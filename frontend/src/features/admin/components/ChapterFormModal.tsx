@@ -5,6 +5,8 @@ import { getSubjectVariants } from "../../../api/chapter.api";
 import { uploadToCloudinary } from "../../../shared/utils/cloudinary";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
+import type { CloudinaryUploadResult } from "../../../shared/types/common.types";
+import type { ChapterInitialData } from "../../../shared/types/chapter.types";
 /* ---------------- TYPES ---------------- */
 
 type SubjectVariant = {
@@ -13,21 +15,6 @@ type SubjectVariant = {
 };
 
 type IconPayload = {
-  url: string;
-  publicId: string;
-};
-
-type ChapterInitialData = {
-  _id: string;
-  name: string;
-  price: number;
-  syllabusId: string;
-  classId: string;
-  subjectVariantId: string;
-  icon?: IconPayload | null;
-};
-
-type CloudinaryUploadResult = {
   url: string;
   publicId: string;
 };

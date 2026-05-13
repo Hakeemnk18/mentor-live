@@ -7,7 +7,6 @@ import TopLoader from "../../../shared/components/TopLoader";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 import toast from "react-hot-toast";
 import type { Column } from "../components/AdminTable";
-import type { Blog, BlogPayload } from "../../../api/blog.api";
 import {
   getBlogs,
   createBlog,
@@ -17,6 +16,7 @@ import {
 } from "../../../api/blog.api";
 import BlogModal from "../components/BlogModal";
 
+import type { Blog, BlogPayload } from "../../../shared/types/blog.types";
 /* ── columns ─────────────────────────────────────────────── */
 const columns: Column<Blog>[] = [
   {

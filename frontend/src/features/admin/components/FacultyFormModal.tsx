@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import ImageCropModal from "../../../shared/components/ImageCropModal/ImageCropModal";
 import {
@@ -10,6 +10,7 @@ import { getSubjects } from "../../../api/subject.api";
 import { uploadToCloudinary } from "../../../shared/utils/cloudinary";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
+import type { FacultyInitialData } from "../../../shared/types/faculty.types";
 /* ---------------- TYPES ---------------- */
 
 type IconPayload = {
@@ -29,42 +30,6 @@ type ChapterOption = {
 type SubjectOption = {
   _id: string;
   name: string;
-};
-
-export type FacultyInitialData = {
-  _id: string;
-  name: string;
-  qualifications: string[];
-  description: string;
-  demoClass: string;
-  price: number;
-
-  image?: string | null;
-
-  slots: {
-    id: string;
-    time: string; // "06:30"
-  }[];
-
-  chapterSlots: {
-    chapter: string;
-  }[];
-
-  subjectOffering: {
-    id: string; // subjectVariantId
-    class: {
-      id: string;
-      name: string;
-    };
-    syllabus: {
-      id: string;
-      name: string;
-    };
-    subject: {
-      id: string;
-      name: string;
-    };
-  }[];
 };
 
 type Props = {
@@ -227,7 +192,7 @@ export default function FacultyFormModal({
         setSubjectClassId(firstOffering.class.id);
       }
 
-      /* SLOTS ("06:30" → ISO) */
+      /* SLOTS ("06:30" ’ ISO) */
       setSlots(
         Array.isArray(initialData.slots)
           ? initialData.slots.map((s: any) => {
@@ -240,11 +205,11 @@ export default function FacultyFormModal({
       );
 
       /* CHAPTER SLOTS */
-      // 🔥 NORMALIZE CHAPTER SLOTS HERE
+      // ðŸ”¥ NORMALIZE CHAPTER SLOTS HERE
       const normalizedChapterSlots = Array.isArray(initialData.chapterSlots)
         ? initialData.chapterSlots.map((cs: any) => ({
             chapter:
-              typeof cs.chapter === "string" ? cs.chapter : cs.chapter.id, // ✅ extract id
+              typeof cs.chapter === "string" ? cs.chapter : cs.chapter.id, // … extract id
             name: typeof cs.chapter === "object" ? cs.chapter.name : undefined,
           }))
         : [];
@@ -268,7 +233,7 @@ export default function FacultyFormModal({
       classId: subjectClassId,
     })
       .then((res) => {
-        // ✅ res is ALREADY mapped
+        // … res is ALREADY mapped
         setSubjects(
           res.map((v) => ({
             _id: v._id,
@@ -397,7 +362,7 @@ export default function FacultyFormModal({
   };
 
   const handleSubmit = async () => {
-    if (isSubmitting || uploading) return; // ✅ HARD STOP
+    if (isSubmitting || uploading) return; // … HARD STOP
 
     setSubmitAttempted(true);
 
@@ -429,7 +394,7 @@ export default function FacultyFormModal({
         finalImage = image!;
       }
 
-      /* ✅ NORMALIZE CHAPTER SLOTS */
+      /* … NORMALIZE CHAPTER SLOTS */
       const normalizedChapterSlots = chapterSlots.map((c) => ({
         chapter: c.chapter,
       }));
@@ -443,7 +408,7 @@ export default function FacultyFormModal({
         price,
         subjects: selectedSubjects,
         slots,
-        chapterSlots: normalizedChapterSlots, // ✅ FIX
+        chapterSlots: normalizedChapterSlots, // … FIX
       };
 
       if (mode === "create") {
@@ -576,7 +541,7 @@ export default function FacultyFormModal({
                         }
                         className="px-3 text-red-500 text-sm"
                       >
-                        ✕
+                        
                       </button>
                     )}
                   </div>
@@ -676,7 +641,7 @@ export default function FacultyFormModal({
               {/* PRICE */}
               <div>
                 <label className="text-sm font-medium text-gray-700">
-                  Price (₹)
+                  Price
                 </label>
 
                 <input
@@ -813,7 +778,7 @@ export default function FacultyFormModal({
                         }
                         className="text-[#DB313E] hover:text-red-600"
                       >
-                        ✕
+                        
                       </button>
                     </span>
                   );
@@ -942,7 +907,7 @@ export default function FacultyFormModal({
                           }
                           className="text-red-500 text-sm hover:text-red-600"
                         >
-                          ✕
+                          
                         </button>
                       </div>
                     );
@@ -1002,7 +967,7 @@ export default function FacultyFormModal({
                   }}
                   className="text-red-500"
                 >
-                  ✕
+                  
                 </button>
               </div>
             ))}
@@ -1015,7 +980,7 @@ export default function FacultyFormModal({
               }
               className="inline-flex items-center gap-2 text-sm px-3 py-2 border rounded hover:bg-gray-50"
             >
-              ➕ Add slot
+               Add slot
             </button>
           </div>
 
@@ -1045,7 +1010,7 @@ export default function FacultyFormModal({
                 onClick={() => fileInputRef.current?.click()}
                 className="mt-2 px-4 py-2 border border-dashed rounded text-sm hover:bg-gray-50"
               >
-                📷 Select image
+                ðŸ“· Select image
               </button>
             )}
 
@@ -1079,7 +1044,7 @@ export default function FacultyFormModal({
             </button>
 
             <button
-              type="button" // ✅ THIS IS THE FIX
+              type="button" // … THIS IS THE FIX
               disabled={uploading || isSubmitting}
               onClick={handleSubmit}
               className={`px-4 py-2 rounded text-white bg-[#DB313E]

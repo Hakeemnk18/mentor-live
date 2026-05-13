@@ -17,8 +17,7 @@ import { getSyllabus } from "../../../api/syllabus.api";
 import { getSubjects } from "../../../api/subject.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 import ChapterFormModal from "../components/ChapterFormModal";
-import type { ChapterRow } from "../../../shared/types/api.types";
-
+import type { ChapterRow } from "../../../shared/types/chapter.types";
 export default function ChapterPage() {
   const [chapters, setChapters] = useState<ChapterRow[]>([]);
   const [loading, setLoading] = useState(false);

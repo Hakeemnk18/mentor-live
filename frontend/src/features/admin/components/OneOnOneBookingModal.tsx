@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import type { OneOnOneBooking } from "../../../api/booking.api";
 import {
   confirmChapterBooking,
   confirmSlotBooking,
@@ -8,6 +7,8 @@ import {
 import { getFacultyAvailableSlots } from "../../../api/faculty.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
+import type { OneOnOneBooking, AvailableSlot } from "../../../shared/types/booking.types";
+import type { Student } from "../../../shared/types/student.types";
 /* ───── helpers ─────────────────────────────────────────── */
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleString("en-IN", {
@@ -28,11 +29,6 @@ const Detail = ({ label, value }: { label: string; value: React.ReactNode }) => 
 );
 
 /* ───── types ───────────────────────────────────────────── */
-interface AvailableSlot {
-  id: string;
-  time: string;
-}
-
 interface Props {
   booking: OneOnOneBooking | null;
   onClose: () => void;

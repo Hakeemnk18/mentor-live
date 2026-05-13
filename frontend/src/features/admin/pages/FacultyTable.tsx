@@ -21,20 +21,8 @@ import FacultyModal from "../components/FacultyModal";
 import { AddTimeSlotModal } from "../components/AddTimeSlotModal";
 import { AddChapterSlotModal } from "../components/AddChapterSlotModal";
 
+import type { FacultyRow } from "../../../shared/types/faculty.types";
 /* ---------------- TYPES ---------------- */
-
-type FacultyRow = {
-  id: string;
-  name: string;
-  qualifications: string[];
-  description: string;
-  demoClass: string;
-  image: string | { url: string; publicId: string };
-  price: number;
-  isDeleted: boolean;
-  slots: { time: string }[];
-  chapterSlots: string[];
-};
 
 /* ---------------- COMPONENT ---------------- */
 
@@ -125,6 +113,7 @@ export default function FacultyPage() {
         isDeleted,
       });
       setFaculties(res.data);
+      console.log("RAW FACULTY RESPONSE:", res.data[0]);
       setTotalPages(Math.ceil(res.total / limit));
     } catch (err) {
       handleApiError(err);

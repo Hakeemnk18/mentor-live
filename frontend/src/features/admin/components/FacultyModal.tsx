@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import ImageCropModal from "../../../shared/components/ImageCropModal/ImageCropModal";
 import { getSubjectVariants, getChaptersList } from "../../../api/chapter.api";
 import { uploadToCloudinary } from "../../../shared/utils/cloudinary";
 import {
-  addFacultySlot,
+  addFacultySlotIST,
   setFacultySlotAvailability,
   addFacultyChapterSlot,
   setFacultyChapterSlotAvailability,
@@ -12,43 +12,12 @@ import {
 } from "../../../api/faculty.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
+import type { TimeSlot, ChapterSlot, ImagePayload, SubjectGroup, FacultyModalData } from "../../../shared/types/faculty.types";
 /* ================================================================== */
 /* TYPES                                                                */
 /* ================================================================== */
 
-type ImagePayload = { url: string; publicId: string };
 type SubjectVariant = { _id: string; subjectName: string };
-
-type SubjectGroup = {
-  id: number;
-  syllabusId: string;
-  classId: string;
-  variants: SubjectVariant[];
-  selected: string[];           // variant IDs — used for API payload
-  selectedVariants: SubjectVariant[]; // full objects — used for display (independent of variants loading)
-};
-
-// pool carries bookings — block is only allowed when pool is empty
-type TimeSlot = { id?: string; time: string; pool?: any[]; isAvailable: boolean };
-type ChapterSlot = { id?: string; chapter: string; label?: string; pool?: any[]; isAvailable: boolean };
-
-export type FacultyModalData = {
-  id: string;  // backend returns 'id', not '_id'
-  name: string;
-  qualifications: string[];
-  description: string;
-  demoClass: string;
-  price: number;
-  image?: string | { url: string; publicId: string } | null;
-  subjectOffering?: {
-    id: string;
-    subject: { id: string; name: string };
-    syllabus: { id: string; name: string };
-    class: { id: string; name: string };
-  }[];
-  slots?: { id?: string; time: string; pool?: any[]; isAvailable?: boolean }[];
-  chapterSlots?: { id?: string; chapter: string | { id: string; name: string }; pool?: any[]; isAvailable?: boolean }[];
-};
 
 type Props = {
   open: boolean;
@@ -174,7 +143,7 @@ export default function FacultyModal({
           : null
       );
 
-      // Time slots — load ALL, preserving isAvailable state
+      // Time slots ” load ALL, preserving isAvailable state
       setTimeSlots(
         (initialData.slots ?? []).map((s) => ({
           id: s.id,
@@ -184,7 +153,7 @@ export default function FacultyModal({
         }))
       );
 
-      // Chapter slots — load ALL, preserving isAvailable state
+      // Chapter slots ” load ALL, preserving isAvailable state
       setChapterSlots(
         (initialData.chapterSlots ?? []).map((cs) => ({
           id: cs.id,
@@ -223,7 +192,7 @@ export default function FacultyModal({
             selectedVariants: [],
           });
         }
-        // o.id IS the SubjectVariant's _id (backend maps so._id → o.id)
+        // o.id IS the SubjectVariant's _id (backend maps so._id ’ o.id)
         map.get(key)!.selected.push(o.id);
         map.get(key)!.selectedVariants.push({ _id: o.id, subjectName: o.subject.name });
       });
@@ -299,7 +268,7 @@ export default function FacultyModal({
               [field]: value,
               // When syllabus changes, also clear classId; always clear variants
               // so the available-subjects list refreshes for the new combo.
-              // Do NOT wipe `selected` or `selectedVariants` — that would
+              // Do NOT wipe `selected` or `selectedVariants` â€” that would
               // erase the user's existing subject picks.
               ...(field === "syllabusId" ? { classId: "" } : {}),
               variants: [],
@@ -365,7 +334,7 @@ export default function FacultyModal({
     if (!isNaN(d.getTime())) {
       return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
     }
-    // Already "HH:MM" or similar — return as-is
+    // Already "HH:MM" or similar â€” return as-is
     return raw;
   };
 
@@ -385,7 +354,7 @@ export default function FacultyModal({
       (s) => Math.abs(toMinutes(s.time) - mins) < 60
     );
     if (overlap) {
-      setSlotError(`Overlaps with ${overlap.time} — slots must be at least 1 hour apart`);
+      setSlotError(`Overlaps with ${overlap.time} ” slots must be at least 1 hour apart`);
       return;
     }
     setSlotError("");
@@ -395,7 +364,7 @@ export default function FacultyModal({
         console.log("mode edit add time slot");
         
         setSlotWorking(true);
-await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend returns no slot ID — re-fetch to get fresh slots with real IDs
+await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns no slot ID â€” re-fetch to get fresh slots with real IDs
         const updated = await getFacultyById(facultyId);
         setTimeSlots(
           (updated.slots ?? []).map((s: any) => ({
@@ -481,7 +450,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
       try {
         setChapterWorking(true);
         await addFacultyChapterSlot(facultyId, { chapter: chapterId });
-        // Backend returns no slot ID — re-fetch to get fresh chapter slots with real IDs
+        // Backend returns no slot ID â€” re-fetch to get fresh chapter slots with real IDs
         const updated = await getFacultyById(facultyId);
         setChapterSlots(
           (updated.chapterSlots ?? []).map((cs: any) => ({
@@ -575,7 +544,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
     if (!price || Number(price) <= 0) {
       e.price = "Price must be greater than 0";
     } else if (Number(price) > 999999) {
-      e.price = "Price must be under ₹9,99,999";
+      e.price = "Price must be under 9,99,999";
     }
     if (mode === "create" && !imageFile && !imagePayload)
       e.image = "Image is required";
@@ -632,12 +601,12 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
 
       // Only include image when the user actually picked a new file.
       // imagePayload is already set from initialData in edit mode (for display),
-      // so finalImage alone is always truthy — imageFile is the real new-image signal.
+      // so finalImage alone is always truthy â€” imageFile is the real new-image signal.
       if (imageFile && finalImage) {
         payload.image = finalImage;
       }
 
-      // Slots/chapters only bundled in CREATE — edit handles them via immediate APIs
+      // Slots/chapters only bundled in CREATE â€” edit handles them via immediate APIs
       if (mode === "create") {
         payload.slots = slotsPayload;
         payload.chapterSlots = chapterSlots.map((c) => ({ chapter: c.chapter }));
@@ -674,7 +643,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
           {/* Body */}
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
 
-            {/* ── Basic Info ── */}
+            {/* â”€â”€ Basic Info â”€â”€ */}
             <Section title="Basic Information">
               <Field label="Faculty Name" error={errors.name}>
                 <input
@@ -687,7 +656,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
               </Field>
               <Field
                 label="Qualifications"
-                hint="Comma-separated — e.g. MSc Physics, B.Ed"
+                hint="Comma-separated ” e.g. MSc Physics, B.Ed"
                 error={errors.qualifications}
               >
                 <input
@@ -704,7 +673,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
                   onChange={(e) => { setDescription(e.target.value); clearFieldError("description"); }}
                   rows={3}
                   maxLength={1000}
-                  placeholder="Brief teaching background…"
+                  placeholder="Brief teaching background¦"
                   className={inp(!!errors.description) + " resize-none"}
                 />
                 <div className="flex justify-end mt-0.5">
@@ -722,7 +691,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
                     className={inp(!!errors.demoClass)}
                   />
                 </Field>
-                <Field label="Price (₹)" error={errors.price}>
+                <Field label="Price" error={errors.price}>
                   <input
                     type="number"
                     value={price}
@@ -739,7 +708,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
               </div>
             </Section>
 
-            {/* ── Image ── */}
+            {/* â”€â”€ Image â”€â”€ */}
             <Section title="Faculty Image">
               <div className="flex items-center gap-4">
                 {imageUrl && (
@@ -758,7 +727,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
                     {imageUrl ? "Change Image" : "Upload Image"}
                   </button>
                   <p className="mt-1 text-xs text-gray-400">
-                    Square image, min 300×300 recommended
+                    Square image, min 300—300 recommended
                   </p>
                 </div>
                 <input
@@ -786,14 +755,14 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
               )}
             </Section>
 
-            {/* ── Subjects ── */}
+            {/* â”€â”€ Subjects â”€â”€ */}
             <Section title="Subjects">
               {errors.subjects && (
                 <p className="text-xs text-red-500 mb-2">{errors.subjects}</p>
               )}
               <div className="space-y-4">
                 {subjectGroups.map((group, idx) => {
-                  // selectedVariants always holds full objects — no dependency on variants loading
+                  // selectedVariants always holds full objects â€” no dependency on variants loading
                   const selected = group.selectedVariants;
                   const available = group.variants.filter(
                     (v) => !group.selected.includes(v._id)
@@ -858,7 +827,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
                         </select>
                       </div>
 
-                      {/* Selected subjects — with explicit × remove buttn */}
+                      {/* Selected subjects â€” with explicit — remove buttn */}
                       {selected.length > 0 && (
                         <div>
                           <p className="text-xs text-gray-400 mb-1">Selected</p>
@@ -877,7 +846,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
                                   className="ml-1 hover:opacity-75"
                                   title="Remove"
                                 >
-                                  ×
+                                  
                                 </button>
                               </span>
                             ))}
@@ -885,7 +854,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
                         </div>
                       )}
 
-                      {/* Available subjects — muted clickable pills */}
+                      {/* Available subjects â€” muted clickable pills */}
                       {available.length > 0 && (
                         <div>
                           <p className="text-xs text-gray-400 mb-1">
@@ -927,7 +896,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
               </button>
             </Section>
 
-            {/* ── Time Slots ── */}
+            {/* â”€â”€ Time Slots â”€â”€ */}
             <Section title="Time Slots">
               {errors.slots && (
                 <p className="text-xs text-red-500 mb-2">{errors.slots}</p>
@@ -946,7 +915,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
                   disabled={slotWorking}
                   className="px-3 py-1.5 text-sm bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 disabled:opacity-50"
                 >
-                  {slotWorking ? "…" : "+ Add"}
+                  {slotWorking ? "" : "+ Add"}
                 </button>
               </div>
               {slotError && (
@@ -974,7 +943,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
                               title="Block slot"
                               className="ml-1 text-blue-400 hover:text-red-500 disabled:opacity-50"
                             >
-                              ×
+                              X
                             </button>
                           )}
                         </span>
@@ -1011,7 +980,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
               )}
             </Section>
 
-            {/* ── Chapter Slots ── */}
+            {/* â”€â”€ Chapter Slots â”€â”€ */}
             <Section title="Chapter Slots">
               {errors.chapters && (
                 <p className="text-xs text-red-500 mb-2">{errors.chapters}</p>
@@ -1071,7 +1040,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
                     disabled={chapterWorking}
                     className="px-3 py-1.5 text-sm bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 disabled:opacity-50"
                   >
-                    {chapterWorking ? "…" : "+ Add"}
+                    {chapterWorking ? "" : "+ Add"}
                   </button>
                 </div>
               )}
@@ -1100,7 +1069,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
                               title="Block chapter slot"
                               className="ml-1 text-green-400 hover:text-red-500 disabled:opacity-50"
                             >
-                              ×
+                              
                             </button>
                           )}
                         </span>
@@ -1153,9 +1122,9 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
               className="px-4 py-2 text-sm bg-[#DB313E] text-white rounded hover:bg-[#c02b37] disabled:opacity-50"
             >
               {uploading
-                ? "Uploading…"
+                ? "Uploading"
                 : saving
-                ? "Saving…"
+                ? "Saving"
                 : mode === "create"
                 ? "Create Faculty"
                 : "Save Changes"}

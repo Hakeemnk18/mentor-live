@@ -1,4 +1,4 @@
-// import { useMutation } from "@tanstack/react-query";
+﻿// import { useMutation } from "@tanstack/react-query";
 // import type {
 //   ResendOtpPayload,
 // } from "../../../api/auth/auth.type";
@@ -6,11 +6,8 @@
 // import toast from "react-hot-toast";
 
 // import { handleApiError } from "../../../utils/handle.api.error";
-// import type { ApiResponse } from "../../../api/common.types";
-
-
-
-export const useForgotPassword = () => {
+// import type { ApiResponse } from "../../../shared/types/common.types";
+// export const useForgotPassword = () => {
   
 
 //   return useMutation<ApiResponse, Error, ResendOtpPayload>({
@@ -23,4 +20,4 @@ export const useForgotPassword = () => {
 //     },
 //     retry: false,
 //   });
-};
+// };

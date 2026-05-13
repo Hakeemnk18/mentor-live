@@ -1,10 +1,10 @@
 import { useMutation } from "@tanstack/react-query";
-import type { ApiResponse } from "../../../shared/types/api.types";
 import { logoutUserApi } from "../api/auth.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
 
 
+import type { ApiResponse } from "../../../shared/types/common.types";
 export const useLogout = () => {
   
   return useMutation<ApiResponse, Error>({

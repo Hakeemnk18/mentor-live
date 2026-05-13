@@ -3,6 +3,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { getBlogs } from "../../../api/blog.api";
 import BlogCard from "../components/BlogCard";
 
+import type { Blog } from "../../../shared/types/blog.types";
 const LIMIT = 9; // 3x3 grid
 
 const BlogsPage: React.FC = () => {

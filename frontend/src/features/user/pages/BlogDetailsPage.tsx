@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getBlogById } from "../../../api/blog.api";
 
+import type { Blog } from "../../../shared/types/blog.types";
 const BlogDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
 

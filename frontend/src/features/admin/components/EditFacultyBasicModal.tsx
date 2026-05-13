@@ -6,16 +6,10 @@ import { getSubjectVariants } from "../../../api/chapter.api";
 import { updateFaculty } from "../../../api/faculty.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
+import type { SubjectOfferingUI } from "../../../shared/types/faculty.types";
 /* ================================================================== */
 /* TYPES                                                                */
 /* ================================================================== */
-
-type SubjectOfferingUI = {
-  syllabusId: string;
-  classId: string;
-  subjectVariantId: string;
-  label: string;
-};
 
 type Props = {
   open: boolean;

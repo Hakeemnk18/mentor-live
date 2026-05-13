@@ -1,6 +1,7 @@
-import type { ChapterListItem, CreateChapterPayload, GetChaptersListParams, GetChaptersParams, GetChaptersResult, GetSubjectVariantsParams, SubjectVariantApi, SubjectVariantsForChapterApi } from "../shared/types/api.types";
 import axiosInstance from "./axios.instance";
 
+import type { SubjectVariantApi } from "../shared/types/subject.types";
+import type { GetChaptersParams, GetChaptersResult, GetChaptersListParams, ChapterListItem, CreateChapterPayload, SubjectVariantsForChapterApi, GetSubjectVariantsParams } from "../shared/types/chapter.types";
 export const getChapters = async (
   params: GetChaptersParams
 ): Promise<GetChaptersResult> => {

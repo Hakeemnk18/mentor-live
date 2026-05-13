@@ -1,24 +1,6 @@
 import axiosInstance from "./axios.instance";
 
-export interface BannerImage {
-  url: string;
-  publicId: string;
-}
-
-export interface Banner {
-  id: string;
-  image: BannerImage;
-  description: string;
-  priority: number;
-  isDeleted: boolean;
-}
-
-export interface BannerPayload {
-  image: BannerImage;
-  description: string;
-  priority: number;
-}
-
+import type { Banner, BannerPayload } from "../shared/types/banner.types";
 export const getBanners = async (): Promise<Banner[]> => {
   const res = await axiosInstance.get("/banners");
   return res.data.data ?? [];

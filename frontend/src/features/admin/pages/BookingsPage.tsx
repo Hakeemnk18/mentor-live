@@ -9,8 +9,8 @@ import type { Column } from "../components/AdminTable";
 import {
   getOneOnOneBookings,
   getPoolBookings,
-  type OneOnOneBooking,
-  type PoolBooking,
+  type 
+  type 
 } from "../../../api/booking.api";
 import { getClasses } from "../../../api/class.api";
 import { getSyllabus } from "../../../api/syllabus.api";
@@ -18,6 +18,8 @@ import OneOnOneBookingModal from "../components/OneOnOneBookingModal";
 import PoolBookingModal from "../components/PoolBookingModal";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
+import type { OneOnOneBooking, PoolBooking, BookingType } from "../../../shared/types/booking.types";
+import type { Student } from "../../../shared/types/student.types";
 /* ─── helpers ─────────────────────────────────────────── */
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-IN", {
