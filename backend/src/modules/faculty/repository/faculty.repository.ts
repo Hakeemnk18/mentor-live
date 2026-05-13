@@ -136,8 +136,16 @@ export class FacultyRepository implements IFacultyRepository {
   async findAllFacultyForAdmin(
     allDoc: AcademicListFiltersBase,
   ): Promise<{ data: FacultyView[]; total: number }> {
-    const { page, limit, classId, syllabusId, subjectId, search, sort, isDeleted } =
-      allDoc;
+    const {
+      page,
+      limit,
+      classId,
+      syllabusId,
+      subjectId,
+      search,
+      sort,
+      isDeleted,
+    } = allDoc;
     const skip = (page - 1) * limit;
 
     const documents = await FacultyModel.aggregate([
@@ -720,7 +728,6 @@ export class FacultyRepository implements IFacultyRepository {
     slotId: string,
     session?: ClientSession,
   ): Promise<void> {
-
     const result = await FacultyModel.updateOne(
       {
         _id: new ObjectId(facultyId),
@@ -750,7 +757,6 @@ export class FacultyRepository implements IFacultyRepository {
     slotIds: string[],
     session?: ClientSession,
   ): Promise<void> {
-
     const result = await FacultyModel.updateOne(
       {
         _id: facultyId,
@@ -881,14 +887,11 @@ export class FacultyRepository implements IFacultyRepository {
 
   //block and unblock slots and chapter slots
 
-  async setSlotAvailability(
-    params: SetSlotAvailabilityDto,
-
-  ): Promise<void> {
+  async setSlotAvailability(params: SetSlotAvailabilityDto): Promise<void> {
     const { facultyId, mode, isAvailable } = params;
 
     let updateQuery: any;
-    let arrayFilters: any[] = []
+    let arrayFilters: any[] = [];
 
     if (mode === "slot") {
       if (!params.slotId) {
@@ -929,7 +932,6 @@ export class FacultyRepository implements IFacultyRepository {
     }
   }
 
-
   async getAllAvailableSlots(facultyId: string): Promise<AvailableSlots[]> {
     const faculty = await FacultyModel.findOne(
       { _id: facultyId, isDeleted: false },
@@ -944,5 +946,36 @@ export class FacultyRepository implements IFacultyRepository {
       id: slot._id.toString(),
       time: slot.time,
     }));
+  }
+
+  async getFacultyCountInRange(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<number> {
+    return FacultyModel.countDocuments({
+      isDeleted: false,
+      createdAt: { $gte: startDate, $lte: endDate },
+    });
+  }
+
+  async getDailyFacultyKpiStats(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<{ _id: string; count: number }[]> {
+    return FacultyModel.aggregate([
+      {
+        $match: {
+          isDeleted: false,
+          createdAt: { $gte: startDate, $lte: endDate },
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
   }
 }

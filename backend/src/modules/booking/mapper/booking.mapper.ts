@@ -5,6 +5,7 @@ import type {
   AdminPoolingRaw,
   AdminPoolingStudentRaw,
   AdminPoolingView,
+  BookingStudentView,
 } from "../type/booking.type.js";
 
 export class BookingMapper {
@@ -94,9 +95,9 @@ export class BookingMapper {
       chapter:
         raw.mode === "chapter" && raw.chapter
           ? {
-              id: String(raw.chapter.id),
-              name: raw.chapter.name,
-            }
+            id: String(raw.chapter.id),
+            name: raw.chapter.name,
+          }
           : undefined,
 
       mode: raw.mode,
@@ -109,15 +110,15 @@ export class BookingMapper {
     return {
       faculty: raw.faculty,
       mode: raw.mode,
-      class: raw.class,  
+      class: raw.class,
       syllabus: raw.syllabus,
       slot: raw.mode === "slot" ? raw.slot : undefined,
       chapter: raw.mode === "chapter" && raw.chapter
-          ? {
-              id: String(raw.chapter.id),
-              name: raw.chapter.name,
-            }
-          : undefined,
+        ? {
+          id: String(raw.chapter.id),
+          name: raw.chapter.name,
+        }
+        : undefined,
       totalStudents: raw.totalStudents,
       hasPendingContact: raw.hasPendingContact,
       createdAt: raw.createdAt.toISOString(),
@@ -128,16 +129,27 @@ export class BookingMapper {
     return {
       faculty: raw.faculty,
       mode: raw.mode,
-      class: raw.class,  
+      class: raw.class,
       syllabus: raw.syllabus,
       slot: raw.mode === "slot" ? raw.slot : undefined,
       chapter: raw.mode === "chapter" && raw.chapter
-          ? {
-              id: String(raw.chapter.id),
-              name: raw.chapter.name,
-            }
-          : undefined,
-      student : raw.student
+        ? {
+          id: String(raw.chapter.id),
+          name: raw.chapter.name,
+        }
+        : undefined,
+      student: raw.student
+    }
+  }
+
+  static mapSlotBookingDetailsView(raw: any): BookingStudentView {
+    return {
+      studentId: raw._id.toString(),
+      name: raw.userId.name,
+      phone: raw.userId.phoneNumber,
+      isContacted: raw.isContacted,
+      bookingDate: raw.createdAt.toISOString(),
+      bookingId: raw._id.toString(),
     }
   }
 }

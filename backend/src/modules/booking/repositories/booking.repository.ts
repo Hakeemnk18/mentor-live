@@ -11,6 +11,7 @@ import type {
   AdminBookingView,
   AdminPoolingStudentRaw,
   AdminPoolingView,
+  BookingStudentView,
   ExistingBookingProps,
   ExpireOtherBookingsForSlotParams,
   GetBookingsFromSlotParams,
@@ -19,6 +20,18 @@ import type { IBookingRepository } from "./booking.repository.interface.js";
 import type { GetOneToOneBookingUseCase } from "../use-cases/get.one.to.one.booking.use-case.js";
 import type { GetAdminPoolingStudentsDto } from "../dto/get.pooling.students.dto.js";
 import type { ClientSession } from "mongoose";
+import type { GetSlotBookingDetailsDto } from "../dto/slot.booking.details.dto.js";
+import type { GetChapterBookingDetailsDto } from "../dto/chapter.booking.details.dto.js";
+import type { GetAllBookingDto } from "../dto/get.all.booking.dto.js";
+import { FacultyModel } from "../../faculty/infrastructure/faculty.schema.js";
+import { ChapterModel } from "../../chapter/infrastructure/chapter.schema.js";
+import { getRangeStartDate } from "../../analysis/utils/get.start.range.start.date.js";
+import type {
+  BookingRange,
+  LowFacultyBookingResponse,
+  TopFacultyBookingResponse,
+  ZeroBookingResponse,
+} from "../../analysis/type/analysis.type.js";
 const { ObjectId } = Types;
 
 export class BookingRepository implements IBookingRepository {
@@ -260,10 +273,6 @@ export class BookingRepository implements IBookingRepository {
         },
       },
     );
-
-    /**
-     * 5️⃣ ACADEMIC FILTERS (AFTER LOOKUPS)
-     */
 
     /**
      * 6️⃣ SEARCH (student name OR faculty name)
@@ -843,7 +852,7 @@ export class BookingRepository implements IBookingRepository {
     session: ClientSession,
   ): Promise<void> {
     const { facultyId, slotIds, excludeBookingIds } = params;
-    
+
     const result = await BookingModel.updateMany(
       {
         facultyId,
@@ -860,8 +869,6 @@ export class BookingRepository implements IBookingRepository {
       },
       session ? { session } : undefined,
     );
-
-    
   }
 
   async getBookingIds(params: GetBookingsFromSlotParams): Promise<string[]> {
@@ -961,4 +968,556 @@ export class BookingRepository implements IBookingRepository {
       throw new Error("No bookings matched for  cancellation");
     }
   }
+
+  async getSlotBookingDetails(
+    params: GetSlotBookingDetailsDto,
+  ): Promise<BookingStudentView[]> {
+    const { facultyId, slotId, bookingType } = params;
+
+    const query: Record<string, any> = {
+      facultyId,
+      slotId,
+      mode: "slot",
+      type: bookingType,
+      status: "interested",
+      isDeleted: false,
+    };
+
+    const docs = await BookingModel.find(query)
+      .populate({
+        path: "userId",
+        select: "name phoneNumber",
+      })
+      .lean();
+    return docs.map(BookingMapper.mapSlotBookingDetailsView);
+  }
+
+  async getChapterBookingDetails(
+    params: GetChapterBookingDetailsDto,
+  ): Promise<BookingStudentView[]> {
+    const { facultyId, chapterId, bookingType } = params;
+
+    const query: Record<string, any> = {
+      facultyId,
+      chapterId,
+      mode: "chapter",
+      type: bookingType,
+      status: "interested",
+      isDeleted: false,
+    };
+
+    const docs = await BookingModel.find(query)
+      .populate({
+        path: "userId",
+        select: "name phoneNumber",
+      })
+      .lean();
+    return docs.map(BookingMapper.mapSlotBookingDetailsView);
+  }
+
+  async findAllBookings(dto: GetAllBookingDto): Promise<{
+    data: any[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      type,
+      mode,
+      status,
+      isContacted,
+      syllabusId,
+      classId,
+      chapterId,
+    } = dto;
+
+    const skip = (page - 1) * limit;
+    const pipeline: any[] = [];
+
+    // ─── 1. BASE MATCH ────────────────────────────────────────────────
+    const baseMatch: any = { isDeleted: false };
+
+    if (type) baseMatch.type = type;
+    if (mode) baseMatch.mode = mode;
+    if (status) baseMatch.status = status;
+    if (typeof isContacted === "boolean") baseMatch.isContacted = isContacted;
+    if (classId) baseMatch.class = new Types.ObjectId(classId);
+    if (syllabusId) baseMatch.syllabus = new Types.ObjectId(syllabusId);
+    if (chapterId) baseMatch.chapterId = new Types.ObjectId(chapterId);
+
+    pipeline.push({ $match: baseMatch });
+
+    // ─── 2. LOOKUPS ───────────────────────────────────────────────────
+    pipeline.push(
+      // Student
+      {
+        $lookup: {
+          from: "students",
+          localField: "userId",
+          foreignField: "_id",
+          as: "student",
+        },
+      },
+      { $unwind: { path: "$student", preserveNullAndEmptyArrays: true } },
+
+      // Faculty
+      {
+        $lookup: {
+          from: "faculties",
+          localField: "facultyId",
+          foreignField: "_id",
+          as: "faculty",
+        },
+      },
+      { $unwind: { path: "$faculty", preserveNullAndEmptyArrays: true } },
+
+      // Class
+      {
+        $lookup: {
+          from: "classes",
+          localField: "class",
+          foreignField: "_id",
+          as: "class",
+        },
+      },
+      { $unwind: { path: "$class", preserveNullAndEmptyArrays: true } },
+
+      // Syllabus
+      {
+        $lookup: {
+          from: "syllabuses",
+          localField: "syllabus",
+          foreignField: "_id",
+          as: "syllabus",
+        },
+      },
+      { $unwind: { path: "$syllabus", preserveNullAndEmptyArrays: true } },
+
+      // Chapter (optional)
+      {
+        $lookup: {
+          from: "chapters",
+          localField: "chapterId",
+          foreignField: "_id",
+          as: "chapter",
+        },
+      },
+      { $unwind: { path: "$chapter", preserveNullAndEmptyArrays: true } },
+    );
+
+    // ─── 3. SEARCH ────────────────────────────────────────────────────
+    if (search.trim()) {
+      pipeline.push({
+        $match: {
+          $or: [
+            { "student.name": { $regex: search.trim(), $options: "i" } },
+            { "faculty.name": { $regex: search.trim(), $options: "i" } },
+          ],
+        },
+      });
+    }
+
+    // ─── 4. PROJECT ───────────────────────────────────────────────────
+    pipeline.push({
+      $project: {
+        id: "$_id",
+        type: 1,
+        mode: 1,
+        status: 1,
+        isContacted: 1,
+        createdAt: 1,
+
+        student: {
+          id: "$student._id",
+          name: "$student.name",
+          phone: "$student.phoneNumber",
+        },
+
+        faculty: {
+          id: "$faculty._id",
+          name: "$faculty.name",
+        },
+
+        class: {
+          id: "$class._id",
+          name: "$class.name",
+        },
+
+        syllabus: {
+          id: "$syllabus._id",
+          name: "$syllabus.name",
+        },
+
+        // Only present when mode === "chapter"
+        chapter: {
+          $cond: [
+            { $eq: ["$mode", "chapter"] },
+            { id: "$chapter._id", name: "$chapter.name" },
+            "$$REMOVE",
+          ],
+        },
+
+        // Only present when mode === "slot"
+        slot: {
+          $cond: [
+            { $eq: ["$mode", "slot"] },
+            {
+              $let: {
+                vars: {
+                  matchedSlot: {
+                    $arrayElemAt: [
+                      {
+                        $filter: {
+                          input: { $ifNull: ["$faculty.slots", []] },
+                          as: "s",
+                          cond: {
+                            $in: [
+                              "$$s._id",
+                              {
+                                $map: {
+                                  input: { $ifNull: ["$slotId", []] },
+                                  as: "id",
+                                  in: { $toObjectId: "$$id" },
+                                },
+                              },
+                            ],
+                          },
+                        },
+                      },
+                      0,
+                    ],
+                  },
+                },
+                in: {
+                  id: "$$matchedSlot._id",
+                  time: "$$matchedSlot.time",
+                },
+              },
+            },
+            "$$REMOVE",
+          ],
+        },
+      },
+    });
+
+    // ─── 5. SORT + PAGINATE ───────────────────────────────────────────
+    pipeline.push({
+      $facet: {
+        data: [
+          { $sort: { createdAt: -1 } },
+          { $skip: skip },
+          { $limit: limit },
+        ],
+        meta: [{ $count: "total" }],
+      },
+    });
+
+    // ─── 6. EXECUTE ───────────────────────────────────────────────────
+    const [result] = await BookingModel.aggregate(pipeline);
+
+    const total = result.meta[0]?.total ?? 0;
+
+    return {
+      data: result.data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async getTopBookingFaculties(
+    range: BookingRange,
+  ): Promise<TopFacultyBookingResponse> {
+    const since = getRangeStartDate(range);
+
+    const pipeline: any[] = [
+      // Only active, non-deleted bookings within the range
+      {
+        $match: {
+          isDeleted: false,
+          createdAt: { $gte: since },
+          status: { $nin: ["cancelled", "expired"] },
+        },
+      },
+
+      // Group by faculty
+      {
+        $group: {
+          _id: "$facultyId",
+          totalBookings: { $sum: 1 },
+          confirmedBookings: {
+            $sum: { $cond: [{ $eq: ["$status", "confirmed"] }, 1, 0] },
+          },
+        },
+      },
+
+      // Sort descending — highest bookings first
+      { $sort: { totalBookings: -1 } },
+      { $limit: 5 },
+
+      // Join faculty name
+      {
+        $lookup: {
+          from: "faculties",
+          localField: "_id",
+          foreignField: "_id",
+          as: "faculty",
+        },
+      },
+      { $unwind: "$faculty" },
+
+      {
+        $project: {
+          _id: 0,
+          facultyId: { $toString: "$_id" },
+          name: "$faculty.name",
+          totalBookings: 1,
+          confirmedBookings: 1,
+        },
+      },
+    ];
+
+    const results = await BookingModel.aggregate(pipeline);
+
+    return {
+      range,
+      faculties: results,
+    };
+  }
+
+  // ─── 2. Low Booking Faculties ─────────────────────────────────────────────────
+
+  async getLowBookingFaculties(
+    range: BookingRange,
+  ): Promise<LowFacultyBookingResponse> {
+    const since = getRangeStartDate(range);
+
+    const pipeline: any[] = [
+      // Start from all active faculties so even 1-booking ones appear
+      { $match: { isDeleted: false } },
+
+      {
+        $lookup: {
+          from: "bookings",
+          let: { facultyId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$facultyId", "$$facultyId"] },
+                isDeleted: false,
+                createdAt: { $gte: since },
+                status: { $nin: ["cancelled", "expired"] },
+              },
+            },
+          ],
+          as: "bookings",
+        },
+      },
+
+      // Exclude completely zero ones — those belong to getZeroBooking()
+      { $match: { "bookings.0": { $exists: true } } },
+
+      {
+        $project: {
+          _id: 0,
+          facultyId: { $toString: "$_id" },
+          name: "$name",
+          totalBookings: { $size: "$bookings" },
+          confirmedBookings: {
+            $size: {
+              $filter: {
+                input: "$bookings",
+                as: "b",
+                cond: { $eq: ["$$b.status", "confirmed"] },
+              },
+            },
+          },
+        },
+      },
+
+      // Sort ascending — lowest bookings first
+      { $sort: { totalBookings: 1 } },
+      { $limit: 5 },
+    ];
+
+    const results = await FacultyModel.aggregate(pipeline);
+
+    return {
+      range,
+      faculties: results,
+    };
+  }
+
+  // ─── 3. Zero Booking Faculties & Chapters ────────────────────────────────────
+
+  async getZeroBookingItems(range: BookingRange): Promise<ZeroBookingResponse> {
+    const since = getRangeStartDate(range);
+
+    // ── Faculties with 0 bookings in range ──
+    const facultyPipeline: any[] = [
+      { $match: { isDeleted: false } },
+
+      {
+        $lookup: {
+          from: "bookings",
+          let: { facultyId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$facultyId", "$$facultyId"] },
+                isDeleted: false,
+                createdAt: { $gte: since },
+                status: { $nin: ["cancelled", "expired"] },
+              },
+            },
+          ],
+          as: "bookings",
+        },
+      },
+
+      // Keep only faculties with NO bookings in range
+      { $match: { "bookings.0": { $exists: false } } },
+
+      { $sort: { createdAt: -1 } },
+      { $limit: 5 },
+
+      {
+        $project: {
+          _id: 0,
+          facultyId: { $toString: "$_id" },
+          name: "$name",
+        },
+      },
+    ];
+
+    // ── Chapters with 0 bookings in range ──
+    const chapterPipeline: any[] = [
+      { $match: { isDeleted: false } },
+
+      {
+        $lookup: {
+          from: "bookings",
+          let: { chapterId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$chapterId", "$$chapterId"] },
+                isDeleted: false,
+                createdAt: { $gte: since },
+                status: { $nin: ["cancelled", "expired"] },
+              },
+            },
+          ],
+          as: "bookings",
+        },
+      },
+
+      { $match: { "bookings.0": { $exists: false } } },
+
+      { $sort: { createdAt: -1 } },
+      { $limit: 5 },
+
+      {
+        $project: {
+          _id: 0,
+          chapterId: { $toString: "$_id" },
+          name: "$name",
+          iconUrl: "$icon.url",
+        },
+      },
+    ];
+
+    const [faculties, chapters] = await Promise.all([
+      FacultyModel.aggregate(facultyPipeline),
+      ChapterModel.aggregate(chapterPipeline),
+    ]);
+
+    return {
+      range,
+      faculties,
+      chapters,
+    };
+  }
+
+  async getAggregateBookingKpiStats(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<{ totalBookings: number }> {
+    const result = await BookingModel.aggregate([
+      {
+        $match: {
+          isDeleted: false,
+          createdAt: { $gte: startDate, $lte: endDate },
+          status: { $nin: ["cancelled", "expired"] },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalBookings: { $sum: 1 },
+        },
+      },
+    ]);
+    return result[0] ?? { totalBookings: 0 };
+  }
+
+  async getDailyBookingKpiStats(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<{ _id: string; bookings: number }[]> {
+    return BookingModel.aggregate([
+      {
+        $match: {
+          isDeleted: false,
+          createdAt: { $gte: startDate, $lte: endDate },
+          status: { $nin: ["cancelled", "expired"] },
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          bookings: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+  }
+
+  // Snapshot — not range-bound, like your pendingOrdersCount
+  async getUncontactedBookingsCount(): Promise<number> {
+    return BookingModel.countDocuments({
+      isDeleted: false,
+      isContacted: false,
+      status: { $nin: ["cancelled", "expired"] },
+    });
+  }
+
+  async getConfirmedBookingsCount(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<number> {
+    return BookingModel.countDocuments({
+      isDeleted: false,
+      status: "confirmed",
+      createdAt: { $gte: startDate, $lte: endDate },
+    });
+  }
+
+  //   async getBookingsForChart(
+  //   startDate: Date,
+  //   endDate: Date,
+  // ): Promise<{ createdAt: Date; type: Booking }[]> {
+  //   return BookingModel.find({
+  //     isDeleted: false,
+  //     createdAt: { $gte: startDate, $lte: endDate },
+  //     status: { $nin: ["cancelled", "expired"] },
+  //   })
+  //     .select({ createdAt: 1, type: 1, _id: 0 })
+  //     .lean();
+  // }
 }

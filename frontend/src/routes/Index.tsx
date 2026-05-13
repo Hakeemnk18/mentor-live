@@ -7,6 +7,7 @@ import NotFoundPage from "../shared/pages/NotFoundPage";
 import UserNotFoundPage from "../features/user/pages/UserNotFoundPage";
 import UserError from "../shared/components/UserError";
 import AdminError from "../shared/components/AdminError";
+import AdminBootstrap from "../features/admin/components/AdminBootstrap";
 
 const allRoutes = [
   {
@@ -27,7 +28,14 @@ const allRoutes = [
         errorElement: <AdminError />,
         children: [
           ...adminRoutes,
-          { path: "*", element: <NotFoundPage /> },
+          {
+            path: "*",
+            element: (
+              <AdminBootstrap>
+                <NotFoundPage />
+              </AdminBootstrap>
+            ),
+          },
         ],
       },
     ],

@@ -65,6 +65,8 @@ export const getFacultyAvailableSlots = async (
   facultyId: string
 ): Promise<{ id: string; time: string }[]> => {
   const res = await axiosInstance.get(`/faculties/${facultyId}/available-slots`);
+  console.log("available slots",res.data.data);
+  
   return res.data.data ?? [];
 };
 

@@ -7,10 +7,20 @@ import type {
   AdminBookingView,
   AdminPoolingStudentRaw,
   AdminPoolingView,
+  BookingStudentView,
   ExistingBookingProps,
   ExpireOtherBookingsForSlotParams,
   GetBookingsFromSlotParams,
 } from "../type/booking.type.js";
+import type { GetSlotBookingDetailsDto } from "../dto/slot.booking.details.dto.js";
+import type { GetChapterBookingDetailsDto } from "../dto/chapter.booking.details.dto.js";
+import type { GetAllBookingDto } from "../dto/get.all.booking.dto.js";
+import type {
+  BookingRange,
+  LowFacultyBookingResponse,
+  TopFacultyBookingResponse,
+  ZeroBookingResponse,
+} from "../../analysis/type/analysis.type.js";
 
 export interface IBookingRepository {
   create(bookingEntity: Booking): Promise<Booking>;
@@ -27,12 +37,55 @@ export interface IBookingRepository {
     dto: GetAllOneToOneBookingDto,
   ): Promise<{ data: AdminPoolingView[]; total: number }>;
   findAdminPoolingStudents(
-     dto: GetAdminPoolingStudentsDto
-    ): Promise<AdminPoolingStudentRaw[]>
-  confirmPoolingBookings(ids: string[], session: ClientSession): Promise<number>;
-  expireOtherBookingsForSlots(params: ExpireOtherBookingsForSlotParams, session?: ClientSession): Promise<void>
-  getBookingIds(prams: GetBookingsFromSlotParams): Promise<string []>
-  addSlotsToBookings(bookingIds: string[], slotIds: string[], session: ClientSession): Promise<void>
+    dto: GetAdminPoolingStudentsDto,
+  ): Promise<AdminPoolingStudentRaw[]>;
+  confirmPoolingBookings(
+    ids: string[],
+    session: ClientSession,
+  ): Promise<number>;
+  expireOtherBookingsForSlots(
+    params: ExpireOtherBookingsForSlotParams,
+    session?: ClientSession,
+  ): Promise<void>;
+  getBookingIds(prams: GetBookingsFromSlotParams): Promise<string[]>;
+  addSlotsToBookings(
+    bookingIds: string[],
+    slotIds: string[],
+    session: ClientSession,
+  ): Promise<void>;
   findByQuery(query: Record<string, any>): Promise<Booking | null>;
-  cancelBookingsByIds(bookingIds: string[], session: ClientSession): Promise<void>;
+  cancelBookingsByIds(
+    bookingIds: string[],
+    session: ClientSession,
+  ): Promise<void>;
+  getSlotBookingDetails(
+    params: GetSlotBookingDetailsDto,
+  ): Promise<BookingStudentView[]>;
+  getChapterBookingDetails(
+    params: GetChapterBookingDetailsDto,
+  ): Promise<BookingStudentView[]>;
+  findAllBookings(dto: GetAllBookingDto): Promise<{
+    data: any[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }>;
+  getTopBookingFaculties(
+    range: BookingRange,
+  ): Promise<TopFacultyBookingResponse>;
+  getLowBookingFaculties(
+    range: BookingRange,
+  ): Promise<LowFacultyBookingResponse>;
+  getZeroBookingItems(range: BookingRange): Promise<ZeroBookingResponse>;
+  getDailyBookingKpiStats(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<{ _id: string; bookings: number }[]>;
+  getUncontactedBookingsCount(): Promise<number>;
+  getAggregateBookingKpiStats(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<{ totalBookings: number }>;
+  getConfirmedBookingsCount(startDate: Date, endDate: Date): Promise<number>;
 }

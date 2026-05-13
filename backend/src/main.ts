@@ -1,8 +1,8 @@
 import "reflect-metadata";
-import { env } from './config/env.js'
+import { env } from "./config/env.js";
 import app from "./core/app.js";
 import { connectDB } from "./config/db.js";
-import type { Application } from 'express';
+import type { Application } from "express";
 import registerUserModule from "./modules/user/user.module.js";
 import registerClassModule from "./modules/class/class.module.js";
 import registerSyllabusModule from "./modules/syllabus/syllabus.module.js";
@@ -16,55 +16,45 @@ import registerStudentsModule from "./modules/student/student.module.js";
 import registerBannerModule from "./modules/banner/banner.module.js";
 import registerTestimonialModule from "./modules/testimonial/testimonial.module.js";
 import registerBlogModule from "./modules/blog/blog.module.js";
+import registerAnalysisModule from "./modules/analysis/analysis.module.js";
 
-
-
-const PORT = env.PORT
+const PORT = env.PORT;
 
 const startServer = async () => {
-    try {
-        
-        console.log("Connecting to database...");
-        await connectDB();
-        console.log("Database connected successfully.");
+  try {
+    console.log("Connecting to database...");
+    await connectDB();
+    //console.log("Database connected successfully.");
 
+    const expressApp: Application = app;
 
-        const expressApp: Application = app;
+    registerUserModule(expressApp);
+    registerMediaModule(expressApp);
+    registerClassModule(expressApp);
+    registerSyllabusModule(expressApp);
+    registerSubjectModule(expressApp);
+    registerSubjectVariantModule(expressApp);
+    registerChapterModule(expressApp);
+    registerFacultyModule(expressApp);
+    registerBookingModule(expressApp);
+    registerStudentsModule(expressApp);
+    registerBannerModule(expressApp);
+    registerTestimonialModule(expressApp);
+    registerBlogModule(expressApp);
+    registerAnalysisModule(expressApp);
 
-        registerUserModule(expressApp);
-        registerMediaModule(expressApp)
-        registerClassModule(expressApp)
-        registerSyllabusModule(expressApp)
-        registerSubjectModule(expressApp)
-        registerSubjectVariantModule(expressApp)
-        registerChapterModule(expressApp)
-        registerFacultyModule(expressApp)
-        registerBookingModule(expressApp)
-        registerStudentsModule(expressApp)
-        registerBannerModule(expressApp)
-        registerTestimonialModule(expressApp)
-        registerBlogModule(expressApp)
-        
-
-
-        expressApp.listen(PORT, () => {
-            console.log(`🚀 Server running on port ${PORT}`);
-        });
-
-
-    } catch (error) {
-        
-
-        if (error instanceof Error) {
-            console.error(error.message);
-            console.error(error.stack); 
-        } else {
-            console.error("An unknown error occurred", error);
-        }
-        process.exit(1);
+    expressApp.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(error.message);
+      console.error(error.stack);
+    } else {
+      console.error("An unknown error occurred", error);
     }
-}
+    process.exit(1);
+  }
+};
 
-startServer()
-
-
+startServer();

@@ -1,3 +1,4 @@
+import { registerAnalysisDependencies } from "./analysis.container.js";
 import { registerBannerDependencies } from "./banner.container.js";
 import { registerBlogDependencies } from "./blog.container.js";
 import { registerBookingDependencies } from "./booking.container.js";
@@ -13,21 +14,20 @@ import { registerSyllabusDependencies } from "./syllabus.container.js";
 import { registerTestimonialDependencies } from "./testimonial.container.js";
 import { registerUserDependencies } from "./user.container.js";
 
-
-registerCommonDependencies()
-registerMediaDependencies()
+registerCommonDependencies();
+registerMediaDependencies();
 registerUserDependencies();
-registerClassDependencies()
-registerSyllabusDependencies()
-registerSubjectDependencies()
-registerSubjectVariantDependencies()
-registerChapterDependencies()
-registerFacultyDependencies()
-registerStudentDependencies()
-registerBookingDependencies()
-registerBannerDependencies()
-registerTestimonialDependencies()
-registerBlogDependencies()
-
+registerClassDependencies();
+registerSyllabusDependencies();
+registerSubjectDependencies();
+registerSubjectVariantDependencies();
+registerChapterDependencies();
+registerFacultyDependencies();
+registerStudentDependencies();
+registerBookingDependencies();
+registerBannerDependencies();
+registerTestimonialDependencies();
+registerBlogDependencies();
+registerAnalysisDependencies();
 
 export { container } from "tsyringe";

@@ -22,6 +22,12 @@ import { ConfirmChapterPoolingBookingSchema } from "../dto/confirm.chapter.pooli
 import type { IRemoveStudentFromPoolingUseCase } from "../use-cases/interfaces/remove.student.from.pooling.use-case.interface.js";
 import { RemoveUserFromPoolSchema } from "../dto/remove.student.from.pooling.dto.js";
 import { log } from "node:console";
+import type { IGetSlotBookingDetailsUseCase } from "../use-cases/interfaces/get.slot.booking.details.use-case.interface.js";
+import { GetSlotBookingDetailsSchema } from "../dto/slot.booking.details.dto.js";
+import type { IGetChapterBookingDetailsUseCase } from "../use-cases/interfaces/get.chapter.booking.details.use-case.interface.js";
+import { GetChapterBookingDetailsSchema } from "../dto/chapter.booking.details.dto.js";
+import { GetAllBookingSchema } from "../dto/get.all.booking.dto.js";
+import type { IGetAllBookingUseCase } from "../use-cases/interfaces/get.all.booking.use.case.interface.js";
 
 @injectable()
 export class BookingController implements IBookingController {
@@ -52,13 +58,21 @@ export class BookingController implements IBookingController {
 
     @inject("IRemoveStudentFromPoolingUseCase")
     private readonly _removeStudentFromPoolingUseCase: IRemoveStudentFromPoolingUseCase,
+
+    @inject("IGetSlotBookingDetailsUseCase")
+    private readonly _getSlotBookingDetailsUseCase: IGetSlotBookingDetailsUseCase,
+
+    @inject("IGetChapterBookingDetailsUseCase")
+    private readonly _getChapterBookingDetailsUseCase: IGetChapterBookingDetailsUseCase,
+
+    @inject("IGetAllBookingUseCase")
+    private readonly _getAllBookingUseCase: IGetAllBookingUseCase,
   ) {}
 
   async createBooking(req: Request, res: Response): Promise<void> {
     try {
-      console.log(req.body);
       const dto = CreateBookingSchema.parse(req.body);
-      console.log(dto);
+
       await this._createBookingUseCase.execute(dto);
       console.log("booking created successfully");
       res.status(HttpStatusCode.OK).json({
@@ -105,6 +119,26 @@ export class BookingController implements IBookingController {
       console.log("error in get all pooling booking ", error);
     }
   }
+  async getAllBookings(req: Request, res: Response): Promise<void> {
+    try {
+      const dto = GetAllBookingSchema.parse(req.query);
+
+      const result = await this._getAllBookingUseCase.execute(dto);
+
+      res.status(HttpStatusCode.OK).json({
+        message: ResponseMessages.SUCCESS,
+        success: true,
+        data: result.data,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+      });
+    } catch (error) {
+      handleError(res, error);
+      console.log("error in get all bookings", error);
+    }
+  }
 
   async getPoolingStudents(req: Request, res: Response): Promise<void> {
     try {
@@ -136,7 +170,10 @@ export class BookingController implements IBookingController {
     }
   }
 
-  async confirmChapterOneToOneBooking(req: Request,res: Response,): Promise<void> {
+  async confirmChapterOneToOneBooking(
+    req: Request,
+    res: Response,
+  ): Promise<void> {
     try {
       const dto = ConfirmChapterOneToOneBookingSchema.parse({
         bookingId: req.params.bookingId,
@@ -155,19 +192,22 @@ export class BookingController implements IBookingController {
   }
 
   async confirmPoolingBookings(req: Request, res: Response): Promise<void> {
-      try {
-        const dto = ConfirmPoolingBookingSchema.parse(req.body);
-        await this._confirmPoolingBookingUseCase.execute(dto);
-        res.status(HttpStatusCode.OK).json({
-          success: true,
-          message: ResponseMessages.BOOKING_STATUS_CHANGED,
-        });
-      } catch (error) {
-        handleError(res, error);
-      }
+    try {
+      const dto = ConfirmPoolingBookingSchema.parse(req.body);
+      await this._confirmPoolingBookingUseCase.execute(dto);
+      res.status(HttpStatusCode.OK).json({
+        success: true,
+        message: ResponseMessages.BOOKING_STATUS_CHANGED,
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
   }
 
-  async confirmChapterPoolingBooking(req: Request,res: Response,): Promise<void> {
+  async confirmChapterPoolingBooking(
+    req: Request,
+    res: Response,
+  ): Promise<void> {
     try {
       const dto = ConfirmChapterPoolingBookingSchema.parse(req.body);
       await this._confirmChapterPoolingBookingUseCase.execute(dto);
@@ -193,6 +233,33 @@ export class BookingController implements IBookingController {
       console.log("error in remove student from pooling ", error);
       handleError(res, error);
     }
+  }
 
+  async getSlotBookingDetails(req: Request, res: Response): Promise<void> {
+    try {
+      const dto = GetSlotBookingDetailsSchema.parse(req.query);
+      const data = await this._getSlotBookingDetailsUseCase.execute(dto);
+      res.status(HttpStatusCode.OK).json({
+        success: true,
+        message: ResponseMessages.SUCCESS,
+        data: data,
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async getChapterBookingDetails(req: Request, res: Response): Promise<void> {
+    try {
+      const dto = GetChapterBookingDetailsSchema.parse(req.query);
+      const data = await this._getChapterBookingDetailsUseCase.execute(dto);
+      res.status(HttpStatusCode.OK).json({
+        success: true,
+        message: ResponseMessages.SUCCESS,
+        data: data,
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
   }
 }
