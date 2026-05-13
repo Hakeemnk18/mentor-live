@@ -1443,4 +1443,81 @@ export class BookingRepository implements IBookingRepository {
       chapters,
     };
   }
+
+  async getAggregateBookingKpiStats(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<{ totalBookings: number }> {
+    const result = await BookingModel.aggregate([
+      {
+        $match: {
+          isDeleted: false,
+          createdAt: { $gte: startDate, $lte: endDate },
+          status: { $nin: ["cancelled", "expired"] },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalBookings: { $sum: 1 },
+        },
+      },
+    ]);
+    return result[0] ?? { totalBookings: 0 };
+  }
+
+  async getDailyBookingKpiStats(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<{ _id: string; bookings: number }[]> {
+    return BookingModel.aggregate([
+      {
+        $match: {
+          isDeleted: false,
+          createdAt: { $gte: startDate, $lte: endDate },
+          status: { $nin: ["cancelled", "expired"] },
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          bookings: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+  }
+
+  // Snapshot — not range-bound, like your pendingOrdersCount
+  async getUncontactedBookingsCount(): Promise<number> {
+    return BookingModel.countDocuments({
+      isDeleted: false,
+      isContacted: false,
+      status: { $nin: ["cancelled", "expired"] },
+    });
+  }
+
+  async getConfirmedBookingsCount(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<number> {
+    return BookingModel.countDocuments({
+      isDeleted: false,
+      status: "confirmed",
+      createdAt: { $gte: startDate, $lte: endDate },
+    });
+  }
+
+  //   async getBookingsForChart(
+  //   startDate: Date,
+  //   endDate: Date,
+  // ): Promise<{ createdAt: Date; type: Booking }[]> {
+  //   return BookingModel.find({
+  //     isDeleted: false,
+  //     createdAt: { $gte: startDate, $lte: endDate },
+  //     status: { $nin: ["cancelled", "expired"] },
+  //   })
+  //     .select({ createdAt: 1, type: 1, _id: 0 })
+  //     .lean();
+  // }
 }

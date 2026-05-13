@@ -78,4 +78,14 @@ export interface IBookingRepository {
     range: BookingRange,
   ): Promise<LowFacultyBookingResponse>;
   getZeroBookingItems(range: BookingRange): Promise<ZeroBookingResponse>;
+  getDailyBookingKpiStats(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<{ _id: string; bookings: number }[]>;
+  getUncontactedBookingsCount(): Promise<number>;
+  getAggregateBookingKpiStats(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<{ totalBookings: number }>;
+  getConfirmedBookingsCount(startDate: Date, endDate: Date): Promise<number>;
 }
