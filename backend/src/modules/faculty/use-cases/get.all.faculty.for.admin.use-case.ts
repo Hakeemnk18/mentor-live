@@ -6,32 +6,39 @@ import type { FacultyView } from "../types/faculty.type.js";
 import { buildFacultySort } from "../utils/faculty-sort.util.js";
 
 @injectable()
-export class GetAllFacultyForAdminUseCase
-  implements IGetAllFacultyForAdminUseCase
-{
+export class GetAllFacultyForAdminUseCase implements IGetAllFacultyForAdminUseCase {
   constructor(
-    @inject("IFacultyRepository") 
-    private _facultyRepository: IFacultyRepository
+    @inject("IFacultyRepository")
+    private _facultyRepository: IFacultyRepository,
   ) {}
   async execute(
-    dto: FindByClassSyllabusQueryDto
+    dto: FindByClassSyllabusQueryDto,
   ): Promise<{ data: FacultyView[]; total: number }> {
-    const { syllabusId, classId, subjectId, sortValue, limit, search, page, isDeleted } = dto;
-    
-
-    const sort = buildFacultySort(sortValue)
-
-    const {data , total }= await this._facultyRepository.findAllFacultyForAdmin({
-      page,
+    const {
+      syllabusId,
+      classId,
+      subjectId,
+      sortValue,
       limit,
       search,
-      subjectId,
-      classId,
-      syllabusId,
-      sort,
-      isDeleted
-    });
+      page,
+      isDeleted,
+    } = dto;
 
-    return { data, total }
+    const sort = buildFacultySort(sortValue);
+
+    const { data, total } =
+      await this._facultyRepository.findAllFacultyForAdmin({
+        page,
+        limit,
+        search,
+        subjectId,
+        classId,
+        syllabusId,
+        sort,
+        isDeleted,
+      });
+
+    return { data, total };
   }
 }

@@ -12,4 +12,5 @@ export interface IBookingController {
   removeStudentFromPooling(req: Request, res: Response): Promise<void>;
   getSlotBookingDetails(req: Request, res: Response): Promise<void>;
   getChapterBookingDetails(req: Request, res: Response): Promise<void>;
+  getAllBookings(req: Request, res: Response): Promise<void>;
 }

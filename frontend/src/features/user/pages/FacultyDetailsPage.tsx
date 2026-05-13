@@ -29,12 +29,13 @@ type FacultyData = {
   slot?: SlotData;
 };
 
-const formatTime = (iso: string) => {
-  const d = new Date(iso);
+const formatTime = (time: string) => {
+  const d = new Date(time);
   return d.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
+    timeZone: "UTC", // ← key fix: read as UTC, not local IST
   });
 };
 
@@ -86,7 +87,7 @@ const FacultyDetailsPage: React.FC = () => {
   });
 
   const availableSlots = slots ?? [];
-
+console.log("slots:", availableSlots); // 👈 add here
   // Use selected slot data if available, otherwise fall back to initial slot from faculty
   const activeSlot = selectedSlotData ?? faculty?.slot;
   const poolCount = activeSlot?.pool?.length ?? 0;
