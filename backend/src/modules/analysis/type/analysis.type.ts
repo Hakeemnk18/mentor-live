@@ -2,7 +2,7 @@ import type { BookingStatus } from "../../booking/type/booking.type.js";
 
 export type RevenueRange = "Year" | "Month" | "Week" | "Daily";
 
-export type RevenueChartData = {
+export type AnalysisChartData = {
   range: RevenueRange;
   currency: "INR" | "USD";
   series: {
@@ -10,23 +10,6 @@ export type RevenueChartData = {
     data: number[];
   };
   categories: string[];
-};
-
-export type DashboardKpiCardType = {
-  key: "orders" | "revenue" | "users" | "pending_orders";
-  label: string;
-  value: number;
-  formattedValue: string;
-  trend?: {
-    percentageChange: number;
-    direction: "up" | "down";
-    comparedTo: "last_month" | "last_week";
-  };
-  sparkline?: number[];
-  action?: {
-    label: string;
-    href: string;
-  };
 };
 
 export type BookingRange = "7d" | "30d" | "6m" | "1y";
@@ -84,7 +67,7 @@ export type DashboardMotivationSummary = {
   metric: {
     value: number;
     formatted: string;
-    type?: "revenue" | "orders";
+    type?: "bookings" | "student" | "confirmed" | "uncontacted";
   };
   target?: {
     value: number;
@@ -107,4 +90,31 @@ export type OrderStatusDistribution = {
     count: number;
     percentage: number;
   }[];
+};
+
+export type BookingKpiCardKey =
+  | "total_bookings"
+  | "total_faculties"
+  | "total_students"
+  | "uncontacted_bookings";
+
+export type BookingKpiTrend = {
+  percentageChange: number;
+  direction: "up" | "down";
+  comparedTo: "last_month";
+};
+
+export type BookingKpiAction = {
+  label: string;
+  href: string;
+};
+
+export type AnalysisKpiCard = {
+  key: BookingKpiCardKey;
+  label: string;
+  value: number;
+  formattedValue: string;
+  trend?: BookingKpiTrend;
+  sparkline?: number[];
+  action?: BookingKpiAction;
 };

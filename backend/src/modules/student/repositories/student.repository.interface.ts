@@ -7,9 +7,12 @@ export interface IStudentRepository {
   findByName(name: string): Promise<Student | null>;
   save(studentEntity: Student): Promise<Student>;
   findAllForAdmin(allDoc: IGetAllDocDB): Promise<Student[]>;
-  findAllForUser(): Promise<
-    { id: string; name: string }[]
-  >;
+  findAllForUser(): Promise<{ id: string; name: string }[]>;
   countDocument(query: Record<string, any>): Promise<number>;
-  findByNamePhoneNumber(phoneNumber: string): Promise<Student | null >
+  findByNamePhoneNumber(phoneNumber: string): Promise<Student | null>;
+  getDailyStudentKpiStats(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<{ _id: string; count: number }[]>;
+  getStudentCountInRange(startDate: Date, endDate: Date): Promise<number>;
 }

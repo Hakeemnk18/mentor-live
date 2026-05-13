@@ -279,4 +279,10 @@ export const ResponseMessages = {
 
   ANALYSIS_TABLE_FETCH_FAILED: "Failed to fetch analysis table",
   ANALYSIS_TABLE_FETCHED: "Analysis table fetched successfully",
+
+  ANALYSIS_KPI_CARDS_FETCH_FAILED: "Failed to fetch analysis kpi cards",
+  ANALYSIS_KPI_CARDS_FETCHED: "Analysis kpi cards fetched successfully",
+
+  ANALYSIS_MOTIVATION_FETCHED: "Analysis motivation fetched successfully",
+  ANALYSIS_MOTIVATION_FETCH_FAILED: "Failed to fetch analysis motivation",
 };

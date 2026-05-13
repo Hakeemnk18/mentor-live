@@ -4,7 +4,7 @@ import { CustomError } from "../../../core/errors/custom.error.js";
 import type { IGetAllDocDB } from "../../../core/shared/interfaces/get.all.doc.interface.js";
 import { Student } from "../entities/student.entity.js";
 import { StudentModel } from "../infrastructure/student.schema.js";
-import { StudentMapper } from "../mapper/student.mapper.js"; 
+import { StudentMapper } from "../mapper/student.mapper.js";
 import type { IStudentRepository } from "./student.repository.interface.js";
 
 export class StudentRepository implements IStudentRepository {
@@ -16,7 +16,7 @@ export class StudentRepository implements IStudentRepository {
     if (!domainStudent) {
       throw new CustomError(
         ResponseMessages.FAILED_TO_MAP,
-        HttpStatusCode.INTERNAL_SERVER_ERROR
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
       );
     }
 
@@ -34,7 +34,7 @@ export class StudentRepository implements IStudentRepository {
   }
 
   async findByNamePhoneNumber(phoneNumber: string): Promise<Student | null> {
-      const foundDocument = await StudentModel.findOne({ phoneNumber }).lean();
+    const foundDocument = await StudentModel.findOne({ phoneNumber }).lean();
     return StudentMapper.toDomain(foundDocument);
   }
 
@@ -42,7 +42,7 @@ export class StudentRepository implements IStudentRepository {
     if (!studentEntity.id) {
       throw new CustomError(
         ResponseMessages.ID_MISSING,
-        HttpStatusCode.INTERNAL_SERVER_ERROR
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
       );
     }
 
@@ -51,13 +51,13 @@ export class StudentRepository implements IStudentRepository {
     const updatedDocument = await StudentModel.findByIdAndUpdate(
       studentEntity.id,
       { $set: persistenceData },
-      { new: true }
+      { new: true },
     ).lean();
 
     if (!updatedDocument) {
       throw new CustomError(
         ResponseMessages.STUDENT_NOT_FOUND,
-        HttpStatusCode.NOT_FOUND
+        HttpStatusCode.NOT_FOUND,
       );
     }
 
@@ -65,7 +65,7 @@ export class StudentRepository implements IStudentRepository {
     if (!domainStudent) {
       throw new CustomError(
         ResponseMessages.FAILED_TO_MAP,
-        HttpStatusCode.INTERNAL_SERVER_ERROR
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
       );
     }
 
@@ -101,5 +101,35 @@ export class StudentRepository implements IStudentRepository {
 
   async countDocument(query: Record<string, any>): Promise<number> {
     return await StudentModel.countDocuments(query);
+  }
+  async getStudentCountInRange(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<number> {
+    return StudentModel.countDocuments({
+      isDeleted: false,
+      createdAt: { $gte: startDate, $lte: endDate },
+    });
+  }
+
+  async getDailyStudentKpiStats(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<{ _id: string; count: number }[]> {
+    return StudentModel.aggregate([
+      {
+        $match: {
+          isDeleted: false,
+          createdAt: { $gte: startDate, $lte: endDate },
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
   }
 }

@@ -85,4 +85,9 @@ export interface IFacultyRepository {
   ): Promise<void>;
   setSlotAvailability(params: SetSlotAvailabilityDto): Promise<void>;
   getAllAvailableSlots(facultyId: string): Promise<AvailableSlots[]>;
+  getFacultyCountInRange(startDate: Date, endDate: Date): Promise<number>;
+  getDailyFacultyKpiStats(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<{ _id: string; count: number }[]>;
 }
