@@ -7,6 +7,8 @@ import type {
   AdminBookingView,
   AdminPoolingStudentRaw,
   AdminPoolingView,
+  BookingChartRaw,
+  BookingStatus,
   BookingStudentView,
   ExistingBookingProps,
   ExpireOtherBookingsForSlotParams,
@@ -88,4 +90,10 @@ export interface IBookingRepository {
     endDate: Date,
   ): Promise<{ totalBookings: number }>;
   getConfirmedBookingsCount(startDate: Date, endDate: Date): Promise<number>;
+  getBookingsForChart(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<BookingChartRaw[]>;
+
+  getBookingStatusCounts(): Promise<{ _id: BookingStatus; count: number }[]>;
 }

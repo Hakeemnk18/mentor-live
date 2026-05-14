@@ -1,40 +1,47 @@
-import type { IdNameView, slotIdView } from "../../../core/shared/type/id.type.js";
+import type {
+  IdNameView,
+  slotIdView,
+} from "../../../core/shared/type/id.type.js";
 import type { SlotMode } from "../../faculty/types/faculty.type.js";
 
 export type BookingType = "oneToOne" | "pooling";
 export type BookingMode = "slot" | "chapter";
-export type BookingStatus = "interested" | "confirmed" | "cancelled" | "expired";
+export type BookingStatus =
+  | "interested"
+  | "confirmed"
+  | "cancelled"
+  | "expired";
 
 export type ExistingBookingProps = {
-  studentId: string,
-  facultyId: string,
-  type: BookingType,
-  mode: BookingMode,
-  isDeleted: boolean,
-  chapterId: string | null,
-  slotId: string | null
-}
+  studentId: string;
+  facultyId: string;
+  type: BookingType;
+  mode: BookingMode;
+  isDeleted: boolean;
+  chapterId: string | null;
+  slotId: string | null;
+};
 export type ExpireOtherBookingsForSlotParams = {
   facultyId: string;
   slotIds: string[];
   excludeBookingIds: string[];
-
 };
 
-export type GetBookingsFromSlotParams = | {
-  mode: "slot";
-  facultyId: string;
-  slotIds: string[];
-  userIds: string[];
-  chapterIds?: never;
-}
+export type GetBookingsFromSlotParams =
   | {
-    mode: "chapter";
-    facultyId: string;
-    chapterId: string;
-    userIds: string[];
-    slotIds?: never;
-  };
+      mode: "slot";
+      facultyId: string;
+      slotIds: string[];
+      userIds: string[];
+      chapterIds?: never;
+    }
+  | {
+      mode: "chapter";
+      facultyId: string;
+      chapterId: string;
+      userIds: string[];
+      slotIds?: never;
+    };
 
 export type AdminBookingRaw = {
   id: any; // ObjectId or string
@@ -45,7 +52,7 @@ export type AdminBookingRaw = {
   };
   faculty: IdNameView;
   class: IdNameView;
-  isContacted: boolean,
+  isContacted: boolean;
   syllabus: IdNameView;
   slot?: slotIdView | undefined;
   chapter?: IdNameView | undefined;
@@ -61,14 +68,14 @@ export interface AdminBookingView {
     name: string;
     phone: string;
   };
-  faculty: IdNameView
+  faculty: IdNameView;
   class: IdNameView;
-  isContacted: boolean
+  isContacted: boolean;
   syllabus: IdNameView;
-  slot?: slotIdView | undefined,
+  slot?: slotIdView | undefined;
   chapter?: IdNameView | undefined;
-  mode: BookingMode
-  status: BookingStatus
+  mode: BookingMode;
+  status: BookingStatus;
   createdAt: string;
 }
 
@@ -79,12 +86,12 @@ export type AdminPoolingRaw = {
     slotId?: string | null;
     chapterId?: any;
   };
-  faculty: IdNameView
+  faculty: IdNameView;
   mode: BookingMode;
   class: IdNameView;
   syllabus: IdNameView;
-  chapter?: IdNameView | undefined,
-  slot?: slotIdView | undefined,
+  chapter?: IdNameView | undefined;
+  slot?: slotIdView | undefined;
   totalStudents: number;
   pendingContactCount: number;
   hasPendingContact: boolean;
@@ -96,8 +103,8 @@ export interface AdminPoolingView {
   mode: BookingMode;
   class: IdNameView;
   syllabus: IdNameView;
-  chapter?: IdNameView | undefined
-  slot?: slotIdView | undefined,
+  chapter?: IdNameView | undefined;
+  slot?: slotIdView | undefined;
   totalStudents: number;
   hasPendingContact: boolean;
   createdAt: string; // ISO
@@ -125,6 +132,9 @@ export type BookingStudentView = {
   isContacted: boolean;
   bookingDate: Date;
   bookingId: string;
-}
+};
 
-
+export type BookingChartRaw = {
+  createdAt: Date;
+  type: BookingType;
+};

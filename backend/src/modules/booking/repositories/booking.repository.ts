@@ -11,6 +11,8 @@ import type {
   AdminBookingView,
   AdminPoolingStudentRaw,
   AdminPoolingView,
+  BookingChartRaw,
+  BookingStatus,
   BookingStudentView,
   ExistingBookingProps,
   ExpireOtherBookingsForSlotParams,
@@ -1508,16 +1510,34 @@ export class BookingRepository implements IBookingRepository {
     });
   }
 
-  //   async getBookingsForChart(
-  //   startDate: Date,
-  //   endDate: Date,
-  // ): Promise<{ createdAt: Date; type: Booking }[]> {
-  //   return BookingModel.find({
-  //     isDeleted: false,
-  //     createdAt: { $gte: startDate, $lte: endDate },
-  //     status: { $nin: ["cancelled", "expired"] },
-  //   })
-  //     .select({ createdAt: 1, type: 1, _id: 0 })
-  //     .lean();
-  // }
+  async getBookingsForChart(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<BookingChartRaw[]> {
+    const booking = await BookingModel.find({
+      isDeleted: false,
+      createdAt: { $gte: startDate, $lte: endDate },
+      status: { $nin: ["cancelled", "expired"] },
+    })
+      .select({ createdAt: 1, type: 1, _id: 0 })
+      .lean();
+
+    return booking.map((b) => BookingMapper.mapBookingChartItem(b));
+  }
+
+  async getBookingStatusCounts(): Promise<
+    { _id: BookingStatus; count: number }[]
+  > {
+    return BookingModel.aggregate([
+      {
+        $match: { isDeleted: false },
+      },
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+  }
 }
