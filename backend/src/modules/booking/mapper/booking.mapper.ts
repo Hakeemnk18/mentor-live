@@ -5,6 +5,7 @@ import type {
   AdminPoolingRaw,
   AdminPoolingStudentRaw,
   AdminPoolingView,
+  BookingChartRaw,
   BookingStudentView,
 } from "../type/booking.type.js";
 
@@ -57,7 +58,7 @@ export class BookingMapper {
       status: bookingEntity.status,
       isDeleted: bookingEntity.isDeleted,
       class: bookingEntity.class,
-      syllabus: bookingEntity.syllabus
+      syllabus: bookingEntity.syllabus,
     };
 
     // exactOptionalPropertyTypes-safe assignments
@@ -95,9 +96,9 @@ export class BookingMapper {
       chapter:
         raw.mode === "chapter" && raw.chapter
           ? {
-            id: String(raw.chapter.id),
-            name: raw.chapter.name,
-          }
+              id: String(raw.chapter.id),
+              name: raw.chapter.name,
+            }
           : undefined,
 
       mode: raw.mode,
@@ -113,33 +114,37 @@ export class BookingMapper {
       class: raw.class,
       syllabus: raw.syllabus,
       slot: raw.mode === "slot" ? raw.slot : undefined,
-      chapter: raw.mode === "chapter" && raw.chapter
-        ? {
-          id: String(raw.chapter.id),
-          name: raw.chapter.name,
-        }
-        : undefined,
+      chapter:
+        raw.mode === "chapter" && raw.chapter
+          ? {
+              id: String(raw.chapter.id),
+              name: raw.chapter.name,
+            }
+          : undefined,
       totalStudents: raw.totalStudents,
       hasPendingContact: raw.hasPendingContact,
       createdAt: raw.createdAt.toISOString(),
     };
   }
 
-  static mapAdminPoolingStudentView(raw: AdminPoolingStudentRaw): AdminPoolingStudentRaw {
+  static mapAdminPoolingStudentView(
+    raw: AdminPoolingStudentRaw,
+  ): AdminPoolingStudentRaw {
     return {
       faculty: raw.faculty,
       mode: raw.mode,
       class: raw.class,
       syllabus: raw.syllabus,
       slot: raw.mode === "slot" ? raw.slot : undefined,
-      chapter: raw.mode === "chapter" && raw.chapter
-        ? {
-          id: String(raw.chapter.id),
-          name: raw.chapter.name,
-        }
-        : undefined,
-      student: raw.student
-    }
+      chapter:
+        raw.mode === "chapter" && raw.chapter
+          ? {
+              id: String(raw.chapter.id),
+              name: raw.chapter.name,
+            }
+          : undefined,
+      student: raw.student,
+    };
   }
 
   static mapSlotBookingDetailsView(raw: any): BookingStudentView {
@@ -150,6 +155,13 @@ export class BookingMapper {
       isContacted: raw.isContacted,
       bookingDate: raw.createdAt.toISOString(),
       bookingId: raw._id.toString(),
-    }
+    };
+  }
+
+  static mapBookingChartItem(raw: any): BookingChartRaw {
+    return {
+      createdAt: raw.createdAt,
+      type: raw.type,
+    };
   }
 }
