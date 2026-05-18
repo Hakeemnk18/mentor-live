@@ -28,6 +28,28 @@ export interface AnalysisTableData {
   };
 }
 
+export type BookingChartRange = "Year" | "Month" | "Week" | "Daily";
+
+export type BookingChartSeries = {
+  label: "One-to-One" | "Pooling";
+  data: number[];
+};
+
+export type AnalysisChartData = {
+  range: BookingChartRange;
+  categories: string[];
+  series: BookingChartSeries[];
+};
+
+export type BookingStatusDistribution = {
+  totalBookings: number;
+  statuses: {
+    status: string;
+    count: number;
+    percentage: number;
+  }[];
+};
+
 export type DashboardMotivationSummary = {
   title: string;
   subtitle: string;

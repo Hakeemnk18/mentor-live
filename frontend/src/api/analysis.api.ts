@@ -1,6 +1,6 @@
 import axiosInstance from "./axios.instance";
-import type { DashboardMotivationSummary } from "../types/admin.type"; 
-// ^ Adjust import paths as necessary for your types
+import type { DashboardMotivationSummary } from "../features/admin/types/admin.types";
+import type { AnalysisChartData, BookingChartRange, BookingStatusDistribution } from "../features/admin/types/admin.types";
 
 export const getAnalysisKpiCards = async () => {
   const res = await axiosInstance.get("/analysis/analysis-kpi-cards");
@@ -10,12 +10,20 @@ export const getAnalysisKpiCards = async () => {
 
 export const getAnalysisMotivation = async (): Promise<DashboardMotivationSummary> => {
   const res = await axiosInstance.get("/analysis/analysis-motivation");
-  // Returns the motivation summary object
   return res.data.data;
 };
 
 export const getAnalysisTable = async () => {
   const res = await axiosInstance.get("/analysis/analysis-table");
-  // Returns the faculties and chapters table data
+  return res.data.data;
+};
+
+export const getAnalysisChart = async (range: BookingChartRange): Promise<AnalysisChartData> => {
+  const res = await axiosInstance.get(`/analysis/analysis-chart?range=${range}`);
+  return res.data.data;
+};
+
+export const getBookingStatusDistribution = async (): Promise<BookingStatusDistribution> => {
+  const res = await axiosInstance.get("/analysis/booking-status-distribution");
   return res.data.data;
 };

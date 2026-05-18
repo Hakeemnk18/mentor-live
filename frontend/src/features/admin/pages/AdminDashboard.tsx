@@ -4,13 +4,14 @@ import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import DashboardMotivationCard from "../components/DashboardMotivationCard";
 import DashboardKpiCard from "../components/DashboardKpiCard";
 import DashboardRankingList from "../components/DashboardRankingList";
+import DashboardBookingChart from "../components/DashboardBookingChart";
 
 // Custom Hooks
 import { useMotivationSummary } from "../hooks/use.motivation.summary";
 import { useKpiCards } from "../hooks/use.kpi.cards"; 
 import { useAnalysisTable } from "../hooks/use.analysis.table";
 
-/* ── Quick link card component (Included here for completeness) ── */
+/* ── Quick link card component ── */
 function QuickLink({ label, path, icon, desc }: { label: string; path: string; icon: React.ReactNode, desc: string }) {
   const navigate = useNavigate();
   return (
@@ -40,9 +41,89 @@ export default function AdminDashboardPage() {
   if (isLoading) {
     return (
       <AdminPageContainer>
-        <div className="w-full h-[60vh] flex flex-col items-center justify-center space-y-4">
-          <div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-[#DB313E] animate-spin"></div>
-          <p className="text-gray-500 font-medium animate-pulse">Loading Platform Data...</p>
+        <div className="w-full space-y-6 pb-12">
+          {/* ── Row 1 Skeletons: Motivation + KPIs ── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-5">
+            {/* Motivation Card Skeleton */}
+            <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-6 min-h-[220px] flex flex-col justify-between relative overflow-hidden">
+              <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-gray-100/50 to-transparent"></div>
+              <div className="animate-pulse">
+                <div className="h-6 bg-gray-200 rounded-md w-1/2 mb-3"></div>
+                <div className="h-3 bg-gray-100 rounded-md w-3/4 mb-2"></div>
+                <div className="h-3 bg-gray-100 rounded-md w-2/3"></div>
+              </div>
+              <div className="animate-pulse mt-8">
+                <div className="h-10 bg-gray-200 rounded-md w-1/4 mb-4"></div>
+                <div className="h-10 bg-gray-200 rounded-xl w-32"></div>
+              </div>
+            </div>
+
+            {/* KPI Cards Skeleton */}
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="lg:col-span-1 bg-white rounded-2xl border border-gray-100 shadow-sm p-5 min-h-[220px] flex flex-col justify-between relative overflow-hidden">
+                <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-gray-50/50 to-transparent"></div>
+                <div className="flex justify-between items-start animate-pulse">
+                  <div className="w-11 h-11 bg-gray-100 rounded-xl"></div>
+                  <div className="w-16 h-4 bg-gray-100 rounded-md mt-1"></div>
+                </div>
+                <div className="mt-6 mb-4 animate-pulse">
+                  <div className="h-10 bg-gray-200 rounded-md w-1/2"></div>
+                </div>
+                <div className="mt-auto animate-pulse">
+                  <div className="h-1.5 w-full bg-gray-100 rounded-full"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Row 2 Skeletons: Chart + Analysis Tables ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
+            {/* Chart skeleton */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 min-h-[300px] relative overflow-hidden">
+              <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-gray-50/50 to-transparent"></div>
+              <div className="animate-pulse space-y-4">
+                <div className="flex justify-between">
+                  <div className="h-4 bg-gray-200 rounded w-28"></div>
+                  <div className="h-4 bg-gray-100 rounded w-24"></div>
+                </div>
+                <div className="h-28 bg-gray-100 rounded-xl"></div>
+                <div className="border-t border-gray-100 pt-3 space-y-3">
+                  {Array.from({ length: 3 }).map((_, j) => (
+                    <div key={j} className="space-y-1">
+                      <div className="flex justify-between">
+                        <div className="h-3 bg-gray-200 rounded w-20"></div>
+                        <div className="h-3 bg-gray-100 rounded w-12"></div>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 rounded-full"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {/* Ranking list skeletons */}
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 min-h-[300px] relative overflow-hidden">
+                <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-gray-50/50 to-transparent"></div>
+                <div className="animate-pulse">
+                  <div className="h-5 bg-gray-200 rounded-md w-1/2 mb-8"></div>
+                  <div className="space-y-6">
+                    {Array.from({ length: 3 }).map((_, j) => (
+                      <div key={j} className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 w-full">
+                          <div className="w-10 h-10 bg-gray-100 rounded-full shrink-0"></div>
+                          <div className="w-full">
+                            <div className="h-4 bg-gray-200 rounded-md w-1/2 mb-2"></div>
+                            <div className="h-3 bg-gray-100 rounded-md w-1/3"></div>
+                          </div>
+                        </div>
+                        <div className="w-8 h-8 bg-gray-100 rounded-lg shrink-0"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </AdminPageContainer>
     );
@@ -67,8 +148,10 @@ export default function AdminDashboardPage() {
           ))}
         </div>
 
-        {/* ── Row 2: Analysis Tables ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* ── Row 2: Chart + Analysis Tables ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
+          <DashboardBookingChart />
+
           <DashboardRankingList 
             title="Top Performing Faculty" 
             badgeText={`Range: ${analysisTables?.topFacultyBookings?.range || '1y'}`}
