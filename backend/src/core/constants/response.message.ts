@@ -285,4 +285,12 @@ export const ResponseMessages = {
 
   ANALYSIS_MOTIVATION_FETCHED: "Analysis motivation fetched successfully",
   ANALYSIS_MOTIVATION_FETCH_FAILED: "Failed to fetch analysis motivation",
+
+  ANALYSIS_CHART_FETCHED: "Analysis chart fetched successfully",
+  ANALYSIS_CHART_FETCH_FAILED: "Failed to fetch analysis chart",
+
+  BOOKING_STATUS_DISTRIBUTION_FETCHED:
+    "Booking status distribution fetched successfully",
+  BOOKING_STATUS_DISTRIBUTION_FETCH_FAILED:
+    "Failed to fetch booking status distribution",
 };

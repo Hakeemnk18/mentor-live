@@ -1,15 +1,16 @@
 import type { BookingStatus } from "../../booking/type/booking.type.js";
 
-export type RevenueRange = "Year" | "Month" | "Week" | "Daily";
+export type BookingChartRange = "Daily" | "Week" | "Month" | "Year";
+
+export type BookingChartSeries = {
+  label: "One-to-One" | "Pooling";
+  data: number[];
+};
 
 export type AnalysisChartData = {
-  range: RevenueRange;
-  currency: "INR" | "USD";
-  series: {
-    label: string;
-    data: number[];
-  };
+  range: BookingChartRange;
   categories: string[];
+  series: BookingChartSeries[]; // always two entries — index 0 oneToOne, index 1 pooling
 };
 
 export type BookingRange = "7d" | "30d" | "6m" | "1y";
@@ -83,8 +84,8 @@ export type DashboardMotivationSummary = {
   };
 };
 
-export type OrderStatusDistribution = {
-  totalOrders: number;
+export type BookingStatusDistribution = {
+  totalBookings: number;
   statuses: {
     status: BookingStatus;
     count: number;
