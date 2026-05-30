@@ -35,6 +35,13 @@ export class UserRepository implements IUserRepository {
     return UserMapper.toDomain(foundDocument);
   }
 
+  async findAll(): Promise<User[]> {
+    const documents = await UserModel.find({}).lean();
+    return documents
+      .map((doc) => UserMapper.toDomain(doc))
+      .filter((u): u is User => u !== null);
+  }
+
   async save(user: User): Promise<User> {
     if (!user.id) {
       throw new CustomError(
