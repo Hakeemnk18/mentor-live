@@ -12,7 +12,7 @@ export interface SlotProps {
   id?: string;
   time: Date;
   isAvailable: boolean;
-  pool: string[]; // userIds
+  pool: string[];
   poolLimit: number;
 }
 
@@ -20,8 +20,26 @@ export interface ChapterSlotProps {
   id?: string;
   chapterId: string;
   isAvailable: boolean;
-  pool: string[]; // userIds
+  pool: string[];
   poolLimit: number;
+}
+
+export interface SubjectOfferingItem {
+  variantId: string;
+  price: number;
+}
+
+export interface FacultyProps {
+  id: string | null;
+  name: string;
+  qualifications: string[];
+  description: string;
+  demoClass: string;
+  image: ImageValue;
+  subjectOffering: SubjectOfferingItem[];
+  slots: SlotProps[];
+  chapterSlots: ChapterSlotProps[];
+  isDeleted: boolean;
 }
 
 export type FacultySlotView = Omit<SlotProps, "time" | "pool"> & {
@@ -41,37 +59,22 @@ export type FacultyChapterSlotView = Omit<
   pool: IdOnlyView[];
 };
 
-export interface FacultyProps {
+export type FacultyView = {
   id: string | null;
   name: string;
   qualifications: string[];
   description: string;
   demoClass: string;
-  image: ImageValue;
-  price: number;
-  subjectOffering: string[]; // SubjectVariant IDs
-  slots: SlotProps[];
-  chapterSlots: ChapterSlotProps[];
-  isDeleted: boolean;
-}
-
-export type FacultyView = Pick<
-  FacultyProps,
-  | "id"
-  | "name"
-  | "qualifications"
-  | "description"
-  | "demoClass"
-  | "price"
-  | "isDeleted"
-> & {
   image: {
     url: string;
     publicId: string;
   };
+  isDeleted: boolean;
 };
 
-export type FacultySubjectOfferingView = SubjectVariantWithSubjectView;
+export type FacultySubjectOfferingView = SubjectVariantWithSubjectView & {
+  price: number;
+};
 
 export interface FacultyFullAdminView extends Omit<FacultyView, "id"> {
   id: string;
@@ -87,10 +90,13 @@ export type FacultyPopulatedLean = Omit<
   _id: Types.ObjectId;
 
   subjectOffering: {
-    _id: Types.ObjectId;
-    class: { _id: Types.ObjectId; name: string };
-    syllabus: { _id: Types.ObjectId; name: string };
-    subject: { _id: Types.ObjectId; name: string };
+    variantId: {
+      _id: Types.ObjectId;
+      class: { _id: Types.ObjectId; name: string };
+      syllabus: { _id: Types.ObjectId; name: string };
+      subject: { _id: Types.ObjectId; name: string };
+    };
+    price: number;
   }[];
 
   slots: {
@@ -119,10 +125,12 @@ export type FacultyClassAndSyllabusSearchFilters = {
   subjectId: string | undefined;
 } & AllFiltersBase;
 
-export type FacultyViewForUser = Pick<
-  FacultyProps,
-  "id" | "name" | "qualifications" | "description" | "price"
-> & {
+export type FacultyViewForUser = {
+  id: string | null;
+  name: string;
+  qualifications: string[];
+  description: string;
+  price: number;
   image: string;
 };
 
@@ -144,4 +152,4 @@ export interface SetSlotAvailabilityDto {
 export type AvailableSlots = {
   id: string;
   time: Date;
-}
+};

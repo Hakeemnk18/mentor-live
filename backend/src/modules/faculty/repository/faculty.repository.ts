@@ -20,7 +20,6 @@ import type {
   SetSlotAvailabilityDto,
   SlotProps,
 } from "../types/faculty.type.js";
-import { _null } from "zod/v4/core";
 import type { AddChapterSlotRequestDto } from "../dtos/add.chapter.dto.js";
 import type { RemoveUserFromPoolDto } from "../../booking/dto/remove.student.from.pooling.dto.js";
 
@@ -111,6 +110,7 @@ export class FacultyRepository implements IFacultyRepository {
       },
     );
   }
+
   async addChapterSlots(
     facultyId: string,
     slots: AddChapterSlotRequestDto,
@@ -161,14 +161,12 @@ export class FacultyRepository implements IFacultyRepository {
       {
         $lookup: {
           from: "subjectvariants",
-          localField: "subjectOffering",
+          localField: "subjectOffering.variantId",
           foreignField: "_id",
           as: "sv",
         },
       },
-
       { $unwind: "$sv" },
-
       {
         $match: {
           ...(classId && { "sv.class": new ObjectId(classId) }),
@@ -180,12 +178,12 @@ export class FacultyRepository implements IFacultyRepository {
         $group: {
           _id: "$_id",
           name: { $first: "$name" },
-          price: { $first: "$price" },
           image: { $first: "$image" },
           qualifications: { $first: "$qualifications" },
           demoClass: { $first: "$demoClass" },
           description: { $first: "$description" },
           createdAt: { $first: "$createdAt" },
+          isDeleted: { $first: "$isDeleted" },
         },
       },
       {
@@ -197,12 +195,12 @@ export class FacultyRepository implements IFacultyRepository {
             {
               $project: {
                 name: 1,
-                price: 1,
                 image: 1,
                 qualifications: 1,
                 demoClass: 1,
                 description: 1,
                 createdAt: 1,
+                isDeleted: 1,
               },
             },
           ],
@@ -212,15 +210,10 @@ export class FacultyRepository implements IFacultyRepository {
     ]);
 
     const data = documents[0]?.data ?? [];
-
     const total = documents[0]?.totalCount[0]?.count ?? 0;
-
     const faculties = data.map(FacultyMapper.toView);
 
-    return {
-      data: faculties,
-      total,
-    };
+    return { data: faculties, total };
   }
 
   async findFacultyFullByIdForAdmin(
@@ -233,7 +226,7 @@ export class FacultyRepository implements IFacultyRepository {
       isDeleted: false,
     })
       .populate({
-        path: "subjectOffering",
+        path: "subjectOffering.variantId",
         populate: [
           { path: "class", select: "name" },
           { path: "syllabus", select: "name" },
@@ -263,7 +256,6 @@ export class FacultyRepository implements IFacultyRepository {
       description: doc.description,
       demoClass: doc.demoClass,
       image: doc.image,
-      price: doc.price,
       isDeleted: doc.isDeleted,
 
       slots: doc.slots.map((s) => ({
@@ -286,18 +278,19 @@ export class FacultyRepository implements IFacultyRepository {
       })),
 
       subjectOffering: doc.subjectOffering.map((so: any) => ({
-        id: so._id.toString(),
+        id: so.variantId._id.toString(),
+        price: so.price,
         class: {
-          id: so.class._id.toString(),
-          name: so.class.name,
+          id: so.variantId.class._id.toString(),
+          name: so.variantId.class.name,
         },
         syllabus: {
-          id: so.syllabus._id.toString(),
-          name: so.syllabus.name,
+          id: so.variantId.syllabus._id.toString(),
+          name: so.variantId.syllabus.name,
         },
         subject: {
-          id: so.subject._id.toString(),
-          name: so.subject.name,
+          id: so.variantId.subject._id.toString(),
+          name: so.variantId.subject.name,
         },
       })),
     };
@@ -348,26 +341,24 @@ export class FacultyRepository implements IFacultyRepository {
           ...(search && {
             name: { $regex: search, $options: "i" },
           }),
-          subjectOffering: { $in: variantObjectIds },
+          "subjectOffering.variantId": { $in: variantObjectIds },
         },
       },
       { $unwind: "$subjectOffering" },
       {
         $match: {
-          subjectOffering: { $in: variantObjectIds },
+          "subjectOffering.variantId": { $in: variantObjectIds },
         },
       },
       {
         $lookup: {
           from: "subjectvariants",
-          localField: "subjectOffering",
+          localField: "subjectOffering.variantId",
           foreignField: "_id",
           as: "sv",
         },
       },
-
       { $unwind: "$sv" },
-
       {
         $match: {
           ...(subjectId && { "sv.subject": new ObjectId(subjectId) }),
@@ -379,7 +370,7 @@ export class FacultyRepository implements IFacultyRepository {
       {
         $project: {
           name: 1,
-          price: 1,
+          price: "$subjectOffering.price",
           image: 1,
           qualifications: 1,
           description: 1,
@@ -416,12 +407,10 @@ export class FacultyRepository implements IFacultyRepository {
           as: "chapter",
         },
       },
-
       { $unwind: "$chapter" },
       {
         $project: {
           name: 1,
-          price: 1,
           image: 1,
           qualifications: 1,
           demoClass: 1,
@@ -458,7 +447,29 @@ export class FacultyRepository implements IFacultyRepository {
   async findFacultyFullByIdAndSlot(
     facultyId: string,
     slotId: string,
+    variantId?: string,
   ): Promise<FacultyDetailsViewForUser | null> {
+    const priceExpr = variantId
+      ? {
+          $let: {
+            vars: {
+              matched: {
+                $filter: {
+                  input: "$subjectOffering",
+                  as: "so",
+                  cond: {
+                    $eq: ["$$so.variantId", new ObjectId(variantId)],
+                  },
+                },
+              },
+            },
+            in: {
+              $ifNull: [{ $arrayElemAt: ["$$matched.price", 0] }, 0],
+            },
+          },
+        }
+      : { $ifNull: [{ $arrayElemAt: ["$subjectOffering.price", 0] }, 0] };
+
     const documents = await FacultyModel.aggregate([
       {
         $match: {
@@ -475,7 +486,7 @@ export class FacultyRepository implements IFacultyRepository {
       {
         $project: {
           name: 1,
-          price: 1,
+          price: priceExpr,
           image: 1,
           qualifications: 1,
           demoClass: 1,
@@ -494,7 +505,29 @@ export class FacultyRepository implements IFacultyRepository {
 
   async findFacultyByIdWithFirstSlot(
     facultyId: string,
+    variantId?: string,
   ): Promise<FacultyDetailsViewForUser | null> {
+    const priceExpr = variantId
+      ? {
+          $let: {
+            vars: {
+              matched: {
+                $filter: {
+                  input: "$subjectOffering",
+                  as: "so",
+                  cond: {
+                    $eq: ["$$so.variantId", new ObjectId(variantId)],
+                  },
+                },
+              },
+            },
+            in: {
+              $ifNull: [{ $arrayElemAt: ["$$matched.price", 0] }, 0],
+            },
+          },
+        }
+      : { $ifNull: [{ $arrayElemAt: ["$subjectOffering.price", 0] }, 0] };
+
     const documents = await FacultyModel.aggregate([
       {
         $match: {
@@ -506,7 +539,7 @@ export class FacultyRepository implements IFacultyRepository {
       {
         $project: {
           name: 1,
-          price: 1,
+          price: priceExpr,
           image: 1,
           qualifications: 1,
           demoClass: 1,
@@ -884,8 +917,6 @@ export class FacultyRepository implements IFacultyRepository {
       throw new Error("Faculty not found");
     }
   }
-
-  //block and unblock slots and chapter slots
 
   async setSlotAvailability(params: SetSlotAvailabilityDto): Promise<void> {
     const { facultyId, mode, isAvailable } = params;

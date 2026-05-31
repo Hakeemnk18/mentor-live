@@ -38,9 +38,11 @@ export interface IFacultyRepository {
   findFacultyFullByIdAndSlot(
     facultyId: string,
     slotId: string,
+    variantId?: string,
   ): Promise<FacultyDetailsViewForUser | null>;
   findFacultyByIdWithFirstSlot(
     facultyId: string,
+    variantId?: string,
   ): Promise<FacultyDetailsViewForUser | null>;
   getSlot(facultyId: string, slotId: string): Promise<SlotProps | null>;
   getChapterSlot(
