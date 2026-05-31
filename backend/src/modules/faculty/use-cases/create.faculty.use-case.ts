@@ -43,9 +43,9 @@ export class CreateFacultyUseCase implements ICreateFacultyUseCase {
      * - validate subject variants
      * - validate chapters (if provided)
      */
-    for (const subjectVariantId of dto.subjects) {
+    for (const offering of dto.subjects) {
       const variant = await this._subjectVariantRepository.findById(
-        subjectVariantId
+        offering.variantId
       );
 
       if (!variant || variant.isDeleted) {
@@ -89,8 +89,10 @@ export class CreateFacultyUseCase implements ICreateFacultyUseCase {
       description: dto.description,
       demoClass: dto.demoClass,
       image: dto.image,
-      price: dto.price,
-      subjectOffering: dto.subjects,
+      subjectOffering: dto.subjects.map((s) => ({
+        variantId: s.variantId,
+        price: s.price,
+      })),
       slots: sortedSlots.map((slot) => ({
         time: slot.time,
         isAvailable: true,

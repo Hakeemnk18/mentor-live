@@ -252,9 +252,11 @@ export class FacultyController implements IFacultyController {
       validateObjectId(req.params.id);
 
       const facultyId = req.params.id;
+      const variantId = req.query.variantId as string | undefined;
 
       const data = await this._getFacultyDetailsBySlotUseCase.execute(
         facultyId!,
+        variantId,
       );
       res.status(HttpStatusCode.OK).json({
         message: ResponseMessages.SUCCESS,

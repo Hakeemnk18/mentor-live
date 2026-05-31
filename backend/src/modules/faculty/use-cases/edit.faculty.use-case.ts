@@ -49,9 +49,9 @@ export class EditFacultyUseCase implements IEditFacultyUseCase {
     }
 
     /* ---------- validate subject variants ---------- */
-    for (const subjectVariantId of dto.subjects) {
+    for (const offering of dto.subjects) {
       const variant =
-        await this._subjectVariantRepository.findById(subjectVariantId);
+        await this._subjectVariantRepository.findById(offering.variantId);
 
       if (!variant || variant.isDeleted) {
         throw new CustomError(
@@ -68,8 +68,10 @@ export class EditFacultyUseCase implements IEditFacultyUseCase {
       description: dto.description,
       demoClass: dto.demoClass,
       image: dto.image,
-      price: dto.price,
-      subjectOffering: dto.subjects,
+      subjectOffering: dto.subjects.map((s) => ({
+        variantId: s.variantId,
+        price: s.price,
+      })),
     });
 
     /* ---------- persist ---------- */

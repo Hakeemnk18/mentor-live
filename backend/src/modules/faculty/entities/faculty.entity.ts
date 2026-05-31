@@ -6,6 +6,7 @@ import type {
   ChapterSlotProps,
   FacultyProps,
   SlotProps,
+  SubjectOfferingItem,
 } from "../types/faculty.type.js";
 
 export class Faculty {
@@ -15,8 +16,7 @@ export class Faculty {
   public readonly description: string;
   public readonly demoClass: string;
   public readonly image: ImageValue;
-  public readonly price: number;
-  public readonly subjectOffering: string[];
+  public readonly subjectOffering: SubjectOfferingItem[];
   public readonly slots: SlotProps[];
   public readonly chapterSlots: ChapterSlotProps[];
   public readonly isDeleted: boolean;
@@ -28,7 +28,6 @@ export class Faculty {
     this.description = props.description;
     this.demoClass = props.demoClass;
     this.image = props.image;
-    this.price = props.price;
     this.subjectOffering = props.subjectOffering;
     this.slots = props.slots;
     this.chapterSlots = props.chapterSlots;
@@ -75,8 +74,7 @@ export class Faculty {
     description: string;
     demoClass: string;
     image: ImageValue;
-    price: number;
-    subjectOffering: string[];
+    subjectOffering: SubjectOfferingItem[];
   }): Faculty {
     return {
       ...this,
@@ -85,15 +83,8 @@ export class Faculty {
       description: props.description,
       demoClass: props.demoClass,
       image: props.image,
-      price: props.price,
       subjectOffering: props.subjectOffering,
     };
-  }
-
-  /* ---------- Pricing ---------- */
-
-  hasPrice(): boolean {
-    return this.price > 0;
   }
 
   /* ---------- add slot ---------- */
@@ -105,7 +96,7 @@ export class Faculty {
       if (existingTimes.has(t)) {
         throw new CustomError(
           ResponseMessages.SLOT_ALREADY_EXIST,
-          HttpStatusCode.BAD_REQUEST
+          HttpStatusCode.BAD_REQUEST,
         );
       }
 
@@ -130,15 +121,14 @@ export class Faculty {
     const existingChapters = new Set(this.chapterSlots.map((s) => s.chapterId));
 
     const slotsToAdd = newChapterSlots.map((slot) => {
-      
       if (existingChapters.has(slot.chapter)) {
         throw new CustomError(
           ResponseMessages.CHAPTER_SLOT_ALREADY_EXIST,
-          HttpStatusCode.BAD_REQUEST
+          HttpStatusCode.BAD_REQUEST,
         );
       }
 
-      existingChapters.add(slot.chapter)
+      existingChapters.add(slot.chapter);
 
       return {
         chapterId: slot.chapter,
