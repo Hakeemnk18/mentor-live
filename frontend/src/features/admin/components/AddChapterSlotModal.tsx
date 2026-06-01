@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import SearchableSelect from "../../../shared/components/SearchableSelect";
+
+type NamedItem = { _id: string; name: string };
 
 type Props = {
   facultyId: string;
-  syllabuses: any[];
-  classes: any[];
+  syllabuses: NamedItem[];
+  classes: NamedItem[];
   onSuccess: () => void;
 };
 
@@ -17,7 +20,7 @@ export function AddChapterSlotModal({
   const [open, setOpen] = useState(false);
   const [syllabusId, setSyllabusId] = useState("");
   const [classId, setClassId] = useState("");
-  const [chapters, setChapters] = useState<any[]>([]);
+  const [chapters, setChapters] = useState<{ id: string; name: string }[]>([]);
   const [chapterId, setChapterId] = useState("");
 
   useEffect(() => {
@@ -53,38 +56,28 @@ export function AddChapterSlotModal({
           <div className="bg-white p-6 rounded space-y-3 w-96">
             <h4 className="font-medium">Add Chapter</h4>
 
-            <select onChange={(e) => setSyllabusId(e.target.value)}>
-              <option value="">Select syllabus</option>
-              {syllabuses.map((s) => (
-                <option key={s._id} value={s._id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+            <SearchableSelect
+              value={syllabusId}
+              onChange={setSyllabusId}
+              options={syllabuses.map((s) => ({ value: s._id, label: s.name }))}
+              placeholder="Select syllabus"
+            />
 
-            <select
+            <SearchableSelect
+              value={classId}
+              onChange={setClassId}
+              options={classes.map((c) => ({ value: c._id, label: c.name }))}
+              placeholder="Select class"
               disabled={!syllabusId}
-              onChange={(e) => setClassId(e.target.value)}
-            >
-              <option value="">Select class</option>
-              {classes.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            />
 
-            <select
-              disabled={!chapters.length}
-              onChange={(e) => setChapterId(e.target.value)}
-            >
-              <option value="">Select chapter</option>
-              {chapters.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            <SearchableSelect
+              value={chapterId}
+              onChange={setChapterId}
+              options={chapters.map((c) => ({ value: c.id, label: c.name }))}
+              placeholder={chapters.length === 0 ? "Select class first" : "Select chapter"}
+              disabled={!syllabusId || !classId}
+            />
 
             <div className="flex justify-end gap-2 pt-2">
               <button onClick={() => setOpen(false)}>Cancel</button>

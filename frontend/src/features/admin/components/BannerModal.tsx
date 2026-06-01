@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import ImageCropModal from "../../../shared/components/ImageCropModal/ImageCropModal";
 import { uploadToCloudinary } from "../../../shared/utils/cloudinary";
 import toast from "react-hot-toast";
@@ -6,15 +6,34 @@ import { handleApiError } from "../../../shared/utils/handle.api.error";
 
 import type { CloudinaryUploadResult } from "../../../shared/types/common.types";
 import type { Banner, BannerPayload } from "../../../shared/types/banner.types";
+
 interface Props {
   open: boolean;
   mode: "create" | "edit";
   initialData?: Banner;
-  existingBanners: Banner[];   // to compute free priority slots
+  existingBanners: Banner[];
   loading: boolean;
   onClose: () => void;
   onSubmit: (payload: BannerPayload) => Promise<void>;
 }
+
+type FormState = {
+  description: string;
+  priority: number | "";
+  imageFile: File | null;
+  imageUrl: string | null;
+  imagePayload: CloudinaryUploadResult | null;
+  errors: Record<string, string>;
+};
+
+const emptyForm: FormState = {
+  description: "",
+  priority: "",
+  imageFile: null,
+  imageUrl: null,
+  imagePayload: null,
+  errors: {},
+};
 
 export default function BannerModal({
   open,
@@ -26,48 +45,42 @@ export default function BannerModal({
   onSubmit,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState<number | "">("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Image state
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [imagePayload, setImagePayload] = useState<CloudinaryUploadResult | null>(null);
+  const [form, setForm] = useState<FormState>(emptyForm);
   const [cropOpen, setCropOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
-    if (open && mode === "edit" && initialData) {
-      setDescription(initialData.description);
-      setPriority(initialData.priority);
-      setImagePayload(initialData.image);
-      setImageUrl(initialData.image.url);
-      setImageFile(null);
-    } else if (open && mode === "create") {
-      setDescription("");
-      setPriority("");
-      setImagePayload(null);
-      setImageUrl(null);
-      setImageFile(null);
+  // Reset form during render when the modal opens (React-recommended pattern
+  // for adjusting state based on a prop change without an effect).
+  const [prevOpen, setPrevOpen] = useState(false);
+  const [prevInitialData, setPrevInitialData] = useState<Banner | undefined>(undefined);
+  if (open !== prevOpen || (open && initialData !== prevInitialData)) {
+    setPrevOpen(open);
+    setPrevInitialData(initialData);
+    if (open) {
+      if (mode === "edit" && initialData) {
+        setForm({
+          description: initialData.description,
+          priority: initialData.priority,
+          imageFile: null,
+          imageUrl: initialData.image.url,
+          imagePayload: initialData.image,
+          errors: {},
+        });
+      } else {
+        setForm(emptyForm);
+      }
     }
-    setErrors({});
-  }, [open, mode, initialData]);
+  }
 
   if (!open) return null;
 
-  // Priorities already taken by OTHER banners (in edit mode, exclude self)
   const takenPriorities = new Set(
     existingBanners
       .filter((b) => b.id !== initialData?.id)
       .map((b) => b.priority)
   );
 
-  // Offer 1 … (max existing priority + 1), minimum 5 slots
-  const maxPriority = Math.max(
-    ...existingBanners.map((b) => b.priority),
-    4
-  );
+  const maxPriority = Math.max(...existingBanners.map((b) => b.priority), 4);
   const availablePriorities = Array.from(
     { length: maxPriority + 1 },
     (_, i) => i + 1
@@ -75,53 +88,50 @@ export default function BannerModal({
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!imagePayload && !imageFile) e.image = "Banner image is required";
-    if (!description.trim()) {
+    if (!form.imagePayload && !form.imageFile) e.image = "Banner image is required";
+    if (!form.description.trim()) {
       e.description = "Description is required";
-    } else if (description.trim().length < 10) {
+    } else if (form.description.trim().length < 10) {
       e.description = "Description must be at least 10 characters";
-    } else if (description.trim().length > 200) {
+    } else if (form.description.trim().length > 200) {
       e.description = "Description must be under 200 characters";
     }
-    if (priority === "") e.priority = "Please select a priority";
+    if (form.priority === "") e.priority = "Please select a priority";
     return e;
   };
-
-  const clearFieldError = (field: string) =>
-    setErrors((prev) => { const next = { ...prev }; delete next[field]; return next; });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Validate file size (max 5 MB)
     if (file.size > 5 * 1024 * 1024) {
-      setErrors((prev) => ({ ...prev, image: "Image must be under 5 MB" }));
+      setForm(prev => ({ ...prev, errors: { ...prev.errors, image: "Image must be under 5 MB" } }));
       e.target.value = "";
       return;
     }
-    clearFieldError("image");
-    setImageFile(file);
-    setImageUrl(URL.createObjectURL(file));
+    setForm(prev => {
+      const errors = { ...prev.errors };
+      delete errors.image;
+      return { ...prev, imageFile: file, imageUrl: URL.createObjectURL(file), errors };
+    });
     setCropOpen(true);
     e.target.value = "";
   };
 
   const handleCropComplete = (croppedFile: File) => {
-    setImageFile(croppedFile);
-    setImageUrl(URL.createObjectURL(croppedFile));
+    setForm(prev => ({ ...prev, imageFile: croppedFile, imageUrl: URL.createObjectURL(croppedFile) }));
   };
 
   const handleSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     const errs = validate();
-    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    if (Object.keys(errs).length > 0) { setForm(prev => ({ ...prev, errors: errs })); return; }
 
     try {
-      let finalImage = imagePayload;
-      if (imageFile) {
+      let finalImage = form.imagePayload;
+      if (form.imageFile) {
         setUploading(true);
         finalImage = await uploadToCloudinary({
-          file: imageFile,
+          file: form.imageFile,
           uploadPreset: "banners",
           cloudName: import.meta.env.VITE_CLOUDINARY_NAME,
         });
@@ -133,8 +143,8 @@ export default function BannerModal({
       }
       await onSubmit({
         image: finalImage,
-        description: description.trim(),
-        priority: Number(priority),
+        description: form.description.trim(),
+        priority: Number(form.priority),
       });
     } catch (err) {
       setUploading(false);
@@ -155,7 +165,7 @@ export default function BannerModal({
       {/* Crop Modal */}
       <ImageCropModal
         open={cropOpen}
-        image={imageUrl ?? ""}
+        image={form.imageUrl ?? ""}
         aspect={16 / 9}
         onClose={() => setCropOpen(false)}
         onCropComplete={handleCropComplete}
@@ -187,11 +197,11 @@ export default function BannerModal({
               <div
                 onClick={() => fileInputRef.current?.click()}
                 className={`relative w-full h-40 rounded-lg border-2 border-dashed flex items-center justify-center cursor-pointer overflow-hidden transition-colors ${
-                  errors.image ? "border-red-400 bg-red-50" : "border-gray-300 bg-gray-50 hover:border-[#DB313E]/60"
+                  form.errors.image ? "border-red-400 bg-red-50" : "border-gray-300 bg-gray-50 hover:border-[#DB313E]/60"
                 }`}
               >
-                {imageUrl ? (
-                  <img src={imageUrl} alt="banner preview" className="w-full h-full object-cover" />
+                {form.imageUrl ? (
+                  <img src={form.imageUrl} alt="banner preview" className="w-full h-full object-cover" />
                 ) : (
                   <div className="flex flex-col items-center gap-1 text-gray-400">
                     <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
@@ -201,7 +211,7 @@ export default function BannerModal({
                   </div>
                 )}
               </div>
-              {imageUrl && (
+              {form.imageUrl && (
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
@@ -211,7 +221,7 @@ export default function BannerModal({
                 </button>
               )}
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} hidden />
-              {errors.image && <p className="text-xs text-red-500 mt-0.5">{errors.image}</p>}
+              {form.errors.image && <p className="text-xs text-red-500 mt-0.5">{form.errors.image}</p>}
             </div>
 
             {/* Description */}
@@ -219,18 +229,21 @@ export default function BannerModal({
               <label className="block text-xs font-medium text-gray-600 mb-1">Description *</label>
               <textarea
                 rows={3}
-                value={description}
-                onChange={(e) => { setDescription(e.target.value); clearFieldError("description"); }}
+                value={form.description}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setForm(prev => { const errors = { ...prev.errors }; delete errors.description; return { ...prev, description: val, errors }; });
+                }}
                 maxLength={200}
                 placeholder="Enter banner description…"
-                className={inp(errors.description) + " resize-none"}
+                className={inp(form.errors.description) + " resize-none"}
               />
               <div className="flex items-center justify-between mt-0.5">
-                {errors.description
-                  ? <p className="text-xs text-red-500">{errors.description}</p>
+                {form.errors.description
+                  ? <p className="text-xs text-red-500">{form.errors.description}</p>
                   : <span />}
-                <span className={`text-xs ${description.length > 185 ? "text-red-500" : "text-gray-400"}`}>
-                  {description.length}/200
+                <span className={`text-xs ${form.description.length > 185 ? "text-red-500" : "text-gray-400"}`}>
+                  {form.description.length}/200
                 </span>
               </div>
             </div>
@@ -239,9 +252,12 @@ export default function BannerModal({
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Priority *</label>
               <select
-                value={priority}
-                onChange={(e) => { setPriority(e.target.value === "" ? "" : Number(e.target.value)); clearFieldError("priority"); }}
-                className={inp(errors.priority)}
+                value={form.priority}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setForm(prev => { const errors = { ...prev.errors }; delete errors.priority; return { ...prev, priority: val === "" ? "" : Number(val), errors }; });
+                }}
+                className={inp(form.errors.priority)}
               >
                 <option value="">Select priority…</option>
                 {availablePriorities.map((p) => (
@@ -250,7 +266,7 @@ export default function BannerModal({
                   </option>
                 ))}
               </select>
-              {errors.priority && <p className="text-xs text-red-500 mt-0.5">{errors.priority}</p>}
+              {form.errors.priority && <p className="text-xs text-red-500 mt-0.5">{form.errors.priority}</p>}
             </div>
 
             {/* Footer */}

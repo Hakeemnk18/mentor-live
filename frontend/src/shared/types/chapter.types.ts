@@ -85,10 +85,10 @@ export type GetSubjectVariantsParams = {
 };
 
 export type ChapterInitialData = {
-  id: string;
+  _id: string;
   name: string;
   price: number;
-  iconUrl?: string;
+  icon?: { url: string; publicId: string };
   syllabusId: string;
   classId: string;
   subjectVariantId: string;

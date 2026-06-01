@@ -103,22 +103,37 @@ export type FacultyData = {
 
 export type ImagePayload = { url: string; publicId: string };
 
+export type SubjectVariant = { _id: string; subjectName: string };
+
 export type SubjectGroup = {
-  subjectId: string;
-  subjectName: string;
-  variants: { variantId: string; syllabusName: string; className: string }[];
+  id: number;
+  syllabusId: string;
+  classId: string;
+  variants: SubjectVariant[];
+  selected: string[];
+  selectedVariants: SubjectVariant[];
 };
 
 export type FacultyModalData = {
-  name: string;
-  qualifications: string;
-  description: string;
-  demoClass: string;
-  imageFile: File | null;
-  price: number | "";
-  selectedSubjectVariantIds: string[];
-  slots: { time: string }[];
-  chapterSlots: { chapterId: string; label: string }[];
+  name?: string;
+  qualifications?: string[];
+  description?: string;
+  demoClass?: string;
+  price?: number | "";
+  image?: string | { url: string; publicId: string };
+  subjectOffering?: SubjectOffering[];
+  slots?: {
+    id?: string;
+    time: string;
+    isAvailable?: boolean;
+    pool?: any[];
+  }[];
+  chapterSlots?: {
+    id?: string;
+    chapter: string | { id: string; name: string };
+    pool?: any[];
+    isAvailable?: boolean;
+  }[];
 };
 
 export type FacultyInitialData = {

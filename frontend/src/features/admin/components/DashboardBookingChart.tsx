@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAnalysisChart } from "../hooks/use.analysis.chart";
 import { useBookingStatus } from "../hooks/use.booking.status";
 import type { BookingChartRange } from "../types/admin.types";
@@ -17,14 +17,8 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function DashboardBookingChart() {
   const [range, setRange] = useState<BookingChartRange>("Year");
-  const [mounted, setMounted] = useState(false);
-
   const { data: chartData, isLoading: chartLoading } = useAnalysisChart(range);
   const { data: statusData, isLoading: statusLoading } = useBookingStatus();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (chartLoading || statusLoading) {
     return (
@@ -130,7 +124,7 @@ export default function DashboardBookingChart() {
                     <div
                       className="flex-1 bg-[#DB313E] rounded-t-sm transition-all duration-500"
                       style={{
-                        height: mounted ? h1 : 0,
+                        height: h1,
                         minHeight: v1 > 0 ? 1 : 0,
                       }}
                       title={`One-to-One: ${v1}`}
@@ -138,7 +132,7 @@ export default function DashboardBookingChart() {
                     <div
                       className="flex-1 bg-[#3B82F6] rounded-t-sm transition-all duration-500"
                       style={{
-                        height: mounted ? h2 : 0,
+                        height: h2,
                         minHeight: v2 > 0 ? 1 : 0,
                       }}
                       title={`Pooling: ${v2}`}
@@ -185,7 +179,7 @@ export default function DashboardBookingChart() {
                 <div
                   className="h-full rounded-full transition-all duration-700"
                   style={{
-                    width: mounted ? `${s.percentage}%` : "0%",
+                    width: `${s.percentage}%`,
                     backgroundColor: STATUS_COLORS[s.status] ?? "#E5E7EB",
                   }}
                 />

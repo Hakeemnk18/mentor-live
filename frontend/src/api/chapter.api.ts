@@ -46,7 +46,7 @@ export const updateChapter = async (
 
 export const getSubjectVariants = async (
   params: GetSubjectVariantsParams
-): Promise<SubjectVariantsForChapterApi[]> => {
+): Promise<{ _id: string; subjectName: string }[]> => {
   const res = await axiosInstance.get("/subject-variants/subjects", {
     params,
   });

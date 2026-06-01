@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
+import { formatTimeAMPM } from "../../../shared/utils/time.utils";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import {
   getFacultyById,
@@ -485,7 +486,7 @@ export default function FacultyDetailPage() {
                 >
                   <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                     <span className="text-sm font-mono font-semibold text-gray-800">
-                      {slot.time}
+                      {formatTimeAMPM(slot.time)}
                     </span>
                     <span
                       className={`px-2 py-0.5 rounded text-xs font-medium ${

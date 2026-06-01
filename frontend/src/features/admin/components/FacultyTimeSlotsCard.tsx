@@ -1,6 +1,14 @@
 import { AddTimeSlotModal } from "./AddTimeSlotModal";
+import { formatTimeAMPM } from "../../../shared/utils/time.utils";
+import type { TimeSlot } from "../../../shared/types/faculty.types";
 
-export default function FacultyTimeSlotsCard({ facultyId, slots, onUpdated }) {
+type Props = {
+  facultyId: string;
+  slots: TimeSlot[];
+  onUpdated: () => void;
+};
+
+export default function FacultyTimeSlotsCard({ facultyId, slots, onUpdated }: Props) {
   return (
     <section>
       <div className="flex justify-between">
@@ -10,7 +18,7 @@ export default function FacultyTimeSlotsCard({ facultyId, slots, onUpdated }) {
 
       {slots.map((s) => (
         <div key={s.id} className="flex justify-between">
-          <span>{s.time}</span>
+          <span>{formatTimeAMPM(s.time)}</span>
           <button onClick={() => 
         //   deleteSlot(facultyId, s.id)
         console.log("delete slot",facultyId,s.id)
