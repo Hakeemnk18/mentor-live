@@ -14,9 +14,10 @@ export class GetFacultyDetailsBySlotUseCase implements IGetFacultyDetailsBySlotU
   ) { }
   async execute(
     facultyId: string,
+    variantId?: string,
   ): Promise<FacultyDetailsViewForUser> {
 
-    const faculty = await this._facultyRepository.findFacultyByIdWithFirstSlot(facultyId)
+    const faculty = await this._facultyRepository.findFacultyByIdWithFirstSlot(facultyId, variantId)
 
 
     if (!faculty) {

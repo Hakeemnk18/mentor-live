@@ -28,9 +28,11 @@ export class FacultyMapper {
         url: facultyModelData.image.url,
         publicId: facultyModelData.image.publicId,
       },
-      price: facultyModelData.price,
-      subjectOffering: (facultyModelData.subjectOffering ?? []).map((id: any) =>
-        id.toString(),
+      subjectOffering: (facultyModelData.subjectOffering ?? []).map(
+        (so: any) => ({
+          variantId: so.variantId?.toString() ?? so.variantId,
+          price: so.price,
+        }),
       ),
 
       slots: (facultyModelData.slots ?? []).map((slot: any) => ({
@@ -63,8 +65,10 @@ export class FacultyMapper {
         url: facultyEntity.image.url,
         publicId: facultyEntity.image.publicId,
       },
-      price: facultyEntity.price,
-      subjectOffering: facultyEntity.subjectOffering,
+      subjectOffering: facultyEntity.subjectOffering.map((so) => ({
+        variantId: so.variantId,
+        price: so.price,
+      })),
       slots: facultyEntity.slots.map((slot) => ({
         time: slot.time,
         isAvailable: slot.isAvailable,
@@ -89,23 +93,36 @@ export class FacultyMapper {
       description: raw.description,
       demoClass: raw.demoClass,
       image: raw.image,
-      price: raw.price,
       isDeleted: raw.isDeleted ?? false,
     };
   }
 
   static toFacultyUserView(doc: any) {
+    const price =
+      typeof doc.price === "number"
+        ? doc.price
+        : doc.subjectOffering?.length > 0
+          ? Math.min(...doc.subjectOffering.map((s: any) => s.price))
+          : 0;
+
     return {
       id: doc._id.toString(),
       name: doc.name,
       qualifications: doc.qualifications,
       description: doc.description,
-      price: doc.price,
+      price,
       image: doc.image.url,
     };
   }
 
   static toFacultyWithSlotToUserView(doc: any): FacultyDetailsViewForUser {
+    const price =
+      typeof doc.price === "number"
+        ? doc.price
+        : doc.subjectOffering?.length > 0
+          ? doc.subjectOffering[0].price
+          : 0;
+
     return {
       id: doc._id.toString(),
       name: doc.name,
@@ -113,7 +130,7 @@ export class FacultyMapper {
       description: doc.description,
       demoClass: doc.demoClass,
       image: doc.image.url,
-      price: doc.price,
+      price,
       slot: {
         id: doc.slots._id.toString(),
         isAvailable: doc.slots.isAvailable,

@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { ObjectIdSchema } from "../../../core/utils/object.id.validation.js";
 
+const SubjectOfferingSchema = z.object({
+  variantId: ObjectIdSchema,
+  price: z.number().min(0, { message: "Price must be 0 or greater" }),
+});
+
 export const CreateFacultySchema = z
   .object({
     name: z.string().trim().min(2).max(100),
@@ -16,10 +21,8 @@ export const CreateFacultySchema = z
       publicId: z.string().trim().min(1, "Icon publicId is required"),
     }),
 
-    price: z.number().min(0),
-
     subjects: z
-      .array(ObjectIdSchema)
+      .array(SubjectOfferingSchema)
       .min(1, "At least one subject is required"),
 
     slots: z
@@ -39,18 +42,18 @@ export const CreateFacultySchema = z
       .optional(),
   })
   .superRefine((data, ctx) => {
-    /* ---------- prevent duplicate subjects ---------- */
-    const subjectSet = new Set<string>();
+    /* ---------- prevent duplicate variantIds ---------- */
+    const variantSet = new Set<string>();
 
-    data.subjects.forEach((id, i) => {
-      if (subjectSet.has(id)) {
+    data.subjects.forEach((item, i) => {
+      if (variantSet.has(item.variantId)) {
         ctx.addIssue({
-          path: ["subjects", i],
-          message: "Duplicate subject is not allowed",
+          path: ["subjects", i, "variantId"],
+          message: "Duplicate subject variant is not allowed",
           code: z.ZodIssueCode.custom,
         });
       }
-      subjectSet.add(id);
+      variantSet.add(item.variantId);
     });
 
     /* ---------- prevent duplicate slot times ---------- */

@@ -6,11 +6,13 @@ export interface IFaculty extends Document {
   description: string;
   demoClass: string;
   image: {
-    url: string,
-    publicId: string
+    url: string;
+    publicId: string;
   };
-  price: number;
-  subjectOffering: Types.ObjectId[];
+  subjectOffering: {
+    variantId: Types.ObjectId;
+    price: number;
+  }[];
   slots: {
     time: Date;
     isAvailable: boolean;
@@ -51,7 +53,7 @@ const facultySchema = new Schema<IFaculty>(
       required: true,
     },
 
-   image: {
+    image: {
       url: {
         type: String,
         required: true,
@@ -59,38 +61,35 @@ const facultySchema = new Schema<IFaculty>(
       },
       publicId: {
         type: String,
-        required: true, 
+        required: true,
       },
-    },
-
-    price: {
-      type: Number,
-      required: true,
-      min: 0,
-      
     },
 
     subjectOffering: [
       {
-        type: Schema.Types.ObjectId,
-        ref: "SubjectVariant",
-        
+        variantId: {
+          type: Schema.Types.ObjectId,
+          ref: "SubjectVariant",
+          required: true,
+        },
+        price: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
       },
     ],
 
     /* ---------- Normal Slots (Embedded) ---------- */
     slots: [
       {
-       
         time: {
           type: Date,
           required: true,
-          
         },
         isAvailable: {
           type: Boolean,
           default: true,
-          
         },
         pool: [
           {
@@ -109,17 +108,14 @@ const facultySchema = new Schema<IFaculty>(
     /* ---------- Chapter Slots (Embedded) ---------- */
     chapterSlots: [
       {
-        
         chapter: {
           type: Schema.Types.ObjectId,
           ref: "Chapter",
           required: true,
-          
         },
         isAvailable: {
           type: Boolean,
           default: true,
-          
         },
         pool: [
           {
@@ -138,17 +134,16 @@ const facultySchema = new Schema<IFaculty>(
     isDeleted: {
       type: Boolean,
       default: false,
-      
     },
   },
   {
     timestamps: true,
-  }
+  },
 );
-
 
 facultySchema.index({ isDeleted: 1 });
 facultySchema.index({ "slots.time": 1 });
 facultySchema.index({ "chapterSlots.chapter": 1 });
+facultySchema.index({ "subjectOffering.variantId": 1 });
 
 export const FacultyModel = model<IFaculty>("Faculty", facultySchema);

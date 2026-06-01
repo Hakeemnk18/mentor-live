@@ -2,7 +2,7 @@ export interface UserProps {
   id: string | null;
   name: string;
   email: string;
-  role: "user" | "admin";
+  role: "user" | "admin" | "salesPerson";
   password?: string | null;
   googleId?: string | null;
   isBlocked?: boolean;
@@ -14,7 +14,7 @@ export class User {
   public readonly id: string | null;
   public readonly name: string;
   public readonly email: string;
-  public readonly role: "admin" | "user";
+  public readonly role: "admin" | "user" | "salesPerson";
   public readonly password: string | null;
   public readonly googleId: string | null;
   public readonly isVerified: boolean;
