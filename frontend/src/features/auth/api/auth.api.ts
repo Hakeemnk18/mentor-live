@@ -1,9 +1,9 @@
 import type { AuthUser, LoginPayload, LoginResponse } from "../type/auth.type";
 import api from '../../../api/axios.instance'
 
-import type { ApiResponse } from "../../../shared/types/api.types";
 import { raw } from "../../../api/raw.api";
 
+import type { ApiResponse } from "../../../shared/types/common.types";
 export const loginApi = async ({
   data,
   role,

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import type { Testimonial, TestimonialPayload } from "../../../api/testimonial.api";
-
+import type { Student } from "../../../shared/types/student.types";
+import type { Testimonial, TestimonialPayload } from "../../../shared/types/testimonial.types";
 interface Props {
   open: boolean;
   mode: "create" | "edit";

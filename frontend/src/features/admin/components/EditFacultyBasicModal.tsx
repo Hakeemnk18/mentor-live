@@ -1,26 +1,28 @@
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import SearchableSelect from "../../../shared/components/SearchableSelect";
 import ImageCropModal from "../../../shared/components/ImageCropModal/ImageCropModal";
 import { uploadToCloudinary } from "../../../shared/utils/cloudinary";
 import { getSubjectVariants } from "../../../api/chapter.api";
 import { updateFaculty } from "../../../api/faculty.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
-/* ================================================================== */
-/* TYPES                                                                */
-/* ================================================================== */
+import type { FacultyData, SubjectOffering, UpdateFacultyPayload } from "../../../shared/types/faculty.types";
 
-type SubjectOfferingUI = {
+type SubjectOfferingRow = {
   syllabusId: string;
   classId: string;
   subjectVariantId: string;
   label: string;
 };
+/* ================================================================== */
+/* TYPES                                                                */
+/* ================================================================== */
 
 type Props = {
   open: boolean;
   facultyId: string;
-  initialData?: any;
+  initialData?: FacultyData;
   syllabuses: { _id: string; name: string }[];
   classes: { _id: string; name: string }[];
   onClose: () => void;
@@ -35,9 +37,6 @@ const inp = (hasError = false) =>
   `w-full px-3 py-2 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30 ${
     hasError ? "border-red-400" : "border-gray-300"
   }`;
-
-const sel = () =>
-  "w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30";
 
 /* ================================================================== */
 /* COMPONENT                                                            */
@@ -65,11 +64,11 @@ export default function EditFacultyBasicModal({
   const [imagePayload, setImagePayload] = useState<{ url: string; publicId: string } | null>(null);
 
   /* ---------- Subject Offering ---------- */
-  const [subjectOfferings, setSubjectOfferings] = useState<SubjectOfferingUI[]>([]);
+  const [subjectOfferings, setSubjectOfferings] = useState<SubjectOfferingRow[]>([]);
   const [addingSubject, setAddingSubject] = useState(false);
   const [syllabusId, setSyllabusId] = useState("");
   const [classId, setClassId] = useState("");
-  const [subjectVariants, setSubjectVariants] = useState<any[]>([]);
+  const [subjectVariants, setSubjectVariants] = useState<{ _id: string; subjectName: string }[]>([]);
   const [subjectVariantId, setSubjectVariantId] = useState("");
 
   /* ---------- Misc ---------- */
@@ -110,7 +109,7 @@ export default function EditFacultyBasicModal({
     setErrors({});
 
     setSubjectOfferings(
-      (initialData.subjectOffering ?? []).map((o: any) => ({
+      (initialData.subjectOffering ?? []).map((o: SubjectOffering) => ({
         syllabusId: o.syllabus.id,
         classId: o.class.id,
         subjectVariantId: o.id,
@@ -163,7 +162,7 @@ export default function EditFacultyBasicModal({
 
     const sylName = syllabuses.find((s) => s._id === syllabusId)?.name ?? "";
     const clsName = classes.find((c) => c._id === classId)?.name ?? "";
-    const varName = subjectVariants.find((v: any) => v._id === subjectVariantId)?.subjectName ?? "";
+    const varName = subjectVariants.find((v) => v._id === subjectVariantId)?.subjectName ?? "";
 
     setSubjectOfferings((prev) => [
       ...prev,
@@ -213,7 +212,7 @@ export default function EditFacultyBasicModal({
         finalImagePayload = { url: uploaded.url, publicId: uploaded.publicId };
       }
 
-      const payload: any = {
+      const payload: UpdateFacultyPayload = {
         name: name.trim(),
         qualifications: qualifications
           .split(",")
@@ -413,50 +412,36 @@ export default function EditFacultyBasicModal({
             {addingSubject ? (
               <div className="border border-dashed border-gray-300 rounded-lg p-3 space-y-3 bg-gray-50">
                 <div className="grid grid-cols-2 gap-2">
-                  <select
+                  <SearchableSelect
                     value={syllabusId}
-                    onChange={(e) => {
-                      setSyllabusId(e.target.value);
+                    onChange={(v) => {
+                      setSyllabusId(v);
                       setClassId("");
                       setSubjectVariantId("");
                     }}
-                    className={sel()}
-                  >
-                    <option value="">Syllabus</option>
-                    {syllabuses.map((s) => (
-                      <option key={s._id} value={s._id}>{s.name}</option>
-                    ))}
-                  </select>
+                    options={syllabuses.map((s) => ({ value: s._id, label: s.name }))}
+                    placeholder="Syllabus"
+                  />
 
-                  <select
+                  <SearchableSelect
                     value={classId}
-                    disabled={!syllabusId}
-                    onChange={(e) => {
-                      setClassId(e.target.value);
+                    onChange={(v) => {
+                      setClassId(v);
                       setSubjectVariantId("");
                     }}
-                    className={sel() + (!syllabusId ? " bg-gray-100" : "")}
-                  >
-                    <option value="">
-                      {syllabusId ? "Class" : "Pick syllabus first"}
-                    </option>
-                    {classes.map((c) => (
-                      <option key={c._id} value={c._id}>{c.name}</option>
-                    ))}
-                  </select>
+                    options={classes.map((c) => ({ value: c._id, label: c.name }))}
+                    placeholder={syllabusId ? "Class" : "Pick syllabus first"}
+                    disabled={!syllabusId}
+                  />
                 </div>
 
                 {subjectVariants.length > 0 && (
-                  <select
+                  <SearchableSelect
                     value={subjectVariantId}
-                    onChange={(e) => setSubjectVariantId(e.target.value)}
-                    className={sel()}
-                  >
-                    <option value="">Select subject variant</option>
-                    {subjectVariants.map((v: any) => (
-                      <option key={v._id} value={v._id}>{v.subjectName}</option>
-                    ))}
-                  </select>
+                    onChange={setSubjectVariantId}
+                    options={subjectVariants.map((v: { _id: string; subjectName: string }) => ({ value: v._id, label: v.subjectName }))}
+                    placeholder="Select subject variant"
+                  />
                 )}
 
                 <div className="flex items-center gap-2">

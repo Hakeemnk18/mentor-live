@@ -21,20 +21,8 @@ import FacultyModal from "../components/FacultyModal";
 import { AddTimeSlotModal } from "../components/AddTimeSlotModal";
 import { AddChapterSlotModal } from "../components/AddChapterSlotModal";
 
+import type { FacultyRow } from "../../../shared/types/faculty.types";
 /* ---------------- TYPES ---------------- */
-
-type FacultyRow = {
-  id: string;
-  name: string;
-  qualifications: string[];
-  description: string;
-  demoClass: string;
-  image: string | { url: string; publicId: string };
-  price: number;
-  isDeleted: boolean;
-  slots: { time: string }[];
-  chapterSlots: string[];
-};
 
 /* ---------------- COMPONENT ---------------- */
 
@@ -125,6 +113,7 @@ export default function FacultyPage() {
         isDeleted,
       });
       setFaculties(res.data);
+      console.log("RAW FACULTY RESPONSE:", res.data[0]);
       setTotalPages(Math.ceil(res.total / limit));
     } catch (err) {
       handleApiError(err);
@@ -182,9 +171,9 @@ export default function FacultyPage() {
       />
 
       {/* FILTER BAR */}
-      <div className="flex flex-col md:flex-row md:items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 mb-4">
         {/* Search */}
-        <div className="flex flex-col gap-1 w-full md:w-auto">
+        <div className="flex flex-col gap-1 flex-1 min-w-45">
           <label className="text-xs font-medium text-gray-600">Search</label>
           <input
             type="text"
@@ -194,76 +183,57 @@ export default function FacultyPage() {
               setPage(1);
               setSearch(e.target.value);
             }}
-            className="w-full md:w-64 px-3 py-2 text-sm border border-gray-300 rounded
-              focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
           />
         </div>
 
         {/* Syllabus */}
-        <div className="flex flex-col gap-1 w-full md:w-auto">
+        <div className="flex flex-col gap-1 min-w-37.5">
           <label className="text-xs font-medium text-gray-600">Syllabus</label>
           <select
             value={syllabusId ?? ""}
-            onChange={(e) => {
-              setPage(1);
-              setSyllabusId(e.target.value || undefined);
-            }}
-            className="w-full md:w-44 px-3 py-2 text-sm border border-gray-300 rounded
-              focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
+            onChange={(e) => { setPage(1); setSyllabusId(e.target.value || undefined); }}
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
           >
             <option value="">All</option>
             {syllabusList.map((s) => (
-              <option key={s._id} value={s._id}>
-                {s.name}
-              </option>
+              <option key={s._id} value={s._id}>{s.name}</option>
             ))}
           </select>
         </div>
 
         {/* Class */}
-        <div className="flex flex-col gap-1 w-full md:w-auto">
+        <div className="flex flex-col gap-1 min-w-32.5">
           <label className="text-xs font-medium text-gray-600">Class</label>
           <select
             value={classId ?? ""}
-            onChange={(e) => {
-              setPage(1);
-              setClassId(e.target.value || undefined);
-            }}
-            className="w-full md:w-40 px-3 py-2 text-sm border border-gray-300 rounded
-              focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
+            onChange={(e) => { setPage(1); setClassId(e.target.value || undefined); }}
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
           >
             <option value="">All</option>
             {classesList.map((c) => (
-              <option key={c._id} value={c._id}>
-                {c.name}
-              </option>
+              <option key={c._id} value={c._id}>{c.name}</option>
             ))}
           </select>
         </div>
 
         {/* Subject */}
-        <div className="flex flex-col gap-1 w-full md:w-auto">
+        <div className="flex flex-col gap-1 min-w-37.5">
           <label className="text-xs font-medium text-gray-600">Subject</label>
           <select
             value={subjectId ?? ""}
-            onChange={(e) => {
-              setPage(1);
-              setSubjectId(e.target.value || undefined);
-            }}
-            className="w-full md:w-44 px-3 py-2 text-sm border border-gray-300 rounded
-              focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
+            onChange={(e) => { setPage(1); setSubjectId(e.target.value || undefined); }}
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
           >
             <option value="">All</option>
             {subjectList.map((s) => (
-              <option key={s._id} value={s._id}>
-                {s.name}
-              </option>
+              <option key={s._id} value={s._id}>{s.name}</option>
             ))}
           </select>
         </div>
 
         {/* Status */}
-        <div className="flex flex-col gap-1 w-full md:w-auto">
+        <div className="flex flex-col gap-1 min-w-30">
           <label className="text-xs font-medium text-gray-600">Status</label>
           <select
             value={isDeleted === undefined ? "" : isDeleted ? "deleted" : "active"}
@@ -272,8 +242,7 @@ export default function FacultyPage() {
               if (e.target.value === "") setIsDeleted(undefined);
               else setIsDeleted(e.target.value === "deleted");
             }}
-            className="w-full md:w-36 px-3 py-2 text-sm border border-gray-300 rounded
-              focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
           >
             <option value="">All</option>
             <option value="active">Active</option>
@@ -281,19 +250,13 @@ export default function FacultyPage() {
           </select>
         </div>
 
-        {/* Entries */}
-        <div className="flex flex-col gap-1 w-full md:w-auto">
-          <label className="text-xs font-medium text-gray-600">
-            Entries Per Page
-          </label>
+        {/* Per Page */}
+        <div className="flex flex-col gap-1 min-w-25">
+          <label className="text-xs font-medium text-gray-600">Per Page</label>
           <select
             value={limit}
-            onChange={(e) => {
-              setPage(1);
-              setLimit(Number(e.target.value));
-            }}
-            className="w-full md:w-32 px-3 py-2 text-sm border border-gray-300 rounded
-              focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
+            onChange={(e) => { setPage(1); setLimit(Number(e.target.value)); }}
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
           >
             <option value={5}>5</option>
             <option value={10}>10</option>

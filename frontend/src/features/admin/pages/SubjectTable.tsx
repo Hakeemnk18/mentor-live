@@ -17,17 +17,7 @@ import { handleApiError } from "../../../shared/utils/handle.api.error";
 import { getSyllabus } from "../../../api/syllabus.api";
 import { getClasses } from "../../../api/class.api";
 import SubjectFormModal from "../components/SubjectFormModal";
-import type { CreateSubjectPayload } from "../../../shared/types/api.types";
-
-type SubjectRow = {
-  _id: string;
-  name: string;
-  isDeleted: boolean;
-};
-type SubjectVariantForm = {
-  syllabusId: string;
-  classId: string;
-};
+import type { CreateSubjectPayload, SubjectRow, SubjectVariantForm } from "../../../shared/types/subject.types";
 const getErrorMessage = (err: any, fallback: string) =>
   err?.response?.data?.message || fallback;
 

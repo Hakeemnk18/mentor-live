@@ -1,19 +1,6 @@
 import axiosInstance from "./axios.instance";
 
-export interface Testimonial {
-  id: string;
-  author: string;
-  designation: string;
-  comment: string;
-  isDeleted: boolean;
-}
-
-export interface TestimonialPayload {
-  author: string;
-  designation: string;
-  comment: string;
-}
-
+import type { Testimonial, TestimonialPayload } from "../shared/types/testimonial.types";
 export const getTestimonials = async (): Promise<Testimonial[]> => {
   const res = await axiosInstance.get("/testimonials");
   return res.data.data ?? [];

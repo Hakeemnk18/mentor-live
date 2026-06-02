@@ -8,6 +8,8 @@ import type { IUnblockUserUseCase } from "../use-cases/interfaces/unblock.user.u
 import type { IGetAllUsersUseCase } from "../use-cases/interfaces/get.all.users.use-case.interface.js";
 import { CreateUserSchema } from "../dtos/create.user.dto.js";
 import { EditUserSchema } from "../dtos/edit.user.dto.js";
+import { GetAllQuerySchema } from "../../../core/shared/dtos/get.all.doc.dto.js";
+import { parseReq } from "../../../core/utils/parse.query.helper.js";
 import { HttpStatusCode } from "../../../core/constants/http.status.codes.js";
 import { ResponseMessages } from "../../../core/constants/response.message.js";
 import { handleError } from "../../../core/errors/custom.error.js";
@@ -56,7 +58,10 @@ export class AdminUserController implements IAdminUserController {
 
   async getAllUsers(req: Request, res: Response): Promise<void> {
     try {
-      const users = await this._getAllUsersUseCase.execute();
+      const dto = GetAllQuerySchema.parse(
+        parseReq(req, ["isBlocked", "role"]),
+      );
+      const { data: users, total } = await this._getAllUsersUseCase.execute(dto);
       const data = users.map((u) => ({
         id: u.id,
         name: u.name,
@@ -69,6 +74,9 @@ export class AdminUserController implements IAdminUserController {
         success: true,
         message: ResponseMessages.SUCCESS,
         data,
+        total,
+        currentPage: dto.page,
+        totalPages: Math.ceil(total / dto.limit),
       });
     } catch (error) {
       console.log("Error in getAllUsers:", error);

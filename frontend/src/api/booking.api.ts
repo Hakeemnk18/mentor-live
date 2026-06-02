@@ -1,25 +1,6 @@
-import axiosInstance from "./axios.instance";
+﻿import axiosInstance from "./axios.instance";
 
-/* ── User-side booking creation ─────────────────────────── */
-export interface CreateBookingUserPayload {
-  name: string;
-  class: string;
-  place: string;
-  phoneNumber: string;
-  school: string;
-  syllabus: string;
-}
-
-export interface CreateBookingPayload {
-  user: CreateBookingUserPayload;
-  booking: {
-    facultyId: string;
-    type: "oneToOne" | "pooling";
-    mode: "slot" | "chapter";
-    slotId?: string[];
-    chapterId?: string;
-  };
-}
+import type { CreateBookingUserPayload, CreateBookingPayload, BookingFilters, OneOnOneBooking, PoolBooking, PoolStudent, PoolStudentsResponse } from "../shared/types/booking.types";
 
 export const createBooking = async (payload: CreateBookingPayload) => {
   try {
@@ -34,34 +15,6 @@ export const createBooking = async (payload: CreateBookingPayload) => {
   }
 };
 
-/* ── Shared filter params ─────────────────────────────── */
-export interface BookingFilters {
-  search?: string;
-  mode?: "chapter" | "slot";
-  chapterId?: string;
-  slotId?: string;
-  faculty?: string;
-  classId?: string;
-  syllabusId?: string;
-  isContacted?: boolean;
-  page?: number;
-  limit?: number;
-}
-
-/* ── One-on-One booking ───────────────────────────────── */
-export interface OneOnOneBooking {
-  id: string;
-  student: { id: string; name: string; phone: string };
-  faculty: { id: string; name: string };
-  class: { id: string; name: string };
-  syllabus: { id: string; name: string };
-  isContacted: boolean;
-  chapter?: { id: string; name: string };
-  slot?: { id: string; time: string };
-  mode: "chapter" | "slot";
-  status: string;
-  createdAt: string;
-}
 
 export const getOneOnOneBookings = async (
   filters: BookingFilters = {}
@@ -98,18 +51,6 @@ export const confirmSlotBooking = async (bookingId: string): Promise<void> => {
   await axiosInstance.patch(`/bookings/one-to-one/slot/${bookingId}/confirm`);
 };
 
-/* ── Pool booking ─────────────────────────────────────── */
-export interface PoolBooking {
-  faculty: { id: string; name: string };
-  mode: "chapter" | "slot";
-  class: { id: string; name: string };
-  syllabus: { id: string; name: string };
-  chapter?: { id: string; name: string };
-  slot?: { id: string; time: string };
-  totalStudents: number;
-  hasPendingContact: boolean;
-  createdAt: string;
-}
 
 export const getPoolBookings = async (
   filters: BookingFilters = {}
@@ -130,23 +71,7 @@ export const getPoolBookings = async (
   return { data: res.data.data, total: res.data.total };
 };
 
-/* ── Pool booking detail APIs ─────────────────────────── */
 
-export interface PoolStudent {
-  id: string;
-  name: string;
-  isContacted: boolean;
-}
-
-export interface PoolStudentsResponse {
-  faculty: { id: string; name: string };
-  mode: "chapter" | "slot";
-  class: { id: string; name: string };
-  syllabus: { id: string; name: string };
-  chapter?: { id: string; name: string };
-  slot?: { id: string; time: string };
-  student: PoolStudent[];
-}
 
 /** Fetch enrolled students for a pool booking */
 export const getPoolStudents = async (params: {

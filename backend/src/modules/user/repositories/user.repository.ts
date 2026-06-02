@@ -1,6 +1,7 @@
 import { HttpStatusCode } from "../../../core/constants/http.status.codes.js";
 import { ResponseMessages } from "../../../core/constants/response.message.js";
 import { CustomError } from "../../../core/errors/custom.error.js";
+import type { IGetAllDocDB } from "../../../core/shared/interfaces/get.all.doc.interface.js";
 import { User } from "../entities/user.entity.js";
 import { UserModel } from "../infrastructure/user.schema.js";
 import { UserMapper } from "../mappers/user.mapper.js";
@@ -40,6 +41,26 @@ export class UserRepository implements IUserRepository {
     return documents
       .map((doc) => UserMapper.toDomain(doc))
       .filter((u): u is User => u !== null);
+  }
+
+  async findAllPaginated(allDoc: IGetAllDocDB): Promise<User[]> {
+    const { query, page, limit, sort } = allDoc;
+    const skip = (page - 1) * limit;
+
+    const documents = await UserModel.find(query)
+      .sort(sort)
+      .collation({ locale: "en", strength: 1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    return documents
+      .map((doc) => UserMapper.toDomain(doc))
+      .filter((u): u is User => u !== null);
+  }
+
+  async countDocument(query: Record<string, any>): Promise<number> {
+    return UserModel.countDocuments(query);
   }
 
   async save(user: User): Promise<User> {

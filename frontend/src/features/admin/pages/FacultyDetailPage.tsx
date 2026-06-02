@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
+import { formatTimeAMPM } from "../../../shared/utils/time.utils";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import {
   getFacultyById,
-  addFacultySlot,
   setFacultySlotAvailability,
   addFacultyChapterSlot,
   setFacultyChapterSlotAvailability,
@@ -15,51 +15,12 @@ import { getClasses } from "../../../api/class.api";
 import { getSyllabus } from "../../../api/syllabus.api";
 import EditFacultyBasicModal from "../components/EditFacultyBasicModal";
 import PoolBookingModal from "../components/PoolBookingModal";
-import type { PoolBooking } from "../../../api/booking.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 import TopLoader from "../../../shared/components/TopLoader";
 import { timeStringToISOSlot } from "../components/FacultyModal";
 
-/* ================================================================== */
-/* TYPES                                                                */
-/* ================================================================== */
-
-type SubjectOffering = {
-  id: string;
-  class: { id: string; name: string };
-  syllabus: { id: string; name: string };
-  subject: { id: string; name: string };
-};
-
-type TimeSlot = {
-  id: string;
-  time: string;
-  isAvailable: boolean;
-  pool: any[];
-  poolLimit: number;
-};
-
-type ChapterSlot = {
-  id: string;
-  chapter: string | { id: string; name: string };
-  isAvailable: boolean;
-  pool: any[];
-};
-
-type FacultyData = {
-  id: string;
-  name: string;
-  qualifications: string[];
-  description: string;
-  demoClass: string;
-  image: string | { url: string; publicId: string };
-  price: number;
-  isDeleted: boolean;
-  slots: TimeSlot[];
-  chapterSlots: ChapterSlot[];
-  subjectOffering: SubjectOffering[];
-};
-
+import type { SubjectOffering, TimeSlot, ChapterSlot, FacultyData } from "../../../shared/types/faculty.types";
+import type { PoolBooking } from "../../../shared/types/booking.types";
 /* ================================================================== */
 /* HELPERS                                                              */
 /* ================================================================== */
@@ -341,7 +302,7 @@ export default function FacultyDetailPage() {
             onClick={() => navigate("/admin/faculty")}
             className="mt-4 text-sm text-[#DB313E] hover:underline"
           >
-            ← Back to Faculty List
+             Back to Faculty List
           </button>
         </div>
       </AdminPageContainer>
@@ -350,7 +311,7 @@ export default function FacultyDetailPage() {
 
   return (
     <AdminPageContainer>
-      {/* ── HEADER ── */}
+      {/* â”€â”€ HEADER â”€â”€ */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
           <button
@@ -378,7 +339,7 @@ export default function FacultyDetailPage() {
         </span>
       </div>
 
-      {/* ── BASIC INFO CARD ── */}
+      {/* â”€â”€ BASIC INFO CARD â”€â”€ */}
       <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
           <h2 className="text-base font-semibold text-gray-800">Basic Information</h2>
@@ -470,9 +431,7 @@ export default function FacultyDetailPage() {
                     className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-full bg-[#DB313E]/8 text-[#DB313E] border border-[#DB313E]/15"
                   >
                     {so.subject.name}
-                    <span className="text-gray-400">·</span>
                     <span className="text-gray-500">{so.class.name}</span>
-                    <span className="text-gray-400">·</span>
                     <span className="text-gray-500">{so.syllabus.name}</span>
                   </span>
                 ))}
@@ -482,7 +441,7 @@ export default function FacultyDetailPage() {
         </div>
       </section>
 
-      {/* ── TIME SLOTS CARD ── */}
+      {/* â”€â”€ TIME SLOTS CARD â”€â”€ */}
       <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
           <h2 className="text-base font-semibold text-gray-800">
@@ -507,7 +466,7 @@ export default function FacultyDetailPage() {
               disabled={!newTime || slotWorking}
               className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#DB313E] rounded-lg hover:bg-[#c22935] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {slotWorking ? "Adding…" : "+ Add Slot"}
+              {slotWorking ? "Adding" : "+ Add Slot"}
             </button>
           </div>
 
@@ -527,7 +486,7 @@ export default function FacultyDetailPage() {
                 >
                   <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                     <span className="text-sm font-mono font-semibold text-gray-800">
-                      {slot.time}
+                      {formatTimeAMPM(slot.time)}
                     </span>
                     <span
                       className={`px-2 py-0.5 rounded text-xs font-medium ${
@@ -571,7 +530,7 @@ export default function FacultyDetailPage() {
                     disabled={slotWorking || (slot.isAvailable && slot.pool.length > 0)}
                     title={
                       slot.isAvailable && slot.pool.length > 0
-                        ? "Cannot block — has active bookings"
+                        ? "Cannot block has active bookings"
                         : ""
                     }
                     className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
@@ -590,7 +549,7 @@ export default function FacultyDetailPage() {
         </div>
       </section>
 
-      {/* ── CHAPTER SLOTS CARD ── */}
+      {/* â”€â”€ CHAPTER SLOTS CARD â”€â”€ */}
       <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-8">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
           <h2 className="text-base font-semibold text-gray-800">
@@ -662,7 +621,7 @@ export default function FacultyDetailPage() {
               disabled={!chapterId || chapterWorking}
               className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#DB313E] rounded-lg hover:bg-[#c22935] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {chapterWorking ? "Adding…" : "+ Add Chapter"}
+              {chapterWorking ? "Adding" : "+ Add Chapter"}
             </button>
           </div>
 
@@ -734,7 +693,7 @@ export default function FacultyDetailPage() {
                       disabled={chapterWorking || (cs.isAvailable && cs.pool?.length > 0)}
                       title={
                         cs.isAvailable && cs.pool?.length > 0
-                          ? "Cannot block — has active bookings"
+                          ? "Cannot block has active bookings"
                           : ""
                       }
                       className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
@@ -754,7 +713,7 @@ export default function FacultyDetailPage() {
         </div>
       </section>
 
-      {/* ── EDIT BASIC INFO MODAL ── */}
+      {/* â”€â”€ EDIT BASIC INFO MODAL â”€â”€ */}
       {editOpen && (
         <EditFacultyBasicModal
           open={editOpen}
@@ -770,7 +729,7 @@ export default function FacultyDetailPage() {
         />
       )}
 
-      {/* ── POOL BOOKING MODAL ── */}
+      {/* â”€â”€ POOL BOOKING MODAL â”€â”€ */}
       <PoolBookingModal
         booking={selectedPoolBooking}
         onClose={() => {
@@ -802,7 +761,7 @@ function InfoItem({
       <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
         {label}
       </p>
-      <div className="text-sm text-gray-800">{value || "—"}</div>
+      <div className="text-sm text-gray-800">{value || ""}</div>
     </div>
   );
 }

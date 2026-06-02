@@ -6,11 +6,11 @@ import Pagination from "../../../shared/components/Pagination";
 import TopLoader from "../../../shared/components/TopLoader";
 import toast from "react-hot-toast";
 import type { Column } from "../components/AdminTable";
-import type { Banner, BannerPayload } from "../../../api/banner.api";
 import { getBanners, createBanner, updateBanner, deleteBanner } from "../../../api/banner.api";
 import BannerModal from "../components/BannerModal";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
+import type { Banner, BannerPayload } from "../../../shared/types/banner.types";
 /* ── columns ─────────────────────────────────────────────── */
 const columns: Column<Banner>[] = [
   {

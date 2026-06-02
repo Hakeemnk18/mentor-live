@@ -1,15 +1,7 @@
 import { useEffect, useState } from "react";
 import { mapVariantsToSyllabusAndClass } from "../../../api/subject.api";
-import type {
-  CreateSubjectPayload,
-  SyllabusAndClassPayload,
-} from "../../../shared/types/api.types";
-
-type VariantRow = {
-  syllabusId: string;
-  classId: string;
-};
-
+import SearchableSelect from "../../../shared/components/SearchableSelect";
+import type { SyllabusAndClassPayload, CreateSubjectPayload, VariantRow } from "../../../shared/types/subject.types";
 type Props = {
   open: boolean;
   mode: "create" | "edit";
@@ -146,67 +138,48 @@ export default function SubjectFormModal({
 
             {newVariants.map((variant, idx) => (
               <div key={idx} className="flex gap-2 items-end">
-                <select
+                <SearchableSelect
                   value={variant.syllabusId}
-                  onChange={(e) =>
+                  onChange={(val) =>
                     setNewVariants((prev) =>
                       prev.map((v, i) =>
-                        i === idx ? { ...v, syllabusId: e.target.value } : v
+                        i === idx ? { ...v, syllabusId: val } : v
                       )
                     )
                   }
-                  className="flex-1 px-2 py-2 text-sm border rounded"
-                >
-                  <option value="">Select syllabus</option>
-                  {syllabuses.map((s) => (
-                    <option key={s._id} value={s._id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
+                  options={syllabuses.map((s) => ({ value: s._id, label: s.name }))}
+                  placeholder="Select syllabus"
+                  className="flex-1"
+                />
 
-                <select
+                <SearchableSelect
                   value={variant.classId}
-                  onChange={(e) =>
+                  onChange={(val) =>
                     setNewVariants((prev) =>
                       prev.map((v, i) =>
-                        i === idx ? { ...v, classId: e.target.value } : v
+                        i === idx ? { ...v, classId: val } : v
                       )
                     )
                   }
-                  className="flex-1 px-2 py-2 text-sm border rounded"
-                  disabled={!variant.syllabusId}
-                >
-                  <option value="">Select class</option>
-
-                  {classes
+                  options={classes
                     .filter((c) => {
                       const comboKey = `${variant.syllabusId}|${c._id}`;
-
-                      // ❗ build used combos excluding current row
                       const usedCombos = new Set<string>();
-
-                      // existing backend variants
                       existingVariants.forEach((v) => {
                         usedCombos.add(`${v.syllabusId}|${v.classId}`);
                       });
-
-                      // other new rows (NOT this one)
                       newVariants.forEach((v, i) => {
                         if (i !== idx && v.syllabusId && v.classId) {
                           usedCombos.add(`${v.syllabusId}|${v.classId}`);
                         }
                       });
-
-                      // hide already-used combos
                       return !usedCombos.has(comboKey);
                     })
-                    .map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name}
-                      </option>
-                    ))}
-                </select>
+                    .map((c) => ({ value: c._id, label: c.name }))}
+                  placeholder="Select class"
+                  disabled={!variant.syllabusId}
+                  className="flex-1"
+                />
 
                 {newVariants.length > 1 && (
                   <button

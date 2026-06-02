@@ -7,12 +7,12 @@ import Pagination from "../../../shared/components/Pagination";
 import TopLoader from "../../../shared/components/TopLoader";
 import toast from "react-hot-toast";
 import type { Column } from "../components/AdminTable";
-import type { Student } from "../../../api/student.api";
 import { getStudents, blockStudent, unblockStudent } from "../../../api/student.api";
 import { getClasses } from "../../../api/class.api";
 import { getSyllabus } from "../../../api/syllabus.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
+import type { Student } from "../../../shared/types/student.types";
 /* ── types ─────────────────────────────────────────────────── */
 type ClassOption = { _id: string; name: string };
 type SyllabusOption = { _id: string; name: string };

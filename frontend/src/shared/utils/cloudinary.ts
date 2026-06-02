@@ -1,8 +1,4 @@
-export type CloudinaryUploadResult = {
-  url: string;
-  publicId: string;
-};
-
+import type { CloudinaryUploadResult } from "../types/common.types";
 type UploadOptions = {
   file: File;
   uploadPreset: string;

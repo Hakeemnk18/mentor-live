@@ -1,20 +1,6 @@
-import type {
-  GetClassesApiResponse,
-  GetClassesParams,
-  GetClassesResult,
-} from "../shared/types/api.types";
 import axiosInstance from "./axios.instance";
 
-export type CreateClassPayload = {
-  name: string;
-};
-
-export type ClassResponse = {
-  id: string;
-  name: string;
-  isDeleted: boolean;
-};
-
+import type { ClassResponse, CreateClassPayload, GetClassesApiResponse, GetClassesParams, GetClassesResult } from "../shared/types/class.types";
 export const createClass = async (
   payload: CreateClassPayload
 ): Promise<ClassResponse> => {

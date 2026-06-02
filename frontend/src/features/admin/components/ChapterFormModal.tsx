@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import SearchableSelect from "../../../shared/components/SearchableSelect";
 import ImageCropModal from "../../../shared/components/ImageCropModal/ImageCropModal";
 import { getSubjectVariants } from "../../../api/chapter.api";
 import { uploadToCloudinary } from "../../../shared/utils/cloudinary";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
+import type { ChapterInitialData } from "../../../shared/types/chapter.types";
 /* ---------------- TYPES ---------------- */
 
 type SubjectVariant = {
@@ -13,21 +15,6 @@ type SubjectVariant = {
 };
 
 type IconPayload = {
-  url: string;
-  publicId: string;
-};
-
-type ChapterInitialData = {
-  _id: string;
-  name: string;
-  price: number;
-  syllabusId: string;
-  classId: string;
-  subjectVariantId: string;
-  icon?: IconPayload | null;
-};
-
-type CloudinaryUploadResult = {
   url: string;
   publicId: string;
 };
@@ -77,7 +64,7 @@ export default function ChapterFormModal({
   /* ---------------- FORM STATE ---------------- */
 
   const [name, setName] = useState("");
-  const [price, setPrice] = useState<number>(0);
+  const [price, setPrice] = useState<number | "">(0);
 
   const [syllabusId, setSyllabusId] = useState("");
   const [classId, setClassId] = useState("");
@@ -191,7 +178,7 @@ export default function ChapterFormModal({
 
   const validationErrors = {
     name: !name.trim(),
-    price: price <= 0,
+    price: price === "" || price <= 0,
     syllabus: !syllabusId,
     class: !classId,
     subject: !subjectVariantId,
@@ -233,7 +220,7 @@ export default function ChapterFormModal({
 
       const payload = {
         name: name.trim(),
-        price,
+        price: Number(price),
         subjectVariant: subjectVariantId,
         icon: finalIcon,
       };
@@ -289,7 +276,7 @@ export default function ChapterFormModal({
   type="number"
   value={price}
   onChange={(e) => setPrice(Number(e.target.value))}
-  onFocus={(e) => { if (price === 0) setPrice('' as any) }}
+  onFocus={() => { if (price === 0) setPrice("") }}
   onBlur={(e) => { if (e.target.value === '') setPrice(0) }}
   placeholder="Price"
   className={`w-full px-3 py-2 text-sm border rounded
@@ -303,58 +290,38 @@ export default function ChapterFormModal({
               </p>
             )}
 
-            <select
+            <SearchableSelect
               value={syllabusId}
-              onChange={(e) => setSyllabusId(e.target.value)}
-              className={`w-full px-3 py-2 text-sm border rounded
-    ${submitAttempted && validationErrors.syllabus ? "border-red-400" : ""}
-  `}
-            >
-              <option value="">Select syllabus</option>
-              {syllabuses.map((s) => (
-                <option key={s._id} value={s._id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+              onChange={setSyllabusId}
+              options={syllabuses.map((s) => ({ value: s._id, label: s.name }))}
+              placeholder="Select syllabus"
+              hasError={submitAttempted && validationErrors.syllabus}
+            />
 
             {submitAttempted && validationErrors.syllabus && (
               <p className="text-xs text-red-500">Please select a syllabus</p>
             )}
 
-            <select
+            <SearchableSelect
               value={classId}
-              onChange={(e) => setClassId(e.target.value)}
-              className={`w-full px-3 py-2 text-sm border rounded
-    ${submitAttempted && validationErrors.class ? "border-red-400" : ""}
-  `}
-            >
-              <option value="">Select class</option>
-              {classes.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+              onChange={setClassId}
+              options={classes.map((c) => ({ value: c._id, label: c.name }))}
+              placeholder="Select class"
+              hasError={submitAttempted && validationErrors.class}
+            />
 
             {submitAttempted && validationErrors.class && (
               <p className="text-xs text-red-500">Please select a class</p>
             )}
 
-            <select
+            <SearchableSelect
               value={subjectVariantId}
-              onChange={(e) => setSubjectVariantId(e.target.value)}
-              className={`w-full px-3 py-2 text-sm border rounded
-    ${submitAttempted && validationErrors.subject ? "border-red-400" : ""}
-  `}
-            >
-              <option value="">Select subject</option>
-              {subjectVariants.map((sv) => (
-                <option key={sv._id} value={sv._id}>
-                  {sv.subjectName}
-                </option>
-              ))}
-            </select>
+              onChange={setSubjectVariantId}
+              options={subjectVariants.map((sv) => ({ value: sv._id, label: sv.subjectName }))}
+              placeholder={!syllabusId || !classId ? "Select syllabus & class first" : "Select subject"}
+              disabled={!syllabusId || !classId}
+              hasError={submitAttempted && validationErrors.subject}
+            />
 
             {submitAttempted && validationErrors.subject && (
               <p className="text-xs text-red-500">Please select a subject</p>

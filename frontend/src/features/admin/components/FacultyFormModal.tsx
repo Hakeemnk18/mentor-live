@@ -1,15 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import SearchableSelect from "../../../shared/components/SearchableSelect";
 import ImageCropModal from "../../../shared/components/ImageCropModal/ImageCropModal";
 import {
-  getChapters,
   getChaptersList,
   getSubjectVariants,
 } from "../../../api/chapter.api";
-import { getSubjects } from "../../../api/subject.api";
 import { uploadToCloudinary } from "../../../shared/utils/cloudinary";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
+import type { FacultyData, SubjectOffering, TimeSlot, ChapterSlot } from "../../../shared/types/faculty.types";
 /* ---------------- TYPES ---------------- */
 
 type IconPayload = {
@@ -31,52 +31,28 @@ type SubjectOption = {
   name: string;
 };
 
-export type FacultyInitialData = {
-  _id: string;
+type FacultyPayload = {
   name: string;
   qualifications: string[];
   description: string;
   demoClass: string;
+  image: IconPayload;
   price: number;
-
-  image?: string | null;
-
-  slots: {
-    id: string;
-    time: string; // "06:30"
-  }[];
-
-  chapterSlots: {
-    chapter: string;
-  }[];
-
-  subjectOffering: {
-    id: string; // subjectVariantId
-    class: {
-      id: string;
-      name: string;
-    };
-    syllabus: {
-      id: string;
-      name: string;
-    };
-    subject: {
-      id: string;
-      name: string;
-    };
-  }[];
+  subjects: string[];
+  slots: SlotPayload[];
+  chapterSlots: { chapter: string }[];
 };
 
 type Props = {
   open: boolean;
   mode: "create" | "edit";
-  initialData?: FacultyInitialData;
+  initialData?: FacultyData;
   onClose: () => void;
   loading?: boolean;
   syllabuses: { _id: string; name: string }[];
   classes: { _id: string; name: string }[];
-  onCreate: (data: any) => Promise<void>;
-  onUpdate: (id: string, data: any) => Promise<void>;
+  onCreate: (data: FacultyPayload) => Promise<void>;
+  onUpdate: (id: string, data: FacultyPayload) => Promise<void>;
 };
 
 /* ---------------- HELPERS ---------------- */
@@ -92,12 +68,15 @@ const generateInitialSlots = (): SlotPayload[] => {
   });
 };
 
-const formatSlotLabel = (iso: string) =>
-  new Date(iso).toLocaleTimeString("en-IN", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
+
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+  const h = Math.floor(i / 2);
+  const m = i % 2 === 0 ? "00" : "30";
+  const value = `${String(h).padStart(2, "0")}:${m}`;
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return { value, label: `${h12}:${m} ${period}` };
+});
 
 /* ---------------- COMPONENT ---------------- */
 
@@ -122,12 +101,9 @@ export default function FacultyFormModal({
   const [price, setPrice] = useState(0);
 
   const [slots, setSlots] = useState<SlotPayload[]>([]);
-  const [chapterSlots, setChapterSlots] = useState<{ chapter: string }[]>([]);
+  const [chapterSlots, setChapterSlots] = useState<{ chapter: string; name?: string }[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
 
-  const [syllabusId, setSyllabusId] = useState("");
-  const [classId, setClassId] = useState("");
-  const [subjectId, setSubjectId] = useState("");
 
   const [subjects, setSubjects] = useState<SubjectOption[]>([]);
   const [chapters, setChapters] = useState<ChapterOption[]>([]);
@@ -141,7 +117,6 @@ export default function FacultyFormModal({
   const [isNewImage, setIsNewImage] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -152,7 +127,6 @@ export default function FacultyFormModal({
   // CHAPTER SLOT FLOW
   const [chapterSyllabusId, setChapterSyllabusId] = useState("");
   const [chapterClassId, setChapterClassId] = useState("");
-  const [chapterSubjectId, setChapterSubjectId] = useState("");
 
   /* ---------------- INIT ---------------- */
 
@@ -181,7 +155,6 @@ export default function FacultyFormModal({
 
       setChapterSyllabusId("");
       setChapterClassId("");
-      setChapterSubjectId("");
 
       setSubjects([]);
       setChapters([]);
@@ -203,10 +176,16 @@ export default function FacultyFormModal({
       setDemoClass(initialData.demoClass ?? "");
       setPrice(initialData.price ?? 0);
 
-      /* IMAGE (backend sends string) */
+      /* IMAGE */
       if (initialData.image) {
-        setImage({ url: initialData.image, publicId: "" });
-        setImagePreview(initialData.image);
+        const img = initialData.image;
+        if (typeof img === "object") {
+          setImage(img);
+          setImagePreview(img.url);
+        } else {
+          setImage({ url: img, publicId: "" });
+          setImagePreview(img);
+        }
       } else {
         setImage(null);
         setImagePreview(null);
@@ -216,7 +195,7 @@ export default function FacultyFormModal({
       /* SUBJECTS (subjectVariantIds) */
       setSelectedSubjects(
         Array.isArray(initialData.subjectOffering)
-          ? initialData.subjectOffering.map((s: any) => s.id)
+          ? initialData.subjectOffering.map((s: SubjectOffering) => s.id)
           : [],
       );
 
@@ -227,10 +206,10 @@ export default function FacultyFormModal({
         setSubjectClassId(firstOffering.class.id);
       }
 
-      /* SLOTS ("06:30" → ISO) */
+      /* SLOTS ("06:30" ’ ISO) */
       setSlots(
         Array.isArray(initialData.slots)
-          ? initialData.slots.map((s: any) => {
+          ? initialData.slots.map((s: TimeSlot) => {
               const base = new Date();
               const [h, m] = s.time.split(":").map(Number);
               base.setHours(h, m, 0, 0);
@@ -240,11 +219,11 @@ export default function FacultyFormModal({
       );
 
       /* CHAPTER SLOTS */
-      // 🔥 NORMALIZE CHAPTER SLOTS HERE
+      // ðŸ”¥ NORMALIZE CHAPTER SLOTS HERE
       const normalizedChapterSlots = Array.isArray(initialData.chapterSlots)
-        ? initialData.chapterSlots.map((cs: any) => ({
+        ? initialData.chapterSlots.map((cs: ChapterSlot) => ({
             chapter:
-              typeof cs.chapter === "string" ? cs.chapter : cs.chapter.id, // ✅ extract id
+              typeof cs.chapter === "string" ? cs.chapter : cs.chapter.id, // … extract id
             name: typeof cs.chapter === "object" ? cs.chapter.name : undefined,
           }))
         : [];
@@ -268,7 +247,7 @@ export default function FacultyFormModal({
       classId: subjectClassId,
     })
       .then((res) => {
-        // ✅ res is ALREADY mapped
+        // … res is ALREADY mapped
         setSubjects(
           res.map((v) => ({
             _id: v._id,
@@ -279,18 +258,6 @@ export default function FacultyFormModal({
       .catch(handleApiError);
   }, [subjectSyllabusId, subjectClassId]);
 
-  /* ---------------- FETCH CHAPTERS ---------------- */
-
-  useEffect(() => {
-    if (!syllabusId || !classId || !subjectId) {
-      setChapters([]);
-      return;
-    }
-
-    getChapters({ syllabusId, classId, subjectId, page: 1, limit: 100 })
-      .then((res) => setChapters(res.rows))
-      .catch(handleApiError);
-  }, [syllabusId, classId, subjectId]);
   /* ---------------- FETCH SUBJECTS (FOR SUBJECT SELECTION) ---------------- */
 
   // useEffect(() => {
@@ -397,7 +364,7 @@ export default function FacultyFormModal({
   };
 
   const handleSubmit = async () => {
-    if (isSubmitting || uploading) return; // ✅ HARD STOP
+    if (isSubmitting || uploading) return; // … HARD STOP
 
     setSubmitAttempted(true);
 
@@ -420,7 +387,6 @@ export default function FacultyFormModal({
           file: imageFile,
           uploadPreset: "faculties",
           cloudName: import.meta.env.VITE_CLOUDINARY_NAME,
-          onProgress: setUploadProgress,
         });
 
         setUploading(false);
@@ -429,7 +395,7 @@ export default function FacultyFormModal({
         finalImage = image!;
       }
 
-      /* ✅ NORMALIZE CHAPTER SLOTS */
+      /* … NORMALIZE CHAPTER SLOTS */
       const normalizedChapterSlots = chapterSlots.map((c) => ({
         chapter: c.chapter,
       }));
@@ -443,13 +409,13 @@ export default function FacultyFormModal({
         price,
         subjects: selectedSubjects,
         slots,
-        chapterSlots: normalizedChapterSlots, // ✅ FIX
+        chapterSlots: normalizedChapterSlots, // … FIX
       };
 
       if (mode === "create") {
         await onCreate(payload);
       } else {
-        await onUpdate(initialData!._id, payload);
+        await onUpdate(initialData!.id, payload);
       }
 
       onClose();
@@ -576,7 +542,7 @@ export default function FacultyFormModal({
                         }
                         className="px-3 text-red-500 text-sm"
                       >
-                        ✕
+                        
                       </button>
                     )}
                   </div>
@@ -676,7 +642,7 @@ export default function FacultyFormModal({
               {/* PRICE */}
               <div>
                 <label className="text-sm font-medium text-gray-700">
-                  Price (₹)
+                  Price
                 </label>
 
                 <input
@@ -707,42 +673,28 @@ export default function FacultyFormModal({
             <label className="text-sm font-medium">Subjects</label>
 
             {/* SUBJECT SYLLABUS */}
-            <select
+            <SearchableSelect
               value={subjectSyllabusId}
-              onChange={(e) => {
-                setSubjectSyllabusId(e.target.value);
+              onChange={(v) => {
+                setSubjectSyllabusId(v);
                 setSubjectClassId("");
                 setSelectedSubjects([]);
               }}
-              className="w-full px-3 py-2 border rounded"
-            >
-              <option value="">Select syllabus</option>
-              {syllabuses.map((s) => (
-                <option key={s._id} value={s._id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+              options={syllabuses.map((s) => ({ value: s._id, label: s.name }))}
+              placeholder="Select syllabus"
+            />
 
             {/* SUBJECT CLASS */}
-            <select
+            <SearchableSelect
               value={subjectClassId}
-              disabled={!subjectSyllabusId}
-              onChange={(e) => {
-                setSubjectClassId(e.target.value);
+              onChange={(v) => {
+                setSubjectClassId(v);
                 setSelectedSubjects([]);
               }}
-              className="w-full px-3 py-2 border rounded disabled:bg-gray-100"
-            >
-              <option value="">
-                {!subjectSyllabusId ? "Select syllabus first" : "Select class"}
-              </option>
-              {classes.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+              options={classes.map((c) => ({ value: c._id, label: c.name }))}
+              placeholder={!subjectSyllabusId ? "Select syllabus first" : "Select class"}
+              disabled={!subjectSyllabusId}
+            />
 
             {/* SUBJECT MULTI SELECT */}
             <select
@@ -813,7 +765,7 @@ export default function FacultyFormModal({
                         }
                         className="text-[#DB313E] hover:text-red-600"
                       >
-                        ✕
+                        
                       </button>
                     </span>
                   );
@@ -830,84 +782,52 @@ export default function FacultyFormModal({
             </label>
 
             {/* SYLLABUS */}
-            <select
+            <SearchableSelect
               value={chapterSyllabusId}
-              onChange={(e) => {
-                setChapterSyllabusId(e.target.value);
+              onChange={(v) => {
+                setChapterSyllabusId(v);
                 setChapterClassId("");
                 setChapters([]);
                 setChapterSlots([]);
               }}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded"
-            >
-              <option value="">Select syllabus</option>
-              {syllabuses.map((s) => (
-                <option key={s._id} value={s._id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+              options={syllabuses.map((s) => ({ value: s._id, label: s.name }))}
+              placeholder="Select syllabus"
+            />
 
             {/* CLASS */}
-            <select
+            <SearchableSelect
               value={chapterClassId}
-              disabled={!chapterSyllabusId}
-              onChange={(e) => {
-                setChapterClassId(e.target.value);
+              onChange={(v) => {
+                setChapterClassId(v);
                 setChapterSlots([]);
               }}
-              className={`w-full px-3 py-2 text-sm border rounded
-      ${!chapterSyllabusId ? "bg-gray-100 cursor-not-allowed" : "border-gray-300"}
-    `}
-            >
-              <option value="">
-                {!chapterSyllabusId ? "Select syllabus first" : "Select class"}
-              </option>
-              {classes.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+              options={classes.map((c) => ({ value: c._id, label: c.name }))}
+              placeholder={!chapterSyllabusId ? "Select syllabus first" : "Select class"}
+              disabled={!chapterSyllabusId}
+            />
 
             {/* CHAPTER SELECT (auto add) */}
-            <select
+            <SearchableSelect
               value={selectedChapter}
-              disabled={!chapterSyllabusId || !chapterClassId}
-              onChange={(e) => {
-                const id = e.target.value;
+              onChange={(id) => {
                 if (!id) return;
-
                 if (chapterSlots.some((c) => c.chapter === id)) {
                   toast.error("Chapter already added");
                   return;
                 }
-
                 setChapterSlots((prev) => [...prev, { chapter: id }]);
                 setSelectedChapter("");
               }}
-              className={`w-full px-3 py-2 text-sm border rounded
-      ${
-        !chapterSyllabusId || !chapterClassId
-          ? "bg-gray-100 cursor-not-allowed"
-          : "border-gray-300"
-      }
-    `}
-            >
-              <option value="">
-                {!chapterSyllabusId || !chapterClassId
+              options={chapters.map((c) => ({ value: c._id, label: c.name }))}
+              placeholder={
+                !chapterSyllabusId || !chapterClassId
                   ? "Select syllabus & class first"
                   : chapters.length === 0
-                    ? "No chapters found"
-                    : "Select chapter"}
-              </option>
-
-              {chapters.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+                  ? "No chapters found"
+                  : "Select chapter"
+              }
+              disabled={!chapterSyllabusId || !chapterClassId}
+            />
             {/* SELECTED CHAPTERS */}
             {chapterSlots.length > 0 && (
               <div className="mt-4 space-y-2">
@@ -942,7 +862,7 @@ export default function FacultyFormModal({
                           }
                           className="text-red-500 text-sm hover:text-red-600"
                         >
-                          ✕
+                          
                         </button>
                       </div>
                     );
@@ -958,8 +878,7 @@ export default function FacultyFormModal({
 
             {slots.map((s, i) => (
               <div key={i} className="flex items-center gap-3">
-                <input
-                  type="time"
+                <select
                   value={new Date(s.time).toLocaleTimeString("en-GB", {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -980,12 +899,12 @@ export default function FacultyFormModal({
                     next[i] = { time: candidate.toISOString() };
                     setSlots(next);
                   }}
-                  className="px-3 py-2 border rounded w-32"
-                />
-
-                <span className="text-sm text-gray-600">
-                  {formatSlotLabel(s.time)}
-                </span>
+                  className="px-3 py-2 border rounded text-sm"
+                >
+                  {TIME_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
 
                 <button
                   type="button"
@@ -1002,7 +921,7 @@ export default function FacultyFormModal({
                   }}
                   className="text-red-500"
                 >
-                  ✕
+                  
                 </button>
               </div>
             ))}
@@ -1015,7 +934,7 @@ export default function FacultyFormModal({
               }
               className="inline-flex items-center gap-2 text-sm px-3 py-2 border rounded hover:bg-gray-50"
             >
-              ➕ Add slot
+               Add slot
             </button>
           </div>
 
@@ -1045,7 +964,7 @@ export default function FacultyFormModal({
                 onClick={() => fileInputRef.current?.click()}
                 className="mt-2 px-4 py-2 border border-dashed rounded text-sm hover:bg-gray-50"
               >
-                📷 Select image
+                ðŸ“· Select image
               </button>
             )}
 
@@ -1079,7 +998,7 @@ export default function FacultyFormModal({
             </button>
 
             <button
-              type="button" // ✅ THIS IS THE FIX
+              type="button" // … THIS IS THE FIX
               disabled={uploading || isSubmitting}
               onClick={handleSubmit}
               className={`px-4 py-2 rounded text-white bg-[#DB313E]

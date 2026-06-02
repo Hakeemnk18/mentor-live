@@ -1,16 +1,7 @@
-import { timeStringToISOSlot } from "../features/admin/components/FacultyModal";
-import type { CreateFacultyPayload } from "../shared/types/api.types";
+﻿import { timeStringToISOSlot } from "../features/admin/components/FacultyModal";
 import axiosInstance from "./axios.instance";
 
-export type UpdateFacultyPayload = {
-  name?: string;
-  qualifications?: string[];
-  description?: string;
-  demoClass?: string;
-  price?: number;
-  image?: { url: string; publicId: string };
-  subjects?: string[];
-};
+import type { CreateFacultyPayload, UpdateFacultyPayload, FacultyListParams, FacultyListItem, FacultyByChapterParams } from "../shared/types/faculty.types";
 
 export const getFaculties = async (params: {
   page?: number;
@@ -27,25 +18,6 @@ export const getFaculties = async (params: {
   return res.data;
 };
 
-export type FacultyListParams = {
-  syllabusId: string;
-  classId: string;
-  subjectId?: string;
-  page?: number;
-  limit?: number;
-  sort?: string;
-  search?: string;
-};
-
-export type FacultyListItem = {
-  id: string;
-  name: string;
-  qualifications: string[];
-  description: string;
-  price: number;
-  image?: string;
-};
-
 export const getFacultiesList = async (
   params: FacultyListParams
 ): Promise<{ data: FacultyListItem[] }> => {
@@ -53,14 +25,6 @@ export const getFacultiesList = async (
     params: { type: "class", ...params },
   });
   return res.data;
-};
-
-export type FacultyByChapterParams = {
-  chapterId: string;
-  page?: number;
-  limit?: number;
-  sort?: string;
-  search?: string;
 };
 
 export const getFacultiesByChapter = async (
@@ -96,7 +60,7 @@ export const getFacultyByChapter = async (facultyId: string, chapterId: string) 
   return res.data.data;
 };
 
-/** Fetch only available (unbooked) time slots for a faculty — used in booking confirm flows */
+/** Fetch only available (unbooked) time slots for a faculty ” used in booking confirm flows */
 export const getFacultyAvailableSlots = async (
   facultyId: string
 ): Promise<{ id: string; time: string }[]> => {
@@ -117,22 +81,6 @@ export const getFacultySlotDetails = async (
   return res.data.data;
 };
 
-/* ── Time slot ─────────────────────────────── */
-export const  addFacultySlot = async (
-  facultyId: string,
-  payload: { time: string } // time in "HH:MM" format
-) => {
-  // Convert "HH:MM" → full ISO date string (backend expects a date object/ISO)
-  console.log(payload);
-  
-  const [h, m] = payload.time.split(":").map(Number);
-  const d = new Date();
-  d.setHours(h, m, 0, 0);
-  const res = await axiosInstance.post(`/faculties/${facultyId}/slots`, {
-    slots: [{ time: d.toISOString() }],
-  });
-  return res.data;
-};
 // faculty.api.ts
 export const addFacultySlotIST = async (
   facultyId: string,
@@ -160,7 +108,6 @@ export const setFacultySlotAvailability = async (
 export const removeFacultySlot = (facultyId: string, slotId: string) =>
   setFacultySlotAvailability(facultyId, slotId, false);
 
-/* ── Chapter slot ───────────────────────────── */
 export const addFacultyChapterSlot = async (
   facultyId: string,
   payload: { chapter: string }

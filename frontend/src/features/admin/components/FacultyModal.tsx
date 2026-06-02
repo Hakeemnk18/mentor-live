@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState, type ReactNode } from "react";
 import toast from "react-hot-toast";
+import SearchableSelect from "../../../shared/components/SearchableSelect";
+import { formatTimeAMPM } from "../../../shared/utils/time.utils";
 import ImageCropModal from "../../../shared/components/ImageCropModal/ImageCropModal";
 import { getSubjectVariants, getChaptersList } from "../../../api/chapter.api";
 import { uploadToCloudinary } from "../../../shared/utils/cloudinary";
 import {
-  addFacultySlot,
+  addFacultySlotIST,
   setFacultySlotAvailability,
   addFacultyChapterSlot,
   setFacultyChapterSlotAvailability,
@@ -12,42 +14,36 @@ import {
 } from "../../../api/faculty.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
+import type { ImagePayload, SubjectGroup, SubjectVariant, FacultyModalData, FacultyData } from "../../../shared/types/faculty.types";
 /* ================================================================== */
 /* TYPES                                                                */
 /* ================================================================== */
 
-type ImagePayload = { url: string; publicId: string };
-type SubjectVariant = { _id: string; subjectName: string };
-
-type SubjectGroup = {
-  id: number;
-  syllabusId: string;
-  classId: string;
-  variants: SubjectVariant[];
-  selected: string[];           // variant IDs — used for API payload
-  selectedVariants: SubjectVariant[]; // full objects — used for display (independent of variants loading)
+type SlotState = {
+  id?: string;
+  time: string;
+  isAvailable: boolean;
+  pool?: unknown[];
 };
 
-// pool carries bookings — block is only allowed when pool is empty
-type TimeSlot = { id?: string; time: string; pool?: any[]; isAvailable: boolean };
-type ChapterSlot = { id?: string; chapter: string; label?: string; pool?: any[]; isAvailable: boolean };
+type ChapterSlotState = {
+  id?: string;
+  chapter: string;
+  label?: string;
+  isAvailable: boolean;
+  pool?: unknown[];
+};
 
-export type FacultyModalData = {
-  id: string;  // backend returns 'id', not '_id'
+type FacultySubmitPayload = {
   name: string;
   qualifications: string[];
   description: string;
   demoClass: string;
   price: number;
-  image?: string | { url: string; publicId: string } | null;
-  subjectOffering?: {
-    id: string;
-    subject: { id: string; name: string };
-    syllabus: { id: string; name: string };
-    class: { id: string; name: string };
-  }[];
-  slots?: { id?: string; time: string; pool?: any[]; isAvailable?: boolean }[];
-  chapterSlots?: { id?: string; chapter: string | { id: string; name: string }; pool?: any[]; isAvailable?: boolean }[];
+  subjects: string[];
+  image?: ImagePayload;
+  slots?: { time: string }[];
+  chapterSlots?: { chapter: string }[];
 };
 
 type Props = {
@@ -60,10 +56,11 @@ type Props = {
   classes: { _id: string; name: string }[];
   saving: boolean;
   onClose: () => void;
-  onSubmit: (payload: any) => Promise<void>;
+  onSubmit: (payload: FacultySubmitPayload) => Promise<void>;
 };
 
 let groupCounter = 0;
+// eslint-disable-next-line react-refresh/only-export-components
 export const timeStringToISOSlot = (time: string): { time: string } => {
   const [h, m] = time.split(":").map(Number);
   const d = new Date();
@@ -71,6 +68,15 @@ export const timeStringToISOSlot = (time: string): { time: string } => {
   const localIsoDate = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
   return { time: localIsoDate.toISOString() };
 };
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+  const h = Math.floor(i / 2);
+  const m = i % 2 === 0 ? "00" : "30";
+  const value = `${String(h).padStart(2, "0")}:${m}`;
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return { value, label: `${h12}:${m} ${period}` };
+});
+
 /* ================================================================== */
 /* COMPONENT                                                            */
 /* ================================================================== */
@@ -105,12 +111,12 @@ export default function FacultyModal({
   const [subjectGroups, setSubjectGroups] = useState<SubjectGroup[]>([]);
 
   /* ---------- Time slots ---------- */
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [timeSlots, setTimeSlots] = useState<SlotState[]>([]);
   const [newTime, setNewTime] = useState("");
   const [slotWorking, setSlotWorking] = useState(false);
 
   /* ---------- Chapter slots ---------- */
-  const [chapterSlots, setChapterSlots] = useState<ChapterSlot[]>([]);
+  const [chapterSlots, setChapterSlots] = useState<ChapterSlotState[]>([]);
   const [chapterSyllabusId, setChapterSyllabusId] = useState("");
   const [chapterClassId, setChapterClassId] = useState("");
   const [chapterOptions, setChapterOptions] = useState<{ _id: string; name: string }[]>([]);
@@ -174,7 +180,7 @@ export default function FacultyModal({
           : null
       );
 
-      // Time slots — load ALL, preserving isAvailable state
+      // Time slots ” load ALL, preserving isAvailable state
       setTimeSlots(
         (initialData.slots ?? []).map((s) => ({
           id: s.id,
@@ -184,16 +190,16 @@ export default function FacultyModal({
         }))
       );
 
-      // Chapter slots — load ALL, preserving isAvailable state
+      // Chapter slots ” load ALL, preserving isAvailable state
       setChapterSlots(
         (initialData.chapterSlots ?? []).map((cs) => ({
           id: cs.id,
           chapter:
-            typeof cs.chapter === "string" ? cs.chapter : (cs.chapter as any).id,
+            typeof cs.chapter === "string" ? cs.chapter : cs.chapter.id,
           label:
-            typeof cs.chapter === "object" ? (cs.chapter as any).name : undefined,
-          pool: (cs as any).pool ?? [],
-          isAvailable: (cs as any).isAvailable !== false,
+            typeof cs.chapter === "object" ? cs.chapter.name : undefined,
+          pool: cs.pool ?? [],
+          isAvailable: cs.isAvailable !== false,
         }))
       );
 
@@ -223,7 +229,7 @@ export default function FacultyModal({
             selectedVariants: [],
           });
         }
-        // o.id IS the SubjectVariant's _id (backend maps so._id → o.id)
+        // o.id IS the SubjectVariant's _id (backend maps so._id ’ o.id)
         map.get(key)!.selected.push(o.id);
         map.get(key)!.selectedVariants.push({ _id: o.id, subjectName: o.subject.name });
       });
@@ -237,7 +243,7 @@ export default function FacultyModal({
               syllabusId: g.syllabusId,
               classId: g.classId,
             });
-            const variants: SubjectVariant[] = raw.map((v: any) => ({
+            const variants: SubjectVariant[] = raw.map((v) => ({
               _id: v._id,
               subjectName: v.subjectName,
             }));
@@ -299,7 +305,7 @@ export default function FacultyModal({
               [field]: value,
               // When syllabus changes, also clear classId; always clear variants
               // so the available-subjects list refreshes for the new combo.
-              // Do NOT wipe `selected` or `selectedVariants` — that would
+              // Do NOT wipe `selected` or `selectedVariants` â€” that would
               // erase the user's existing subject picks.
               ...(field === "syllabusId" ? { classId: "" } : {}),
               variants: [],
@@ -317,7 +323,7 @@ export default function FacultyModal({
           syllabusId: newSyllabusId,
           classId: newClassId,
         });
-        const variants: SubjectVariant[] = raw.map((v: any) => ({
+        const variants: SubjectVariant[] = raw.map((v) => ({
           _id: v._id,
           subjectName: v.subjectName,
         }));
@@ -365,7 +371,7 @@ export default function FacultyModal({
     if (!isNaN(d.getTime())) {
       return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
     }
-    // Already "HH:MM" or similar — return as-is
+    // Already "HH:MM" or similar â€” return as-is
     return raw;
   };
 
@@ -378,27 +384,23 @@ export default function FacultyModal({
       setSlotError("This slot is already added");
       return;
     }
-    console.log("new time ",newTime);
-    
     const mins = toMinutes(newTime);
     const overlap = timeSlots.find(
       (s) => Math.abs(toMinutes(s.time) - mins) < 60
     );
     if (overlap) {
-      setSlotError(`Overlaps with ${overlap.time} — slots must be at least 1 hour apart`);
+      setSlotError(`Overlaps with ${formatTimeAMPM(overlap.time)} — slots must be at least 1 hour apart`);
       return;
     }
     setSlotError("");
 
     if (mode === "edit" && facultyId) {
       try {
-        console.log("mode edit add time slot");
-        
         setSlotWorking(true);
-await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend returns no slot ID — re-fetch to get fresh slots with real IDs
-        const updated = await getFacultyById(facultyId);
+await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns no slot ID â€” re-fetch to get fresh slots with real IDs
+        const updated = await getFacultyById(facultyId) as FacultyData;
         setTimeSlots(
-          (updated.slots ?? []).map((s: any) => ({
+          (updated.slots ?? []).map((s) => ({
             id: s.id,
             time: toHHMM(s.time),
             pool: s.pool ?? [],
@@ -423,7 +425,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
   };
 
   // Block a time slot (sets isAvailable = false via API in edit mode)
-  const handleBlockTimeSlot = async (slot: TimeSlot) => {
+  const handleBlockTimeSlot = async (slot: SlotState) => {
     if (mode === "edit" && facultyId && slot.id) {
       try {
         setSlotWorking(true);
@@ -444,7 +446,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
   };
 
   // Unblock a time slot (sets isAvailable = true via API)
-  const handleUnblockTimeSlot = async (slot: TimeSlot) => {
+  const handleUnblockTimeSlot = async (slot: SlotState) => {
     if (!facultyId || !slot.id) return;
     try {
       setSlotWorking(true);
@@ -481,10 +483,10 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
       try {
         setChapterWorking(true);
         await addFacultyChapterSlot(facultyId, { chapter: chapterId });
-        // Backend returns no slot ID — re-fetch to get fresh chapter slots with real IDs
-        const updated = await getFacultyById(facultyId);
+        // Backend returns no slot ID â€” re-fetch to get fresh chapter slots with real IDs
+        const updated = await getFacultyById(facultyId) as FacultyData;
         setChapterSlots(
-          (updated.chapterSlots ?? []).map((cs: any) => ({
+          (updated.chapterSlots ?? []).map((cs) => ({
             id: cs.id,
             chapter: typeof cs.chapter === "string" ? cs.chapter : cs.chapter?.id,
             label: typeof cs.chapter === "object" ? cs.chapter?.name : undefined,
@@ -506,7 +508,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
   };
 
   // Block a chapter slot
-  const handleBlockChapterSlot = async (cs: ChapterSlot) => {
+  const handleBlockChapterSlot = async (cs: ChapterSlotState) => {
     if (mode === "edit" && facultyId && cs.chapter) {
       try {
         setChapterWorking(true);
@@ -526,7 +528,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
   };
 
   // Unblock a chapter slot
-  const handleUnblockChapterSlot = async (cs: ChapterSlot) => {
+  const handleUnblockChapterSlot = async (cs: ChapterSlotState) => {
     if (!facultyId || !cs.chapter) return;
     try {
       setChapterWorking(true);
@@ -575,7 +577,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
     if (!price || Number(price) <= 0) {
       e.price = "Price must be greater than 0";
     } else if (Number(price) > 999999) {
-      e.price = "Price must be under ₹9,99,999";
+      e.price = "Price must be under 9,99,999";
     }
     if (mode === "create" && !imageFile && !imagePayload)
       e.image = "Image is required";
@@ -600,7 +602,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
     const errs = validate();
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
-      toast.error(Object.values(errs)[0]);
+      toast.error("Please check highlighted fields");
       return;
     }
 
@@ -618,7 +620,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
 
       const slotsPayload = timeSlots.map(({ time }) => timeStringToISOSlot(time));
 
-      const payload: any = {
+      const payload: FacultySubmitPayload = {
         name: name.trim(),
         qualifications: qualifications
           .split(",")
@@ -632,12 +634,12 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
 
       // Only include image when the user actually picked a new file.
       // imagePayload is already set from initialData in edit mode (for display),
-      // so finalImage alone is always truthy — imageFile is the real new-image signal.
+      // so finalImage alone is always truthy â€” imageFile is the real new-image signal.
       if (imageFile && finalImage) {
         payload.image = finalImage;
       }
 
-      // Slots/chapters only bundled in CREATE — edit handles them via immediate APIs
+      // Slots/chapters only bundled in CREATE â€” edit handles them via immediate APIs
       if (mode === "create") {
         payload.slots = slotsPayload;
         payload.chapterSlots = chapterSlots.map((c) => ({ chapter: c.chapter }));
@@ -674,7 +676,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
           {/* Body */}
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
 
-            {/* ── Basic Info ── */}
+            {/* â”€â”€ Basic Info â”€â”€ */}
             <Section title="Basic Information">
               <Field label="Faculty Name" error={errors.name}>
                 <input
@@ -687,7 +689,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
               </Field>
               <Field
                 label="Qualifications"
-                hint="Comma-separated — e.g. MSc Physics, B.Ed"
+                hint="Comma-separated ” e.g. MSc Physics, B.Ed"
                 error={errors.qualifications}
               >
                 <input
@@ -722,7 +724,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
                     className={inp(!!errors.demoClass)}
                   />
                 </Field>
-                <Field label="Price (₹)" error={errors.price}>
+                <Field label="Price" error={errors.price}>
                   <input
                     type="number"
                     value={price}
@@ -739,7 +741,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
               </div>
             </Section>
 
-            {/* ── Image ── */}
+            {/* â”€â”€ Image â”€â”€ */}
             <Section title="Faculty Image">
               <div className="flex items-center gap-4">
                 {imageUrl && (
@@ -758,7 +760,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
                     {imageUrl ? "Change Image" : "Upload Image"}
                   </button>
                   <p className="mt-1 text-xs text-gray-400">
-                    Square image, min 300×300 recommended
+                    Square image, min 300—300 recommended
                   </p>
                 </div>
                 <input
@@ -786,14 +788,14 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
               )}
             </Section>
 
-            {/* ── Subjects ── */}
+            {/* â”€â”€ Subjects â”€â”€ */}
             <Section title="Subjects">
               {errors.subjects && (
                 <p className="text-xs text-red-500 mb-2">{errors.subjects}</p>
               )}
               <div className="space-y-4">
                 {subjectGroups.map((group, idx) => {
-                  // selectedVariants always holds full objects — no dependency on variants loading
+                  // selectedVariants always holds full objects â€” no dependency on variants loading
                   const selected = group.selectedVariants;
                   const available = group.variants.filter(
                     (v) => !group.selected.includes(v._id)
@@ -820,45 +822,23 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
-                        <select
+                        <SearchableSelect
                           value={group.syllabusId}
-                          onChange={(e) =>
-                            updateGroupField(group.id, "syllabusId", e.target.value)
-                          }
-                          className={sel()}
-                        >
-                          <option value="">Syllabus</option>
-                          {syllabuses.map((s) => (
-                            <option key={s._id} value={s._id}>
-                              {s.name}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(v) => updateGroupField(group.id, "syllabusId", v)}
+                          options={syllabuses.map((s) => ({ value: s._id, label: s.name }))}
+                          placeholder="Syllabus"
+                        />
 
-                        <select
+                        <SearchableSelect
                           value={group.classId}
+                          onChange={(v) => updateGroupField(group.id, "classId", v)}
+                          options={classes.map((c) => ({ value: c._id, label: c.name }))}
+                          placeholder={group.syllabusId ? "Class" : "Select syllabus first"}
                           disabled={!group.syllabusId}
-                          onChange={(e) =>
-                            updateGroupField(group.id, "classId", e.target.value)
-                          }
-                          className={
-                            sel() + (!group.syllabusId ? " bg-gray-100" : "")
-                          }
-                        >
-                          <option value="">
-                            {group.syllabusId
-                              ? "Class"
-                              : "Select syllabus first"}
-                          </option>
-                          {classes.map((c) => (
-                            <option key={c._id} value={c._id}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
+                        />
                       </div>
 
-                      {/* Selected subjects — with explicit × remove buttn */}
+                      {/* Selected subjects â€” with explicit — remove buttn */}
                       {selected.length > 0 && (
                         <div>
                           <p className="text-xs text-gray-400 mb-1">Selected</p>
@@ -877,7 +857,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
                                   className="ml-1 hover:opacity-75"
                                   title="Remove"
                                 >
-                                  ×
+                                  
                                 </button>
                               </span>
                             ))}
@@ -885,7 +865,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
                         </div>
                       )}
 
-                      {/* Available subjects — muted clickable pills */}
+                      {/* Available subjects â€” muted clickable pills */}
                       {available.length > 0 && (
                         <div>
                           <p className="text-xs text-gray-400 mb-1">
@@ -927,26 +907,30 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
               </button>
             </Section>
 
-            {/* ── Time Slots ── */}
+            {/* â”€â”€ Time Slots â”€â”€ */}
             <Section title="Time Slots">
               {errors.slots && (
                 <p className="text-xs text-red-500 mb-2">{errors.slots}</p>
               )}
 
               <div className="flex gap-2">
-                <input
-                  type="time"
+                <select
                   value={newTime}
                   onChange={(e) => { setNewTime(e.target.value); setSlotError(""); }}
-                  className={inp(!!slotError) + " flex-1"}
-                />
+                  className={inp(!!slotError) + " flex-1 text-sm"}
+                >
+                  <option value="">Pick a time…</option>
+                  {TIME_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
                 <button
                   type="button"
                   onClick={handleAddTimeSlot}
                   disabled={slotWorking}
                   className="px-3 py-1.5 text-sm bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 disabled:opacity-50"
                 >
-                  {slotWorking ? "…" : "+ Add"}
+                  {slotWorking ? "" : "+ Add"}
                 </button>
               </div>
               {slotError && (
@@ -965,7 +949,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
                           key={s.id ?? s.time}
                           className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-50 border border-blue-200 rounded-full text-blue-700"
                         >
-                          {s.time}
+                          {formatTimeAMPM(s.time)}
                           {(!s.pool || s.pool.length === 0) && (
                             <button
                               type="button"
@@ -974,7 +958,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
                               title="Block slot"
                               className="ml-1 text-blue-400 hover:text-red-500 disabled:opacity-50"
                             >
-                              ×
+                              X
                             </button>
                           )}
                         </span>
@@ -995,7 +979,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
                           key={s.id ?? s.time}
                           className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-50 border border-gray-300 rounded-full text-gray-400"
                         >
-                          {s.time}
+                          {formatTimeAMPM(s.time)}
                           <button
                             type="button"
                             onClick={() => handleUnblockTimeSlot(s)}
@@ -1011,67 +995,48 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
               )}
             </Section>
 
-            {/* ── Chapter Slots ── */}
+            {/* â”€â”€ Chapter Slots â”€â”€ */}
             <Section title="Chapter Slots">
               {errors.chapters && (
                 <p className="text-xs text-red-500 mb-2">{errors.chapters}</p>
               )}
 
               <div className="grid grid-cols-2 gap-2">
-                <select
+                <SearchableSelect
                   value={chapterSyllabusId}
-                  onChange={(e) => {
-                    setChapterSyllabusId(e.target.value);
+                  onChange={(v) => {
+                    setChapterSyllabusId(v);
                     setChapterClassId("");
                   }}
-                  className={sel()}
-                >
-                  <option value="">Syllabus</option>
-                  {syllabuses.map((s) => (
-                    <option key={s._id} value={s._id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
+                  options={syllabuses.map((s) => ({ value: s._id, label: s.name }))}
+                  placeholder="Syllabus"
+                />
 
-                <select
+                <SearchableSelect
                   value={chapterClassId}
+                  onChange={setChapterClassId}
+                  options={classes.map((c) => ({ value: c._id, label: c.name }))}
+                  placeholder={chapterSyllabusId ? "Class" : "Select syllabus first"}
                   disabled={!chapterSyllabusId}
-                  onChange={(e) => setChapterClassId(e.target.value)}
-                  className={sel() + (!chapterSyllabusId ? " bg-gray-100" : "")}
-                >
-                  <option value="">
-                    {chapterSyllabusId ? "Class" : "Select syllabus first"}
-                  </option>
-                  {classes.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
 
               {chapterOptions.length > 0 && (
                 <div className="flex gap-2 mt-2">
-                  <select
+                  <SearchableSelect
                     value={chapterId}
-                    onChange={(e) => { setChapterId(e.target.value); setChapterError(""); }}
-                    className={sel() + " flex-1"}
-                  >
-                    <option value="">Select chapter</option>
-                    {chapterOptions.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => { setChapterId(v); setChapterError(""); }}
+                    options={chapterOptions.map((c) => ({ value: c._id, label: c.name }))}
+                    placeholder="Select chapter"
+                    className="flex-1"
+                  />
                   <button
                     type="button"
                     onClick={handleAddChapterSlot}
                     disabled={chapterWorking}
                     className="px-3 py-1.5 text-sm bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 disabled:opacity-50"
                   >
-                    {chapterWorking ? "…" : "+ Add"}
+                    {chapterWorking ? "" : "+ Add"}
                   </button>
                 </div>
               )}
@@ -1100,7 +1065,7 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
                               title="Block chapter slot"
                               className="ml-1 text-green-400 hover:text-red-500 disabled:opacity-50"
                             >
-                              ×
+                              
                             </button>
                           )}
                         </span>
@@ -1153,9 +1118,9 @@ await addFacultySlot(facultyId, timeStringToISOSlot(newTime));        // Backend
               className="px-4 py-2 text-sm bg-[#DB313E] text-white rounded hover:bg-[#c02b37] disabled:opacity-50"
             >
               {uploading
-                ? "Uploading…"
+                ? "Uploading"
                 : saving
-                ? "Saving…"
+                ? "Saving"
                 : mode === "create"
                 ? "Create Faculty"
                 : "Save Changes"}
@@ -1190,7 +1155,7 @@ function Section({
   children,
 }: {
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div className="space-y-3">
@@ -1209,7 +1174,7 @@ function Field({
   label: string;
   hint?: string;
   error?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div className="space-y-1">
@@ -1226,5 +1191,3 @@ const inp = (hasError: boolean) =>
     hasError ? "border-red-400" : "border-gray-300"
   }`;
 
-const sel = () =>
-  "w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30";

@@ -14,12 +14,7 @@ import Pagination from "../../../shared/components/Pagination";
 import TopLoader from "../../../shared/components/TopLoader";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
-type SyllabusRow = {
-  _id: string;
-  name: string;
-  isDeleted: boolean;
-};
-
+import type { SyllabusRow } from "../../../shared/types/syllabus.types";
 export default function SyllabusPage() {
   const [syllabus, setSyllabus] = useState<SyllabusRow[]>([]);
   const [loading, setLoading] = useState(false);

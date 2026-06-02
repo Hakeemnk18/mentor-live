@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { AdminTable } from "../components/AdminTable";
+import SearchableSelect from "../../../shared/components/SearchableSelect";
+import { formatTimeAMPM } from "../../../shared/utils/time.utils";
 import { AdminPageActions } from "../components/AdminPageActions";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
@@ -9,8 +11,8 @@ import type { Column } from "../components/AdminTable";
 import {
   getOneOnOneBookings,
   getPoolBookings,
-  type OneOnOneBooking,
-  type PoolBooking,
+  type 
+  type 
 } from "../../../api/booking.api";
 import { getClasses } from "../../../api/class.api";
 import { getSyllabus } from "../../../api/syllabus.api";
@@ -18,6 +20,8 @@ import OneOnOneBookingModal from "../components/OneOnOneBookingModal";
 import PoolBookingModal from "../components/PoolBookingModal";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
+import type { OneOnOneBooking, PoolBooking, BookingType } from "../../../shared/types/booking.types";
+import type { Student } from "../../../shared/types/student.types";
 /* ─── helpers ─────────────────────────────────────────── */
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-IN", {
@@ -48,7 +52,7 @@ const oneOnOneColumns: Column<OneOnOneBooking>[] = [
     render: (b) =>
       b.mode === "chapter"
         ? b.chapter?.name ?? "—"
-        : b.slot?.time ?? "—",
+        : formatTimeAMPM(b.slot?.time) ?? "—",
   },
   { key: "class", label: "Class", render: (b) => b.class.name },
   { key: "syllabus", label: "Syllabus", render: (b) => b.syllabus.name },
@@ -95,7 +99,7 @@ const poolColumns: Column<PoolBooking>[] = [
     render: (b) =>
       b.mode === "chapter"
         ? b.chapter?.name ?? "—"
-        : b.slot?.time ?? "—",
+        : formatTimeAMPM(b.slot?.time) ?? "—",
   },
   { key: "class", label: "Class", render: (b) => b.class.name },
   { key: "syllabus", label: "Syllabus", render: (b) => b.syllabus.name },
@@ -274,31 +278,31 @@ export default function BookingsPage() {
         {/* Syllabus */}
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-gray-600">Syllabus</label>
-          <select
+          <SearchableSelect
             value={syllabusId}
-            onChange={(e) => { setSyllabusId(e.target.value); resetPage(); }}
-            className={`${sel} w-44`}
-          >
-            <option value="">All</option>
-            {syllabusList.map((s) => (
-              <option key={s._id} value={s._id}>{s.name}</option>
-            ))}
-          </select>
+            onChange={(v) => { setSyllabusId(v); resetPage(); }}
+            options={[
+              { value: "", label: "All" },
+              ...syllabusList.map((s) => ({ value: s._id, label: s.name })),
+            ]}
+            placeholder="All"
+            className="w-44"
+          />
         </div>
 
         {/* Class */}
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-gray-600">Class</label>
-          <select
+          <SearchableSelect
             value={classId}
-            onChange={(e) => { setClassId(e.target.value); resetPage(); }}
-            className={`${sel} w-36`}
-          >
-            <option value="">All</option>
-            {classesList.map((c) => (
-              <option key={c._id} value={c._id}>{c.name}</option>
-            ))}
-          </select>
+            onChange={(v) => { setClassId(v); resetPage(); }}
+            options={[
+              { value: "", label: "All" },
+              ...classesList.map((c) => ({ value: c._id, label: c.name })),
+            ]}
+            placeholder="All"
+            className="w-36"
+          />
         </div>
 
         {/* Contacted (one-on-one only) */}

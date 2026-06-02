@@ -15,6 +15,7 @@ const navItems = [
   { label: "Blogs", path: "/admin/blogs" },
   { label: "Banners", path: "/admin/banners" },
   { label: "Students", path: "/admin/students" },
+  { label: "Users", path: "/admin/users" },
 ];
 
 const AdminNavbar: React.FC = () => {
@@ -33,7 +34,7 @@ const AdminNavbar: React.FC = () => {
   };
 
   const linkClasses = ({ isActive }: { isActive: boolean }) =>
-    `transition ${
+    `transition whitespace-nowrap ${
       isActive
         ? "text-[#DB313E] font-semibold"
         : "text-gray-600 hover:text-[#DB313E]"
@@ -41,14 +42,14 @@ const AdminNavbar: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-200">
-      <div className="flex items-center justify-between h-16 px-4 md:px-6">
+      <div className="flex items-center justify-between h-16 px-4 lg:px-6">
 
-        {/* Brand */}
-        <Link to="/admin/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+        {/* Brand - Added shrink-0 and min-w-max so it never squishes */}
+        <Link to="/admin/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity shrink-0">
           <div className="h-9 w-9 rounded bg-[#DB313E] text-white flex items-center justify-center font-bold">
             ML
           </div>
-          <div className="leading-tight">
+          <div className="leading-tight min-w-max">
             <p className="text-sm font-semibold text-gray-900">
               Mentor Live
             </p>
@@ -58,8 +59,8 @@ const AdminNavbar: React.FC = () => {
           </div>
         </Link>
 
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+        {/* Desktop Nav - Changed hidden md:flex to hidden lg:flex */}
+        <nav className="hidden lg:flex items-center gap-4 xl:gap-6 text-sm font-medium overflow-x-auto no-scrollbar pl-4">
           {navItems.map((item) => (
             <NavLink
               key={item.path}
@@ -72,15 +73,15 @@ const AdminNavbar: React.FC = () => {
 
           <button
             onClick={handleLogout}
-            className="text-[#DB313E] cursor-pointer"
+            className="text-[#DB313E] cursor-pointer whitespace-nowrap ml-2"
           >
             Logout
           </button>
         </nav>
 
-        {/* Mobile Toggle */}
+        {/* Mobile Toggle - Changed md:hidden to lg:hidden */}
         <button
-          className="md:hidden text-gray-800"
+          className="lg:hidden text-gray-800 shrink-0 ml-4"
           onClick={() => setOpen(!open)}
           aria-label="Toggle menu"
         >
@@ -104,39 +105,36 @@ const AdminNavbar: React.FC = () => {
         </button>
       </div>
 
-      {/* Mobile Menu */}
-      {/* Mobile Menu */}
-{open && (
-  <div className="md:hidden border-t border-gray-200 bg-white px-4 py-4">
-    <nav className="flex flex-col space-y-4 text-sm">
-      {navItems.map((item) => (
-        <NavLink
-          key={item.path}
-          to={item.path}
-          onClick={() => setOpen(false)}
-          className={({ isActive }) =>
-            `block w-full ${
-              isActive
-                ? "text-[#DB313E] font-semibold"
-                : "text-gray-700 hover:text-[#DB313E]"
-            }`
-          }
-        >
-          {item.label}
-        </NavLink>
-      ))}
+      {/* Mobile Menu - Changed md:hidden to lg:hidden */}
+      {open && (
+        <div className="lg:hidden border-t border-gray-200 bg-white px-4 py-4 absolute w-full shadow-md">
+          <nav className="flex flex-col space-y-4 text-sm">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                onClick={() => setOpen(false)}
+                className={({ isActive }) =>
+                  `block w-full ${
+                    isActive
+                      ? "text-[#DB313E] font-semibold"
+                      : "text-gray-700 hover:text-[#DB313E]"
+                  }`
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
 
-     <button
-  onClick={handleLogout}
-  className="block w-full text-left text-[#DB313E] font-medium pt-3 border-t border-gray-200 cursor-pointer transition-opacity hover:opacity-80"
->
-  Logout
-</button>
-
-    </nav>
-  </div>
-)}
-
+            <button
+              onClick={handleLogout}
+              className="block w-full text-left text-[#DB313E] font-medium pt-3 border-t border-gray-200 cursor-pointer transition-opacity hover:opacity-80"
+            >
+              Logout
+            </button>
+          </nav>
+        </div>
+      )}
     </header>
   );
 };

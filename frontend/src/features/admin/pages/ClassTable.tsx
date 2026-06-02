@@ -9,12 +9,7 @@ import type { Column } from "../components/AdminTable";
 import NameFormModal from "../components/NameFormModal/NameFormModal";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
-type ClassRow = {
-  _id: string;
-  name: string;
-  isDeleted: boolean;
-};
-
+import type { ClassRow } from "../../../shared/types/class.types";
 export default function ClassPage() {
   const [classes, setClasses] = useState<ClassRow[]>([]);
   const [loading, setLoading] = useState(false);

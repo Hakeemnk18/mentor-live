@@ -39,7 +39,7 @@ const formatTime = (time: string) => {
   });
 };
 
-const FacultyDetailsPage: React.FC = () => {
+const FacultyDetailsPage = () => {
   const location = useLocation();
   const { facultyId = "", chapterId, syllabusId = "", classId = "" } = (location.state ?? {}) as {
     facultyId?: string;
@@ -87,7 +87,6 @@ const FacultyDetailsPage: React.FC = () => {
   });
 
   const availableSlots = slots ?? [];
-console.log("slots:", availableSlots); // 👈 add here
   // Use selected slot data if available, otherwise fall back to initial slot from faculty
   const activeSlot = selectedSlotData ?? faculty?.slot;
   const poolCount = activeSlot?.pool?.length ?? 0;

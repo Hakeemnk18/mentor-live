@@ -1,4 +1,5 @@
-import type { ApiResponse } from "../../../shared/types/api.types"; 
+import type { ApiResponse } from "../../../shared/types/common.types";
+ 
 
 export interface AuthUser {
   id: string;

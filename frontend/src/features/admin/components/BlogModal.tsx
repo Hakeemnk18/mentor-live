@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import type { Blog, BlogPayload } from "../../../api/blog.api";
+import { useState } from "react";
+import type { Blog, BlogPayload } from "../../../shared/types/blog.types";
 
 interface Props {
   open: boolean;
@@ -10,6 +10,22 @@ interface Props {
   onSubmit: (payload: BlogPayload) => Promise<void>;
 }
 
+type FormState = {
+  author: string;
+  heading: string;
+  description: string;
+  content: string;
+  errors: Record<string, string>;
+};
+
+const emptyForm: FormState = {
+  author: "",
+  heading: "",
+  description: "",
+  content: "",
+  errors: {},
+};
+
 export default function BlogModal({
   open,
   mode,
@@ -18,72 +34,70 @@ export default function BlogModal({
   onClose,
   onSubmit,
 }: Props) {
-  const [author, setAuthor] = useState("");
-  const [heading, setHeading] = useState("");
-  const [description, setDescription] = useState("");
-  const [content, setContent] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [form, setForm] = useState<FormState>(emptyForm);
 
-  useEffect(() => {
-    if (open && mode === "edit" && initialData) {
-      setAuthor(initialData.author);
-      setHeading(initialData.heading);
-      setDescription(initialData.description);
-      setContent(initialData.content ?? "");
-    } else if (open && mode === "create") {
-      setAuthor("");
-      setHeading("");
-      setDescription("");
-      setContent("");
+  const [prevOpen, setPrevOpen] = useState(false);
+  const [prevInitialData, setPrevInitialData] = useState<(Blog & { content?: string }) | undefined>(undefined);
+  if (open !== prevOpen || (open && initialData !== prevInitialData)) {
+    setPrevOpen(open);
+    setPrevInitialData(initialData);
+    if (open) {
+      if (mode === "edit" && initialData) {
+        setForm({
+          author: initialData.author,
+          heading: initialData.heading,
+          description: initialData.description,
+          content: initialData.content ?? "",
+          errors: {},
+        });
+      } else {
+        setForm(emptyForm);
+      }
     }
-    setErrors({});
-  }, [open, mode, initialData]);
+  }
 
   if (!open) return null;
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!author.trim()) {
+    if (!form.author.trim()) {
       e.author = "Author is required";
-    } else if (author.trim().length < 2) {
+    } else if (form.author.trim().length < 2) {
       e.author = "Author must be at least 2 characters";
-    } else if (author.trim().length > 100) {
+    } else if (form.author.trim().length > 100) {
       e.author = "Author must be under 100 characters";
     }
-    if (!heading.trim()) {
+    if (!form.heading.trim()) {
       e.heading = "Heading is required";
-    } else if (heading.trim().length < 5) {
+    } else if (form.heading.trim().length < 5) {
       e.heading = "Heading must be at least 5 characters";
-    } else if (heading.trim().length > 150) {
+    } else if (form.heading.trim().length > 150) {
       e.heading = "Heading must be under 150 characters";
     }
-    if (!description.trim()) {
+    if (!form.description.trim()) {
       e.description = "Description is required";
-    } else if (description.trim().length < 20) {
+    } else if (form.description.trim().length < 20) {
       e.description = "Description must be at least 20 characters";
-    } else if (description.trim().length > 300) {
+    } else if (form.description.trim().length > 300) {
       e.description = "Description must be under 300 characters";
     }
-    if (!content.trim()) {
+    if (!form.content.trim()) {
       e.content = "Content is required";
-    } else if (content.trim().length < 50) {
+    } else if (form.content.trim().length < 50) {
       e.content = "Content must be at least 50 characters";
     }
     return e;
   };
 
-  const clearFieldError = (field: string) =>
-    setErrors((prev) => { const next = { ...prev }; delete next[field]; return next; });
-
   const handleSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     const errs = validate();
-    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    if (Object.keys(errs).length > 0) { setForm(prev => ({ ...prev, errors: errs })); return; }
     await onSubmit({
-      author: author.trim(),
-      heading: heading.trim(),
-      description: description.trim(),
-      content: content.trim(),
+      author: form.author.trim(),
+      heading: form.heading.trim(),
+      description: form.description.trim(),
+      content: form.content.trim(),
     });
   };
 
@@ -119,26 +133,26 @@ export default function BlogModal({
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Author *</label>
               <input
-                value={author}
-                onChange={(e) => { setAuthor(e.target.value); clearFieldError("author"); }}
+                value={form.author}
+                onChange={(e) => { const v = e.target.value; setForm(prev => { const errors = { ...prev.errors }; delete errors.author; return { ...prev, author: v, errors }; }); }}
                 maxLength={100}
                 placeholder="e.g. Muhammed Hakeem"
-                className={inp(errors.author)}
+                className={inp(form.errors.author)}
               />
-              {errors.author && <p className="text-xs text-red-500 mt-0.5">{errors.author}</p>}
+              {form.errors.author && <p className="text-xs text-red-500 mt-0.5">{form.errors.author}</p>}
             </div>
 
             {/* Heading */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Heading *</label>
               <input
-                value={heading}
-                onChange={(e) => { setHeading(e.target.value); clearFieldError("heading"); }}
+                value={form.heading}
+                onChange={(e) => { const v = e.target.value; setForm(prev => { const errors = { ...prev.errors }; delete errors.heading; return { ...prev, heading: v, errors }; }); }}
                 maxLength={150}
                 placeholder="e.g. Understanding Node.js"
-                className={inp(errors.heading)}
+                className={inp(form.errors.heading)}
               />
-              {errors.heading && <p className="text-xs text-red-500 mt-0.5">{errors.heading}</p>}
+              {form.errors.heading && <p className="text-xs text-red-500 mt-0.5">{form.errors.heading}</p>}
             </div>
 
             {/* Description */}
@@ -146,18 +160,18 @@ export default function BlogModal({
               <label className="block text-xs font-medium text-gray-600 mb-1">Description *</label>
               <textarea
                 rows={2}
-                value={description}
-                onChange={(e) => { setDescription(e.target.value); clearFieldError("description"); }}
+                value={form.description}
+                onChange={(e) => { const v = e.target.value; setForm(prev => { const errors = { ...prev.errors }; delete errors.description; return { ...prev, description: v, errors }; }); }}
                 maxLength={300}
                 placeholder="Short summary of the post…"
-                className={inp(errors.description) + " resize-none"}
+                className={inp(form.errors.description) + " resize-none"}
               />
               <div className="flex items-center justify-between mt-0.5">
-                {errors.description
-                  ? <p className="text-xs text-red-500">{errors.description}</p>
+                {form.errors.description
+                  ? <p className="text-xs text-red-500">{form.errors.description}</p>
                   : <span />}
-                <span className={`text-xs ${description.length > 280 ? "text-red-500" : "text-gray-400"}`}>
-                  {description.length}/300
+                <span className={`text-xs ${form.description.length > 280 ? "text-red-500" : "text-gray-400"}`}>
+                  {form.description.length}/300
                 </span>
               </div>
             </div>
@@ -167,17 +181,17 @@ export default function BlogModal({
               <label className="block text-xs font-medium text-gray-600 mb-1">Content *</label>
               <textarea
                 rows={8}
-                value={content}
-                onChange={(e) => { setContent(e.target.value); clearFieldError("content"); }}
+                value={form.content}
+                onChange={(e) => { const v = e.target.value; setForm(prev => { const errors = { ...prev.errors }; delete errors.content; return { ...prev, content: v, errors }; }); }}
                 placeholder="Full blog content…"
-                className={inp(errors.content) + " resize-y"}
+                className={inp(form.errors.content) + " resize-y"}
               />
               <div className="flex items-center justify-between mt-0.5">
-                {errors.content
-                  ? <p className="text-xs text-red-500">{errors.content}</p>
+                {form.errors.content
+                  ? <p className="text-xs text-red-500">{form.errors.content}</p>
                   : <span />}
-                <span className={`text-xs ${content.length > 9500 ? "text-red-500" : "text-gray-400"}`}>
-                  {content.length.toLocaleString()} chars
+                <span className={`text-xs ${form.content.length > 9500 ? "text-red-500" : "text-gray-400"}`}>
+                  {form.content.length.toLocaleString()} chars
                 </span>
               </div>
             </div>
