@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { mapVariantsToSyllabusAndClass } from "../../../api/subject.api";
 import SearchableSelect from "../../../shared/components/SearchableSelect";
-import type { SyllabusAndClassPayload, CreateSubjectPayload, VariantRow } from "../../../shared/types/subject.types";
+import type { CreateSubjectPayload, SubjectFormVariant } from "../../../shared/types/subject.types";
 type Props = {
   open: boolean;
   mode: "create" | "edit";
   initialData?: {
     _id?: string;
     name: string;
-    variants: VariantRow[];
+    variants: SubjectFormVariant[];
   };
   onClose: () => void;
 
@@ -17,7 +17,7 @@ type Props = {
   onUpdateName: (data: { _id: string; name: string }) => void;
   onAddVariants: (data: {
     _id: string;
-    variants: VariantRow[];
+    variants: SubjectFormVariant[];
   }) => void;
 
   loading?: boolean;
@@ -40,8 +40,8 @@ export default function SubjectFormModal({
   console.log("initial data recieved ", initialData);
   const [name, setName] = useState("");
   
-  const [existingVariants, setExistingVariants] = useState<VariantRow[]>([]);
-  const [newVariants, setNewVariants] = useState<VariantRow[]>([
+  const [existingVariants, setExistingVariants] = useState<SubjectFormVariant[]>([]);
+  const [newVariants, setNewVariants] = useState<SubjectFormVariant[]>([
     { syllabusId: "", classId: "" },
   ]);
 
@@ -63,9 +63,6 @@ export default function SubjectFormModal({
 
   if (!open) return null;
 
-  const hasValidNewVariant = newVariants.some((v) => v.syllabusId && v.classId);
-
-  const isValid = name.trim() && (mode === "edit" || hasValidNewVariant);
   const canCreate =
     name.trim() && newVariants.some((v) => v.syllabusId && v.classId);
 

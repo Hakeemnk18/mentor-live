@@ -7,14 +7,14 @@ export type FacultySlotPayload = {
   time: string; // ISO string
 };
 
+/** subjects is now an array of { variantId, price } — price lives per variant */
 export type CreateFacultyPayload = {
   name: string;
   qualifications: string[];
   description: string;
   demoClass: string;
   image: FacultyImagePayload;
-  price: number;
-  subjects: string[];
+  subjects: { variantId: string; price: number }[];
   slots: FacultySlotPayload[];
 };
 
@@ -23,9 +23,8 @@ export type UpdateFacultyPayload = {
   qualifications?: string[];
   description?: string;
   demoClass?: string;
-  price?: number;
   image?: { url: string; publicId: string };
-  subjects?: string[];
+  subjects?: { variantId: string; price: number }[];
 };
 
 export type FacultyListParams = {
@@ -60,12 +59,13 @@ export type FacultyRow = {
   description: string;
   demoClass: string;
   image: string | { url: string; publicId: string };
-  price: number;
   isDeleted: boolean;
 };
 
+/** price is now per subject offering, not top-level */
 export type SubjectOffering = {
   id: string;
+  price: number;
   subject: { id: string; name: string };
   class: { id: string; name: string };
   syllabus: { id: string; name: string };
@@ -93,7 +93,6 @@ export type FacultyData = {
   qualifications: string[];
   description: string;
   demoClass: string;
-  price: number;
   image: string | { url: string; publicId: string };
   isDeleted: boolean;
   subjectOffering: SubjectOffering[];
@@ -112,6 +111,8 @@ export type SubjectGroup = {
   variants: SubjectVariant[];
   selected: string[];
   selectedVariants: SubjectVariant[];
+  /** price per variantId */
+  prices: Record<string, number>;
 };
 
 export type FacultyModalData = {
@@ -119,7 +120,6 @@ export type FacultyModalData = {
   qualifications?: string[];
   description?: string;
   demoClass?: string;
-  price?: number | "";
   image?: string | { url: string; publicId: string };
   subjectOffering?: SubjectOffering[];
   slots?: {
@@ -142,9 +142,8 @@ export type FacultyInitialData = {
   qualifications: string[];
   description: string;
   demoClass: string;
-  price: number;
   image: string | { url: string; publicId: string };
-  subjects: string[];
+  subjects: { variantId: string; price: number }[];
 };
 
 export type SubjectOfferingUI = {

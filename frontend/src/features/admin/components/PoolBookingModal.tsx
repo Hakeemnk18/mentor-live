@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import {
   getPoolStudents,
@@ -114,7 +114,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed }: Prop
       toast.success("Pool booking confirmed");
       onConfirmed();
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       handleApiError(err);
     } finally {
       setConfirming(false);
@@ -124,10 +124,10 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed }: Prop
   /* ── remove student ── */
   const handleRemove = async (student: PoolStudent) => {
     try {
-      setRemovingId(student.id);
+      setRemovingId(student.studentId);
       await removeStudentFromPool({
         facultyId: booking.faculty.id,
-        userId: student.id,
+        userId: student.studentId,
         mode: booking.mode,
         ...(booking.mode === "slot"
           ? { slotId: booking.slot!.id }
@@ -137,10 +137,10 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed }: Prop
       // update local list
       setDetail((prev) =>
         prev
-          ? { ...prev, student: prev.student.filter((s) => s.id !== student.id) }
+          ? { ...prev, students: prev.students.filter((s) => s.studentId !== student.studentId) }
           : prev
       );
-    } catch (err: any) {
+    } catch (err) {
       handleApiError(err);
     } finally {
       setRemovingId(null);
@@ -201,12 +201,12 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed }: Prop
               </p>
               {loadingDetail ? (
                 <p className="text-sm text-gray-400">Loading students…</p>
-              ) : !detail || detail.student.length === 0 ? (
+              ) : !detail || detail.students.length === 0 ? (
                 <p className="text-sm text-gray-400">No students found.</p>
               ) : (
                 <div className="divide-y divide-gray-100 rounded-lg border border-gray-200 overflow-hidden">
-                  {detail.student.map((s) => (
-                    <div key={s.id} className="flex items-center justify-between px-4 py-2.5">
+                  {detail.students.map((s) => (
+                    <div key={s.studentId} className="flex items-center justify-between px-4 py-2.5">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600">
                           {s.name.charAt(0).toUpperCase()}
@@ -214,18 +214,18 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed }: Prop
                         <div>
                           <p className="text-sm font-medium text-gray-800">{s.name}</p>
                           <span className={`text-xs px-1.5 py-0.5 rounded ${
-                            s.isContacted ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+                            s.contactStatus === "contacted" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
                           }`}>
-                            {s.isContacted ? "Contacted" : "Not Contacted"}
+                            {s.contactStatus === "contacted" ? "Contacted" : "Not Contacted"}
                           </span>
                         </div>
                       </div>
                       <button
                         onClick={() => handleRemove(s)}
-                        disabled={removingId === s.id}
+                        disabled={removingId === s.studentId}
                         className="text-xs px-2.5 py-1 text-red-600 border border-red-200 rounded-md hover:bg-red-50 disabled:opacity-50 transition-colors"
                       >
-                        {removingId === s.id ? "Removing…" : "Remove"}
+                        {removingId === s.studentId ? "Removing…" : "Remove"}
                       </button>
                     </div>
                   ))}

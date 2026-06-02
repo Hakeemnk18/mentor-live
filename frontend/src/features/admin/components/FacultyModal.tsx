@@ -39,8 +39,7 @@ type FacultySubmitPayload = {
   qualifications: string[];
   description: string;
   demoClass: string;
-  price: number;
-  subjects: string[];
+  subjects: { variantId: string; price: number }[];
   image?: ImagePayload;
   slots?: { time: string }[];
   chapterSlots?: { chapter: string }[];
@@ -97,7 +96,6 @@ export default function FacultyModal({
   const [qualifications, setQualifications] = useState("");
   const [description, setDescription] = useState("");
   const [demoClass, setDemoClass] = useState("");
-  const [price, setPrice] = useState<number | "">("");
 
   /* ---------- Image ---------- */
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -139,7 +137,6 @@ export default function FacultyModal({
       setQualifications("");
       setDescription("");
       setDemoClass("");
-      setPrice("");
       setImageUrl(null);
       setImageFile(null);
       setImagePayload(null);
@@ -166,7 +163,6 @@ export default function FacultyModal({
       setQualifications((initialData.qualifications ?? []).join(", "));
       setDescription(initialData.description ?? "");
       setDemoClass(initialData.demoClass ?? "");
-      setPrice(initialData.price ?? "");
 
       const initImageUrl = typeof initialData.image === "object" && initialData.image !== null 
         ? initialData.image.url 
@@ -180,7 +176,7 @@ export default function FacultyModal({
           : null
       );
 
-      // Time slots ” load ALL, preserving isAvailable state
+      // Time slots " load ALL, preserving isAvailable state
       setTimeSlots(
         (initialData.slots ?? []).map((s) => ({
           id: s.id,
@@ -190,7 +186,7 @@ export default function FacultyModal({
         }))
       );
 
-      // Chapter slots ” load ALL, preserving isAvailable state
+      // Chapter slots " load ALL, preserving isAvailable state
       setChapterSlots(
         (initialData.chapterSlots ?? []).map((cs) => ({
           id: cs.id,
@@ -227,11 +223,13 @@ export default function FacultyModal({
             variants: [],
             selected: [],
             selectedVariants: [],
+            prices: {},
           });
         }
-        // o.id IS the SubjectVariant's _id (backend maps so._id ’ o.id)
+        // o.id IS the SubjectVariant's _id (backend maps so._id → o.id)
         map.get(key)!.selected.push(o.id);
         map.get(key)!.selectedVariants.push({ _id: o.id, subjectName: o.subject.name });
+        map.get(key)!.prices[o.id] = o.price ?? 0;
       });
 
       // Fetch variants for all groups in parallel
@@ -284,7 +282,7 @@ export default function FacultyModal({
   /* ================================================================ */
 
   function makeEmptyGroup(): SubjectGroup {
-    return { id: ++groupCounter, syllabusId: "", classId: "", variants: [], selected: [], selectedVariants: [] };
+    return { id: ++groupCounter, syllabusId: "", classId: "", variants: [], selected: [], selectedVariants: [], prices: {} };
   }
 
   const addGroup = () => setSubjectGroups((prev) => [...prev, makeEmptyGroup()]);
@@ -305,7 +303,7 @@ export default function FacultyModal({
               [field]: value,
               // When syllabus changes, also clear classId; always clear variants
               // so the available-subjects list refreshes for the new combo.
-              // Do NOT wipe `selected` or `selectedVariants` â€” that would
+              // Do NOT wipe `selected` or `selectedVariants` â€" that would
               // erase the user's existing subject picks.
               ...(field === "syllabusId" ? { classId: "" } : {}),
               variants: [],
@@ -342,6 +340,12 @@ export default function FacultyModal({
         if (g.id !== groupId) return g;
         const isSelected = g.selected.includes(variantId);
         const variant = g.variants.find((v) => v._id === variantId);
+        const newPrices = { ...g.prices };
+        if (isSelected) {
+          delete newPrices[variantId];
+        } else {
+          newPrices[variantId] = 0;
+        }
         return {
           ...g,
           selected: isSelected
@@ -350,8 +354,19 @@ export default function FacultyModal({
           selectedVariants: isSelected
             ? g.selectedVariants.filter((v) => v._id !== variantId)
             : [...g.selectedVariants, ...(variant ? [variant] : [])],
+          prices: newPrices,
         };
       })
+    );
+  };
+
+  const updateVariantPrice = (groupId: number, variantId: string, price: number) => {
+    setSubjectGroups((prev) =>
+      prev.map((g) =>
+        g.id === groupId
+          ? { ...g, prices: { ...g.prices, [variantId]: price } }
+          : g
+      )
     );
   };
 
@@ -371,7 +386,7 @@ export default function FacultyModal({
     if (!isNaN(d.getTime())) {
       return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
     }
-    // Already "HH:MM" or similar â€” return as-is
+    // Already "HH:MM" or similar â€" return as-is
     return raw;
   };
 
@@ -397,7 +412,7 @@ export default function FacultyModal({
     if (mode === "edit" && facultyId) {
       try {
         setSlotWorking(true);
-await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns no slot ID â€” re-fetch to get fresh slots with real IDs
+await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns no slot ID â€" re-fetch to get fresh slots with real IDs
         const updated = await getFacultyById(facultyId) as FacultyData;
         setTimeSlots(
           (updated.slots ?? []).map((s) => ({
@@ -483,7 +498,7 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
       try {
         setChapterWorking(true);
         await addFacultyChapterSlot(facultyId, { chapter: chapterId });
-        // Backend returns no slot ID â€” re-fetch to get fresh chapter slots with real IDs
+        // Backend returns no slot ID â€" re-fetch to get fresh chapter slots with real IDs
         const updated = await getFacultyById(facultyId) as FacultyData;
         setChapterSlots(
           (updated.chapterSlots ?? []).map((cs) => ({
@@ -574,16 +589,17 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
         e.demoClass = "Must be a valid URL (starting with https://)";
       }
     }
-    if (!price || Number(price) <= 0) {
-      e.price = "Price must be greater than 0";
-    } else if (Number(price) > 999999) {
-      e.price = "Price must be under 9,99,999";
-    }
     if (mode === "create" && !imageFile && !imagePayload)
       e.image = "Image is required";
     const allSelected = subjectGroups.flatMap((g) => g.selected);
-    if (allSelected.length === 0)
+    if (allSelected.length === 0) {
       e.subjects = "Select at least one subject variant";
+    } else {
+      const missingPrice = subjectGroups.some((g) =>
+        g.selected.some((id) => !g.prices[id] || g.prices[id] <= 0)
+      );
+      if (missingPrice) e.subjects = "Enter a price > 0 for every selected subject";
+    }
     if (mode === "create" && timeSlots.length === 0)
       e.slots = "Add at least one time slot";
     // if (mode === "create" && chapterSlots.length === 0)
@@ -628,18 +644,22 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
           .filter(Boolean),
         description: description.trim(),
         demoClass: demoClass.trim(),
-        price: Number(price),
-        subjects: subjectGroups.flatMap((g) => g.selected),
+        subjects: subjectGroups.flatMap((g) =>
+          g.selected.map((variantId) => ({
+            variantId,
+            price: g.prices[variantId] ?? 0,
+          }))
+        ),
       };
 
       // Only include image when the user actually picked a new file.
       // imagePayload is already set from initialData in edit mode (for display),
-      // so finalImage alone is always truthy â€” imageFile is the real new-image signal.
+      // so finalImage alone is always truthy â€" imageFile is the real new-image signal.
       if (imageFile && finalImage) {
         payload.image = finalImage;
       }
 
-      // Slots/chapters only bundled in CREATE â€” edit handles them via immediate APIs
+      // Slots/chapters only bundled in CREATE â€" edit handles them via immediate APIs
       if (mode === "create") {
         payload.slots = slotsPayload;
         payload.chapterSlots = chapterSlots.map((c) => ({ chapter: c.chapter }));
@@ -676,7 +696,7 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
           {/* Body */}
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
 
-            {/* â”€â”€ Basic Info â”€â”€ */}
+            {/* â"€â"€ Basic Info â"€â"€ */}
             <Section title="Basic Information">
               <Field label="Faculty Name" error={errors.name}>
                 <input
@@ -689,7 +709,8 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
               </Field>
               <Field
                 label="Qualifications"
-                hint="Comma-separated ” e.g. MSc Physics, B.Ed"
+                hint="Comma-separated "
+                //  e.g. MSc Physics, B.Ed"
                 error={errors.qualifications}
               >
                 <input
@@ -715,33 +736,17 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
                   </span>
                 </div>
               </Field>
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Demo Class URL" error={errors.demoClass}>
-                  <input
-                    value={demoClass}
-                    onChange={(e) => { setDemoClass(e.target.value); clearFieldError("demoClass"); }}
-                    placeholder="https://youtu.be/..."
-                    className={inp(!!errors.demoClass)}
-                  />
-                </Field>
-                <Field label="Price" error={errors.price}>
-                  <input
-                    type="number"
-                    value={price}
-                    min={1}
-                    max={999999}
-                    onChange={(e) => {
-                      setPrice(e.target.value === "" ? "" : Number(e.target.value));
-                      clearFieldError("price");
-                    }}
-                    placeholder="e.g. 1500"
-                    className={inp(!!errors.price)}
-                  />
-                </Field>
-              </div>
+              <Field label="Demo Class URL" error={errors.demoClass}>
+                <input
+                  value={demoClass}
+                  onChange={(e) => { setDemoClass(e.target.value); clearFieldError("demoClass"); }}
+                  placeholder="https://youtu.be/..."
+                  className={inp(!!errors.demoClass)}
+                />
+              </Field>
             </Section>
 
-            {/* â”€â”€ Image â”€â”€ */}
+            {/* â"€â"€ Image â"€â"€ */}
             <Section title="Faculty Image">
               <div className="flex items-center gap-4">
                 {imageUrl && (
@@ -788,14 +793,14 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
               )}
             </Section>
 
-            {/* â”€â”€ Subjects â”€â”€ */}
+            {/* â"€â"€ Subjects â"€â"€ */}
             <Section title="Subjects">
               {errors.subjects && (
                 <p className="text-xs text-red-500 mb-2">{errors.subjects}</p>
               )}
               <div className="space-y-4">
                 {subjectGroups.map((group, idx) => {
-                  // selectedVariants always holds full objects â€” no dependency on variants loading
+                  // selectedVariants always holds full objects â€" no dependency on variants loading
                   const selected = group.selectedVariants;
                   const available = group.variants.filter(
                     (v) => !group.selected.includes(v._id)
@@ -838,34 +843,52 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
                         />
                       </div>
 
-                      {/* Selected subjects â€” with explicit — remove buttn */}
+                      {/* Selected subjects with price input per variant */}
                       {selected.length > 0 && (
                         <div>
                           <p className="text-xs text-gray-400 mb-1">Selected</p>
-                          <div className="flex flex-wrap gap-2">
+                          <div className="space-y-2">
                             {selected.map((v) => (
-                              <span
+                              <div
                                 key={v._id}
-                                className="flex items-center gap-1 px-3 py-1 text-xs rounded-full bg-[#DB313E] text-white"
+                                className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg border border-red-200 bg-red-50"
                               >
-                                {v.subjectName}
+                                <span className="flex-1 font-medium text-[#DB313E] truncate">
+                                  {v.subjectName}
+                                </span>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <span className="text-gray-500 text-xs">{String.fromCharCode(8377)}</span>
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    value={group.prices[v._id] || String()}
+                                    onChange={(e) => {
+                                      updateVariantPrice(
+                                        group.id,
+                                        v._id,
+                                        Number(e.target.value) || 0
+                                      );
+                                      clearFieldError(`subjects`);
+                                    }}
+                                    placeholder="Price"
+                                    className="w-20 px-1.5 py-0.5 border border-gray-300 rounded text-gray-800 text-xs focus:outline-none focus:border-[#DB313E]"
+                                  />
+                                </div>
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    toggleVariant(group.id, v._id)
-                                  }
-                                  className="ml-1 hover:opacity-75"
+                                  onClick={() => toggleVariant(group.id, v._id)}
+                                  className="text-red-400 hover:text-red-600 leading-none"
                                   title="Remove"
                                 >
-                                  
+                                  {String.fromCharCode(215)}
                                 </button>
-                              </span>
+                              </div>
                             ))}
                           </div>
                         </div>
                       )}
 
-                      {/* Available subjects â€” muted clickable pills */}
+                      {/* Available subjects â€" muted clickable pills */}
                       {available.length > 0 && (
                         <div>
                           <p className="text-xs text-gray-400 mb-1">
@@ -907,7 +930,7 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
               </button>
             </Section>
 
-            {/* â”€â”€ Time Slots â”€â”€ */}
+            {/* â"€â"€ Time Slots â"€â"€ */}
             <Section title="Time Slots">
               {errors.slots && (
                 <p className="text-xs text-red-500 mb-2">{errors.slots}</p>
@@ -995,7 +1018,7 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
               )}
             </Section>
 
-            {/* â”€â”€ Chapter Slots â”€â”€ */}
+            {/* â"€â"€ Chapter Slots â"€â"€ */}
             <Section title="Chapter Slots">
               {errors.chapters && (
                 <p className="text-xs text-red-500 mb-2">{errors.chapters}</p>
