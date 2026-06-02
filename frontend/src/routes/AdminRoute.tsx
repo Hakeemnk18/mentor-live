@@ -11,6 +11,7 @@ import TestimonialsPage from "../features/admin/pages/TestimonialsPage"
 import BlogsPage from "../features/admin/pages/BlogsPage"
 import BannersPage from "../features/admin/pages/BannersPage"
 import StudentsPage from "../features/admin/pages/StudentsPage"
+import UsersPage from "../features/admin/pages/UsersPage"
 import AdminDashboard from "../features/admin/pages/AdminDashboard"
 import LoginPage from "../features/auth/pages/LoginPage"
 
@@ -130,6 +131,14 @@ const adminRoutes = [
         element: (
             <AdminBootstrap>
                 <StudentsPage />
+            </AdminBootstrap>
+        )
+    },
+    {
+        path: "users",
+        element: (
+            <AdminBootstrap>
+                <UsersPage />
             </AdminBootstrap>
         )
     },

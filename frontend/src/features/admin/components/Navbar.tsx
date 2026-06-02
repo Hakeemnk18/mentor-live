@@ -15,6 +15,7 @@ const navItems = [
   { label: "Blogs", path: "/admin/blogs" },
   { label: "Banners", path: "/admin/banners" },
   { label: "Students", path: "/admin/students" },
+  { label: "Users", path: "/admin/users" },
 ];
 
 const AdminNavbar: React.FC = () => {
