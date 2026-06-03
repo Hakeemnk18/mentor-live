@@ -14,7 +14,9 @@ type SubjectOfferingRow = {
   classId: string;
   subjectVariantId: string;
   label: string;
+  price: number;
 };
+
 /* ================================================================== */
 /* TYPES                                                                */
 /* ================================================================== */
@@ -56,7 +58,6 @@ export default function EditFacultyBasicModal({
   const [qualifications, setQualifications] = useState("");
   const [description, setDescription] = useState("");
   const [demoClass, setDemoClass] = useState("");
-  const [price, setPrice] = useState<number | "">(0);
 
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -70,6 +71,7 @@ export default function EditFacultyBasicModal({
   const [classId, setClassId] = useState("");
   const [subjectVariants, setSubjectVariants] = useState<{ _id: string; subjectName: string }[]>([]);
   const [subjectVariantId, setSubjectVariantId] = useState("");
+  const [newSubjectPrice, setNewSubjectPrice] = useState<number | "">("");
 
   /* ---------- Misc ---------- */
   const [cropOpen, setCropOpen] = useState(false);
@@ -88,7 +90,6 @@ export default function EditFacultyBasicModal({
     setQualifications((initialData.qualifications ?? []).join(", "));
     setDescription(initialData.description ?? "");
     setDemoClass(initialData.demoClass ?? "");
-    setPrice(initialData.price ?? 0);
     // image can be a string URL or an object { url, publicId }
     const img = initialData.image;
     if (typeof img === "object" && img !== null) {
@@ -114,6 +115,7 @@ export default function EditFacultyBasicModal({
         classId: o.class.id,
         subjectVariantId: o.id,
         label: `${o.subject.name} · ${o.class.name} · ${o.syllabus.name}`,
+        price: o.price ?? 0,
       }))
     );
   }, [initialData]);
@@ -153,6 +155,10 @@ export default function EditFacultyBasicModal({
       toast.error("Select syllabus, class, and subject variant");
       return;
     }
+    if (!newSubjectPrice || Number(newSubjectPrice) <= 0) {
+      toast.error("Enter a price greater than 0");
+      return;
+    }
 
     // Don't add duplicates
     if (subjectOfferings.some((s) => s.subjectVariantId === subjectVariantId)) {
@@ -171,6 +177,7 @@ export default function EditFacultyBasicModal({
         classId,
         subjectVariantId,
         label: `${varName} · ${clsName} · ${sylName}`,
+        price: Number(newSubjectPrice),
       },
     ]);
 
@@ -179,6 +186,7 @@ export default function EditFacultyBasicModal({
     setClassId("");
     setSubjectVariantId("");
     setSubjectVariants([]);
+    setNewSubjectPrice("");
     setAddingSubject(false);
   };
 
@@ -190,8 +198,10 @@ export default function EditFacultyBasicModal({
     const errs: Record<string, string> = {};
     if (!name.trim() || name.trim().length < 3) errs.name = "Name must be at least 3 characters";
     if (!description.trim() || description.trim().length < 10) errs.description = "Description must be at least 10 characters";
-    if (!price || Number(price) <= 0) errs.price = "Price must be greater than 0";
     if (!demoClass.trim()) errs.demoClass = "Demo class URL is required";
+    if (subjectOfferings.length === 0) errs.subjects = "At least one subject is required";
+    else if (subjectOfferings.some((s) => !s.price || s.price <= 0))
+      errs.subjects = "All subjects must have a price greater than 0";
 
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
@@ -220,8 +230,10 @@ export default function EditFacultyBasicModal({
           .filter(Boolean),
         description: description.trim(),
         demoClass: demoClass.trim(),
-        price: Number(price),
-        subjects: subjectOfferings.map((s) => s.subjectVariantId),
+        subjects: subjectOfferings.map((s) => ({
+          variantId: s.subjectVariantId,
+          price: s.price,
+        })),
       };
 
       // Always include image as {url, publicId} — backend requires it
@@ -263,7 +275,7 @@ export default function EditFacultyBasicModal({
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
 
-          {/* ── Basic Info ── */}
+          {/* Basic Info */}
           <Section title="Basic Information">
             <Field label="Faculty Name" error={errors.name}>
               <input
@@ -295,7 +307,7 @@ export default function EditFacultyBasicModal({
                 onChange={(e) => { setDescription(e.target.value); clearFieldError("description"); }}
                 rows={3}
                 maxLength={1000}
-                placeholder="Brief teaching background…"
+                placeholder="Brief teaching background..."
                 className={inp(!!errors.description) + " resize-none"}
               />
               <div className="flex justify-end mt-0.5">
@@ -305,33 +317,17 @@ export default function EditFacultyBasicModal({
               </div>
             </Field>
 
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Demo Class URL" error={errors.demoClass}>
-                <input
-                  value={demoClass}
-                  onChange={(e) => { setDemoClass(e.target.value); clearFieldError("demoClass"); }}
-                  placeholder="https://youtu.be/..."
-                  className={inp(!!errors.demoClass)}
-                />
-              </Field>
-              <Field label="Price (₹)" error={errors.price}>
-                <input
-                  type="number"
-                  value={price}
-                  min={1}
-                  max={999999}
-                  onChange={(e) => {
-                    setPrice(e.target.value === "" ? "" : Number(e.target.value));
-                    clearFieldError("price");
-                  }}
-                  placeholder="e.g. 1500"
-                  className={inp(!!errors.price)}
-                />
-              </Field>
-            </div>
+            <Field label="Demo Class URL" error={errors.demoClass}>
+              <input
+                value={demoClass}
+                onChange={(e) => { setDemoClass(e.target.value); clearFieldError("demoClass"); }}
+                placeholder="https://youtu.be/..."
+                className={inp(!!errors.demoClass)}
+              />
+            </Field>
           </Section>
 
-          {/* ── Image ── */}
+          {/* Image */}
           <Section title="Faculty Image">
             <div className="flex items-center gap-4">
               {imageUrl && (
@@ -350,7 +346,7 @@ export default function EditFacultyBasicModal({
                   {imageUrl ? "Change Image" : "Upload Image"}
                 </button>
                 <p className="mt-1 text-xs text-gray-400">
-                  Square image, min 300×300 recommended
+                  Square image, min 300x300 recommended
                 </p>
               </div>
               <input
@@ -378,24 +374,49 @@ export default function EditFacultyBasicModal({
             )}
           </Section>
 
-          {/* ── Subjects ── */}
+          {/* Subjects */}
           <Section title="Subjects">
+            {errors.subjects && (
+              <p className="text-xs text-red-500 mb-2">{errors.subjects}</p>
+            )}
+
             {/* Existing subject offerings */}
             {subjectOfferings.length > 0 && (
               <div className="space-y-2">
                 {subjectOfferings.map((s) => (
                   <div
                     key={s.subjectVariantId}
-                    className="flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg bg-gray-50"
+                    className="flex items-center gap-3 px-3 py-2 border border-gray-200 rounded-lg bg-gray-50"
                   >
-                    <span className="text-sm text-gray-800">{s.label}</span>
+                    <span className="flex-1 text-sm text-gray-800">{s.label}</span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-xs text-gray-500">{String.fromCharCode(8377)}</span>
+                      <input
+                        type="number"
+                        min={1}
+                        value={s.price || String()}
+                        onChange={(e) => {
+                          const val = Number(e.target.value) || 0;
+                          setSubjectOfferings((prev) =>
+                            prev.map((x) =>
+                              x.subjectVariantId === s.subjectVariantId
+                                ? { ...x, price: val }
+                                : x
+                            )
+                          );
+                          clearFieldError(`subjects`);
+                        }}
+                        placeholder="Price"
+                        className="w-20 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:border-[#DB313E]"
+                      />
+                    </div>
                     <button
                       onClick={() =>
                         setSubjectOfferings((prev) =>
                           prev.filter((x) => x.subjectVariantId !== s.subjectVariantId)
                         )
                       }
-                      className="text-xs text-red-500 hover:text-red-600"
+                      className="text-xs text-red-500 hover:text-red-600 shrink-0"
                     >
                       Remove
                     </button>
@@ -444,10 +465,26 @@ export default function EditFacultyBasicModal({
                   />
                 )}
 
+                {subjectVariantId && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600 shrink-0">Price (Rs.)</span>
+                    <input
+                      type="number"
+                      min={1}
+                      value={newSubjectPrice}
+                      onChange={(e) =>
+                        setNewSubjectPrice(e.target.value === '' ? '' : Number(e.target.value))
+                      }
+                      placeholder="e.g. 1500"
+                      className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-[#DB313E]"
+                    />
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2">
                   <button
                     onClick={addSubjectOffering}
-                    disabled={!subjectVariantId}
+                    disabled={!subjectVariantId || !newSubjectPrice}
                     className="px-3 py-1.5 text-sm font-medium text-white bg-[#DB313E] rounded hover:bg-[#c22935] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Add
@@ -458,6 +495,7 @@ export default function EditFacultyBasicModal({
                       setSyllabusId("");
                       setClassId("");
                       setSubjectVariantId("");
+                      setNewSubjectPrice("");
                     }}
                     className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800"
                   >
@@ -490,7 +528,7 @@ export default function EditFacultyBasicModal({
             disabled={isLoading}
             className="px-4 py-2 text-sm font-medium text-white bg-[#DB313E] rounded hover:bg-[#c22935] disabled:opacity-50"
           >
-            {saving ? "Saving…" : "Save Changes"}
+            {saving ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </div>

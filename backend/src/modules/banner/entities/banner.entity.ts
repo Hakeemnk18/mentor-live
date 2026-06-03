@@ -5,69 +5,54 @@ export interface BannerProps {
     publicId: string;
   };
   description: string;
-  priority: number;
+  priority: number | null;
+  isShow?: boolean;
   isDeleted?: boolean;
 }
 
 export class Banner {
   public readonly id: string | null;
-  public readonly image: {
-    url: string;
-    publicId: string;
-  };
+  public readonly image: { url: string; publicId: string };
   public readonly description: string;
-  public readonly priority: number;
+  public readonly priority: number | null;
+  public readonly isShow: boolean;
   public readonly isDeleted: boolean;
 
   constructor(props: BannerProps) {
     this.id = props.id;
     this.image = props.image;
     this.description = props.description;
-    this.priority = props.priority;
+    this.priority = props.priority ?? null;
+    this.isShow = props.isShow ?? false;
     this.isDeleted = props.isDeleted ?? false;
   }
 
-  /** 🔼 Change banner priority */
+  show(priority: number): Banner {
+    return new Banner({ ...this, isShow: true, priority });
+  }
+
+  hide(): Banner {
+    return new Banner({ ...this, isShow: false });
+  }
+
   changePriority(priority: number): Banner {
-    if (priority < 1) {
-      throw new Error("Banner priority must be >= 1");
+    if (priority < 1 || priority > 5) {
+      throw new Error("Banner priority must be between 1 and 5");
     }
-
-    return new Banner({
-      ...this,
-      priority,
-    });
+    return new Banner({ ...this, priority });
   }
 
-  /** 📝 Update description */
   updateDescription(description: string): Banner {
-    if (!description.trim()) {
-      throw new Error("Banner description is required");
-    }
-
-    return new Banner({
-      ...this,
-      description: description.trim(),
-    });
+    if (!description.trim()) throw new Error("Banner description is required");
+    return new Banner({ ...this, description: description.trim() });
   }
 
-  /** 🖼️ Replace banner image */
   updateImage(image: { url: string; publicId: string }): Banner {
-    return new Banner({
-      ...this,
-      image,
-    });
+    return new Banner({ ...this, image });
   }
 
-  /** 🗑️ Soft delete (future use) */
   delete(): Banner {
-    if (this.isDeleted) {
-      throw new Error("Banner already deleted");
-    }
-
-    return new Banner({
-      ...this,
-      isDeleted: true,
-    });
+    if (this.isDeleted) throw new Error("Banner already deleted");
+    return new Banner({ ...this, isDeleted: true });
   }
 }

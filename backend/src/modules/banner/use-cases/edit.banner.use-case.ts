@@ -12,48 +12,42 @@ import type { IBannerRepository } from "../repository/banner.repository.interfac
 export class EditBannerUseCase implements IEditBannerUseCase {
   constructor(
     @inject("IBannerRepository")
-    private readonly _bannerRepository: IBannerRepository
+    private readonly _bannerRepository: IBannerRepository,
   ) {}
 
-  async execute(id: string, dto: CreateBannerRequestDto
-
-  ): Promise<void> {
-    //  Fetch existing banner
+  async execute(id: string, dto: CreateBannerRequestDto): Promise<void> {
     const existing = await this._bannerRepository.findById(id);
 
     if (!existing) {
       throw new CustomError(
         ResponseMessages.BANNER_NOT_FOUND,
-        HttpStatusCode.NOT_FOUND
+        HttpStatusCode.NOT_FOUND,
       );
     }
 
-    //  Priority uniqueness check (exclude self)
-    if (existing.priority !== dto.priority) {
-      const priorities = await this._bannerRepository.getAllPriorities();
+    /* If visible with a priority, check uniqueness (excluding self) */
+    const newIsShow = dto.isShow ?? existing.isShow;
+    const newPriority = dto.priority ?? existing.priority;
 
-      const conflict = priorities.some(
-        (priority) => priority === dto.priority
-      );
-
-      if (conflict) {
+    if (newIsShow && newPriority != null) {
+      const taken = await this._bannerRepository.getActivePriorities(id);
+      if (taken.includes(newPriority)) {
         throw new CustomError(
           ResponseMessages.BANNER_PRIORITY_ALREADY_EXISTS,
-          HttpStatusCode.BAD_REQUEST
+          HttpStatusCode.BAD_REQUEST,
         );
       }
     }
 
-    //  Rebuild domain entity (immutable update)
     const updated = new Banner({
       id: existing.id,
       image: dto.image,
       description: dto.description,
-      priority: dto.priority,
+      priority: dto.priority ?? existing.priority,
+      isShow: dto.isShow ?? existing.isShow,
       isDeleted: existing.isDeleted,
     });
 
-    //  Persist
     await this._bannerRepository.save(updated);
   }
 }

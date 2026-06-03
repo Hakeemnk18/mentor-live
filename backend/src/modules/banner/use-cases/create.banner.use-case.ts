@@ -1,4 +1,3 @@
-
 import { inject, injectable } from "tsyringe";
 import { CustomError } from "../../../core/errors/custom.error.js";
 import { ResponseMessages } from "../../../core/constants/response.message.js";
@@ -13,26 +12,27 @@ import type { IBannerRepository } from "../repository/banner.repository.interfac
 export class CreateBannerUseCase implements ICreateBannerUseCase {
   constructor(
     @inject("IBannerRepository")
-    private readonly _bannerRepository: IBannerRepository
+    private readonly _bannerRepository: IBannerRepository,
   ) {}
 
   async execute(dto: CreateBannerRequestDto): Promise<void> {
-    /* ---------- priority uniqueness check ---------- */
-    const priorities = await this._bannerRepository.getAllPriorities();
-
-    if (priorities.includes(dto.priority)) {
-      throw new CustomError(
-        ResponseMessages.BANNER_PRIORITY_ALREADY_EXISTS,
-        HttpStatusCode.BAD_REQUEST
-      );
+    /* If banner is set to visible, priority must be unique among visible banners */
+    if (dto.isShow && dto.priority != null) {
+      const taken = await this._bannerRepository.getActivePriorities();
+      if (taken.includes(dto.priority)) {
+        throw new CustomError(
+          ResponseMessages.BANNER_PRIORITY_ALREADY_EXISTS,
+          HttpStatusCode.BAD_REQUEST,
+        );
+      }
     }
 
-    /* ---------- create banner entity ---------- */
     const bannerEntity = new Banner({
       id: null,
       image: dto.image,
       description: dto.description,
-      priority: dto.priority,
+      priority: dto.priority ?? null,
+      isShow: dto.isShow ?? false,
       isDeleted: false,
     });
 
@@ -41,7 +41,7 @@ export class CreateBannerUseCase implements ICreateBannerUseCase {
     if (!banner) {
       throw new CustomError(
         ResponseMessages.BANNER_CREATION_FAILED,
-        HttpStatusCode.INTERNAL_SERVER_ERROR
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
       );
     }
   }

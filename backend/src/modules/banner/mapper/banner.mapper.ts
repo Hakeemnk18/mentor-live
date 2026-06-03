@@ -2,18 +2,13 @@ import { Banner } from "../entities/banner.entity.js";
 
 export class BannerMapper {
   static toDomain(bannerModelData: any): Banner | null {
-    if (!bannerModelData) {
-      return null;
-    }
+    if (!bannerModelData) return null;
 
     const idString =
       bannerModelData._id?.toString() || bannerModelData.id?.toString();
 
     if (!idString) {
-      console.error(
-        "Banner data from DB is missing an ID:",
-        bannerModelData
-      );
+      console.error("Banner data from DB is missing an ID:", bannerModelData);
       return null;
     }
 
@@ -24,8 +19,9 @@ export class BannerMapper {
         publicId: bannerModelData.image?.publicId,
       },
       description: bannerModelData.description,
-      priority: bannerModelData.priority,
-      isDeleted: bannerModelData.isDeleted,
+      priority: bannerModelData.priority ?? null,
+      isShow: bannerModelData.isShow ?? false,
+      isDeleted: bannerModelData.isDeleted ?? false,
     });
   }
 
@@ -37,6 +33,7 @@ export class BannerMapper {
       },
       description: bannerEntity.description,
       priority: bannerEntity.priority,
+      isShow: bannerEntity.isShow,
       isDeleted: bannerEntity.isDeleted,
     };
   }

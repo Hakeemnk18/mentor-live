@@ -174,7 +174,6 @@ export default function FacultyFormModal({
       );
       setDescription(initialData.description ?? "");
       setDemoClass(initialData.demoClass ?? "");
-      setPrice(initialData.price ?? 0);
 
       /* IMAGE */
       if (initialData.image) {

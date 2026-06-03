@@ -311,7 +311,7 @@ export default function FacultyDetailPage() {
 
   return (
     <AdminPageContainer>
-      {/* â”€â”€ HEADER â”€â”€ */}
+      {/* â"€â"€ HEADER â"€â"€ */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
           <button
@@ -339,7 +339,7 @@ export default function FacultyDetailPage() {
         </span>
       </div>
 
-      {/* â”€â”€ BASIC INFO CARD â”€â”€ */}
+      {/* â"€â"€ BASIC INFO CARD â"€â"€ */}
       <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
           <h2 className="text-base font-semibold text-gray-800">Basic Information</h2>
@@ -366,9 +366,7 @@ export default function FacultyDetailPage() {
             {/* Details */}
             <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 sm:gap-y-4">
               <InfoItem label="Name" value={faculty.name} />
-              <InfoItem label="Price" value={`₹${faculty.price}`} />
               <InfoItem label="Qualifications" value={faculty.qualifications.join(", ")} />
-              <div className="hidden sm:block" />{/* spacer for grid alignment */}
               <div className="sm:col-span-2">
                 <InfoItem label="Description" value={faculty.description} />
               </div>
@@ -428,11 +426,14 @@ export default function FacultyDetailPage() {
                 {faculty.subjectOffering.map((so) => (
                   <span
                     key={so.id}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-full bg-[#DB313E]/8 text-[#DB313E] border border-[#DB313E]/15"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-[#DB313E]/8 text-[#DB313E] border border-[#DB313E]/15"
                   >
                     {so.subject.name}
                     <span className="text-gray-500">{so.class.name}</span>
                     <span className="text-gray-500">{so.syllabus.name}</span>
+                    <span className="ml-1 px-1.5 py-0.5 rounded bg-white border border-[#DB313E]/20 text-gray-700 font-semibold">
+                      {String.fromCharCode(8377)}{so.price}
+                    </span>
                   </span>
                 ))}
               </div>
@@ -441,7 +442,7 @@ export default function FacultyDetailPage() {
         </div>
       </section>
 
-      {/* â”€â”€ TIME SLOTS CARD â”€â”€ */}
+      {/* â"€â"€ TIME SLOTS CARD â"€â"€ */}
       <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
           <h2 className="text-base font-semibold text-gray-800">
@@ -549,7 +550,7 @@ export default function FacultyDetailPage() {
         </div>
       </section>
 
-      {/* â”€â”€ CHAPTER SLOTS CARD â”€â”€ */}
+      {/* â"€â"€ CHAPTER SLOTS CARD â"€â"€ */}
       <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-8">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
           <h2 className="text-base font-semibold text-gray-800">
@@ -713,7 +714,7 @@ export default function FacultyDetailPage() {
         </div>
       </section>
 
-      {/* â”€â”€ EDIT BASIC INFO MODAL â”€â”€ */}
+      {/* â"€â"€ EDIT BASIC INFO MODAL â"€â"€ */}
       {editOpen && (
         <EditFacultyBasicModal
           open={editOpen}
@@ -729,7 +730,7 @@ export default function FacultyDetailPage() {
         />
       )}
 
-      {/* â”€â”€ POOL BOOKING MODAL â”€â”€ */}
+      {/* â"€â"€ POOL BOOKING MODAL â"€â"€ */}
       <PoolBookingModal
         booking={selectedPoolBooking}
         onClose={() => {
