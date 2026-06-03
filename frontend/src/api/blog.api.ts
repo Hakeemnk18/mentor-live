@@ -1,11 +1,46 @@
 import axiosInstance from "./axios.instance";
 
-import type { Blog, BlogPayload, GetBlogsParams, GetBlogsResponse } from "../shared/types/blog.types";
+import type {
+  Blog,
+  BlogPayload,
+  GetBlogsParams,
+  GetBlogsResponse,
+  GetBlogsAdminParams,
+  GetBlogsAdminResponse,
+} from "../shared/types/blog.types";
+
+/** User-facing blog list (non-deleted only) */
 export const getBlogs = async (params?: GetBlogsParams): Promise<GetBlogsResponse> => {
   const res = await axiosInstance.get("/blogs/list", { params });
+  const d = res.data;
   return {
-    data: res.data.data ?? [],
-    totalPage: res.data.totalPage ?? 1,
+    data: d.data ?? [],
+    total: d.total ?? 0,
+    totalPages: d.totalPages ?? 1,
+    currentPage: d.currentPage ?? 1,
+    totalPage: d.totalPage ?? d.total ?? 0,
+  };
+};
+
+/** Featured blogs sorted by priority — landing page */
+export const getFeaturedBlogs = async (): Promise<Blog[]> => {
+  const res = await axiosInstance.get("/blogs/list", {
+    params: { isFeatured: true, sort: "priority", limit: 9 },
+  });
+  return res.data.data ?? [];
+};
+
+/** Admin blog list (all blogs including deleted) */
+export const getBlogsAdmin = async (
+  params: GetBlogsAdminParams,
+): Promise<GetBlogsAdminResponse> => {
+  const res = await axiosInstance.get("/blogs", { params });
+  const d = res.data;
+  return {
+    data: d.data ?? [],
+    total: d.total ?? 0,
+    totalPages: d.totalPages ?? 1,
+    currentPage: d.currentPage ?? 1,
   };
 };
 
@@ -20,7 +55,7 @@ export const createBlog = async (payload: BlogPayload): Promise<void> => {
 
 export const updateBlog = async (
   id: string,
-  payload: BlogPayload
+  payload: BlogPayload,
 ): Promise<void> => {
   await axiosInstance.put(`/blogs/${id}`, payload);
 };

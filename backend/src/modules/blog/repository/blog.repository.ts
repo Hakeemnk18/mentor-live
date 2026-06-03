@@ -81,6 +81,10 @@ export class BlogRepository implements IBlogRepository {
       heading: 1,
       description: 1,
       author: 1,
+      image: 1,
+      priority: 1,
+      topic: 1,
+      isFeatured: 1,
       isDeleted: 1,
     })
       .sort(sort)
@@ -105,5 +109,19 @@ export class BlogRepository implements IBlogRepository {
 
   async countDocument(query: Record<string, any>): Promise<number> {
     return BlogModel.countDocuments(query);
+  }
+
+  async getActivePriorities(excludeId?: string): Promise<number[]> {
+    const query: Record<string, any> = { priority: { $ne: null } };
+    if (excludeId) {
+      query._id = { $ne: excludeId };
+    }
+    const documents = await BlogModel.find(query)
+      .select({ priority: 1, _id: 0 })
+      .lean();
+
+    return documents
+      .map((doc) => doc.priority)
+      .filter((p): p is number => p !== null && p !== undefined);
   }
 }
