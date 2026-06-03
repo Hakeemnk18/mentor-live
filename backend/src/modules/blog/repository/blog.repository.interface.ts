@@ -12,4 +12,7 @@ export interface IBlogRepository {
   findAllForUser(): Promise<Blog[]>;
 
   countDocument(query: Record<string, any>): Promise<number>;
+
+  /** Returns all priorities already in use, optionally excluding one blog id */
+  getActivePriorities(excludeId?: string): Promise<number[]>;
 }

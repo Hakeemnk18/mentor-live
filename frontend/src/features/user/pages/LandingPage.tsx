@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import heroImage from "/hero-image.png";
 import { getFaculties } from "../../../api/faculty.api";
-import { getBlogs } from "../../../api/blog.api";
+import { getBlogs, getFeaturedBlogs } from "../../../api/blog.api";
 import { getTestimonials } from "../../../api/testimonial.api";
 import FacultyCard from "../components/FacultyCard";
 import BlogCard from "../components/BlogCard";
@@ -418,12 +418,12 @@ const FacultySection: React.FC = () => {
 const BLOGS_PER_PAGE = 3;
 
 const BlogSection: React.FC = () => {
-  const { data, isLoading } = useQuery({
-    queryKey: ["landing-blogs"],
-    queryFn: () => getBlogs({ limit: 9 }),
+  const { data: featuredData, isLoading } = useQuery({
+    queryKey: ["landing-blogs-featured"],
+    queryFn: getFeaturedBlogs,
   });
 
-  const blogs = (data?.data ?? []).filter((b) => !b.isDeleted);
+  const blogs = featuredData ?? [];
   const [page, setPage] = useState(0);
   const totalPages = Math.max(1, Math.ceil(blogs.length / BLOGS_PER_PAGE));
   const visible = blogs.slice(
@@ -497,6 +497,8 @@ const BlogSection: React.FC = () => {
                   heading={b.heading}
                   description={b.description}
                   author={b.author}
+                  image={b.image}
+                  topic={b.topic}
                 />
               ))}
             </div>

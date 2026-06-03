@@ -12,14 +12,11 @@ import type { IEditBlogUseCase } from "../use-cases/interfaces/edit.blog.use-cas
 import type { IBlockBlogUseCase } from "../use-cases/interfaces/block.blog.use-case.interface.js";
 import type { IUnblockBlogUseCase } from "../use-cases/interfaces/unblock.blog.use-case.interface.js";
 import type { IGetAllBlogUseCase } from "../use-cases/interfaces/get.all.blog.use-case.interface.js";
+import type { IGetBlogDetailsUseCase } from "../use-cases/interfaces/get.blog.details.use-case.interface.js";
 
-import {
-  CreateBlogSchema,
-  type CreateBlogRequestDto,
-} from "../dto/create.blog.dto.js";
+import { CreateBlogSchema, type CreateBlogRequestDto } from "../dto/create.blog.dto.js";
 import { GetAllQuerySchema } from "../../../core/shared/dtos/get.all.doc.dto.js";
 import { parseReq } from "../../../core/utils/parse.query.helper.js";
-import type { IGetBlogDetailsUseCase } from "../use-cases/interfaces/get.blog.details.use-case.interface.js";
 
 @injectable()
 export class BlogController implements IBlogController {
@@ -46,9 +43,7 @@ export class BlogController implements IBlogController {
   async createBlog(req: Request, res: Response): Promise<void> {
     try {
       const dto: CreateBlogRequestDto = CreateBlogSchema.parse(req.body);
-
       await this._createBlogUseCase.execute(dto);
-
       res.status(HttpStatusCode.CREATED).json({
         success: true,
         message: ResponseMessages.BLOG_CREATED,
@@ -63,11 +58,8 @@ export class BlogController implements IBlogController {
     try {
       const { id } = req.params;
       validateObjectId(id);
-
       const dto: CreateBlogRequestDto = CreateBlogSchema.parse(req.body);
-
       await this._editBlogUseCase.execute(id!, dto);
-
       res.status(HttpStatusCode.OK).json({
         success: true,
         message: ResponseMessages.BLOG_UPDATED,
@@ -82,9 +74,7 @@ export class BlogController implements IBlogController {
     try {
       const { id } = req.params;
       validateObjectId(id);
-
       await this._blockBlogUseCase.execute(id!);
-
       res.status(HttpStatusCode.OK).json({
         success: true,
         message: ResponseMessages.BLOG_DELETED,
@@ -99,9 +89,7 @@ export class BlogController implements IBlogController {
     try {
       const { id } = req.params;
       validateObjectId(id);
-
       await this._unblockBlogUseCase.execute(id!);
-
       res.status(HttpStatusCode.OK).json({
         success: true,
         message: ResponseMessages.BLOG_UPDATED,
@@ -115,17 +103,19 @@ export class BlogController implements IBlogController {
   async getAllBlogForAdmin(req: Request, res: Response): Promise<void> {
     try {
       const dto = GetAllQuerySchema.parse(
-        parseReq(req, ["isDeleted"]),
+        parseReq(req, ["isDeleted", "isFeatured"]),
       );
       const { data, total } = await this._getAllBlogUseCase.execute(dto, "admin");
       res.status(HttpStatusCode.OK).json({
         success: true,
         message: ResponseMessages.SUCCESS,
-        data: data,
-        totalPage: total,
+        data,
+        total,
+        currentPage: dto.page,
+        totalPages: Math.ceil(total / dto.limit),
       });
     } catch (error) {
-      console.log("Error in get blogs for admin:", error);
+      console.log("Error in getAllBlogForAdmin:", error);
       handleError(res, error);
     }
   }
@@ -133,19 +123,21 @@ export class BlogController implements IBlogController {
   async getAllBlogForUser(req: Request, res: Response): Promise<void> {
     try {
       const dto = GetAllQuerySchema.parse(
-        parseReq(req, ["isDeleted"]),
+        parseReq(req, ["isFeatured"]),
       );
-
-      const { data, total } = await this._getAllBlogUseCase.execute(dto, "user")
-
+      const { data, total } = await this._getAllBlogUseCase.execute(dto, "user");
       res.status(HttpStatusCode.OK).json({
         success: true,
         message: ResponseMessages.SUCCESS,
-        data: data,
+        data,
+        total,
+        currentPage: dto.page,
+        totalPages: Math.ceil(total / dto.limit),
+        /* keep legacy field so existing consumers don't break */
         totalPage: total,
       });
     } catch (error) {
-      console.log("Error in get blogs for user:", error);
+      console.log("Error in getAllBlogForUser:", error);
       handleError(res, error);
     }
   }
@@ -155,7 +147,6 @@ export class BlogController implements IBlogController {
       const { id } = req.params;
       validateObjectId(id);
       const blog = await this._getBlogDetailsUseCase.execute(id!);
-
       res.status(HttpStatusCode.OK).json({
         success: true,
         message: ResponseMessages.SUCCESS,
