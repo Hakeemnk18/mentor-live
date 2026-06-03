@@ -8,6 +8,7 @@ import { getTestimonials } from "../../../api/testimonial.api";
 import FacultyCard from "../components/FacultyCard";
 import BlogCard from "../components/BlogCard";
 import TestimonialCard from "../components/TestimonialCard";
+import BannerCarousel from "../components/BannerCarousel";
 
 import type { Student } from "../../../shared/types/student.types";
 import type { Banner } from "../../../shared/types/banner.types";
@@ -78,64 +79,8 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* ─── Banner Section ─── */}
-      <section className="relative overflow-hidden">
-        <div
-          className="w-full py-5 md:py-6 px-5 md:px-8"
-          style={{
-            background:
-              "linear-gradient(135deg, #FF6B35 0%, #DB313E 30%, #C62368 60%, #8B5CF6 100%)",
-          }}
-        >
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              {/* icon */}
-              <div className="flex-shrink-0 w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <svg
-                  className="w-7 h-7 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                >
-                  <rect x="3" y="4" width="18" height="18" rx="2" />
-                  <path d="M16 2v4M8 2v4M3 10h18" />
-                </svg>
-              </div>
-              <div className="text-white">
-                <h3 className="text-xl md:text-2xl font-bold leading-tight">
-                  New Group Learning Batches Starting Soon!
-                </h3>
-                <p className="text-white/80 text-sm md:text-base">
-                  Save up to 30%!{" "}
-                  <a
-                    href="/reserve"
-                    className="underline underline-offset-2 hover:text-white transition font-medium"
-                  >
-                    Reserve Your Spot →
-                  </a>
-                </p>
-              </div>
-            </div>
-
-            {/* Right badges */}
-            <div className="flex items-center gap-3">
-              <span className="bg-white/20 backdrop-blur-sm text-white text-xs font-semibold px-4 py-2 rounded-full flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                </svg>
-                Online
-              </span>
-              <span className="bg-white/20 backdrop-blur-sm text-white text-xs font-semibold px-4 py-2 rounded-full flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                </svg>
-                500+ Qualified Tutors
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* ─── Banner Carousel ─── */}
+      <BannerCarousel />
 
       {/* ─── Stats Section ─── */}
       <section className="bg-white border-t border-gray-200">

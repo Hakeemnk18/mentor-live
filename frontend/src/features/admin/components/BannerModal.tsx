@@ -19,6 +19,7 @@ interface Props {
 
 type FormState = {
   description: string;
+  isShow: boolean;
   priority: number | "";
   imageFile: File | null;
   imageUrl: string | null;
@@ -28,6 +29,7 @@ type FormState = {
 
 const emptyForm: FormState = {
   description: "",
+  isShow: false,
   priority: "",
   imageFile: null,
   imageUrl: null,
@@ -49,8 +51,6 @@ export default function BannerModal({
   const [cropOpen, setCropOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // Reset form during render when the modal opens (React-recommended pattern
-  // for adjusting state based on a prop change without an effect).
   const [prevOpen, setPrevOpen] = useState(false);
   const [prevInitialData, setPrevInitialData] = useState<Banner | undefined>(undefined);
   if (open !== prevOpen || (open && initialData !== prevInitialData)) {
@@ -60,7 +60,8 @@ export default function BannerModal({
       if (mode === "edit" && initialData) {
         setForm({
           description: initialData.description,
-          priority: initialData.priority,
+          isShow: initialData.isShow,
+          priority: initialData.priority ?? "",
           imageFile: null,
           imageUrl: initialData.image.url,
           imagePayload: initialData.image,
@@ -74,29 +75,30 @@ export default function BannerModal({
 
   if (!open) return null;
 
+  /* Priorities already taken by OTHER visible banners */
   const takenPriorities = new Set(
     existingBanners
-      .filter((b) => b.id !== initialData?.id)
-      .map((b) => b.priority)
+      .filter((b) => b.isShow && b.priority != null && b.id !== initialData?.id)
+      .map((b) => b.priority as number),
   );
 
-  const maxPriority = Math.max(...existingBanners.map((b) => b.priority), 4);
-  const availablePriorities = Array.from(
-    { length: maxPriority + 1 },
-    (_, i) => i + 1
-  ).filter((p) => !takenPriorities.has(p));
+  const availablePriorities = [1, 2, 3, 4, 5].filter(
+    (p) => !takenPriorities.has(p),
+  );
 
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.imagePayload && !form.imageFile) e.image = "Banner image is required";
     if (!form.description.trim()) {
       e.description = "Description is required";
-    } else if (form.description.trim().length < 10) {
-      e.description = "Description must be at least 10 characters";
+    } else if (form.description.trim().length < 5) {
+      e.description = "Description must be at least 5 characters";
     } else if (form.description.trim().length > 200) {
       e.description = "Description must be under 200 characters";
     }
-    if (form.priority === "") e.priority = "Please select a priority";
+    if (form.isShow && form.priority === "") {
+      e.priority = "Priority (1–5) is required when the banner is set to visible";
+    }
     return e;
   };
 
@@ -104,11 +106,11 @@ export default function BannerModal({
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      setForm(prev => ({ ...prev, errors: { ...prev.errors, image: "Image must be under 5 MB" } }));
+      setForm((prev) => ({ ...prev, errors: { ...prev.errors, image: "Image must be under 5 MB" } }));
       e.target.value = "";
       return;
     }
-    setForm(prev => {
+    setForm((prev) => {
       const errors = { ...prev.errors };
       delete errors.image;
       return { ...prev, imageFile: file, imageUrl: URL.createObjectURL(file), errors };
@@ -118,13 +120,13 @@ export default function BannerModal({
   };
 
   const handleCropComplete = (croppedFile: File) => {
-    setForm(prev => ({ ...prev, imageFile: croppedFile, imageUrl: URL.createObjectURL(croppedFile) }));
+    setForm((prev) => ({ ...prev, imageFile: croppedFile, imageUrl: URL.createObjectURL(croppedFile) }));
   };
 
   const handleSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     const errs = validate();
-    if (Object.keys(errs).length > 0) { setForm(prev => ({ ...prev, errors: errs })); return; }
+    if (Object.keys(errs).length > 0) { setForm((prev) => ({ ...prev, errors: errs })); return; }
 
     try {
       let finalImage = form.imagePayload;
@@ -144,7 +146,8 @@ export default function BannerModal({
       await onSubmit({
         image: finalImage,
         description: form.description.trim(),
-        priority: Number(form.priority),
+        isShow: form.isShow,
+        priority: form.isShow && form.priority !== "" ? Number(form.priority) : null,
       });
     } catch (err) {
       setUploading(false);
@@ -159,10 +162,8 @@ export default function BannerModal({
 
   return (
     <>
-      {/* Backdrop */}
       <div className="fixed inset-0 z-[100] bg-black/40" onClick={onClose} />
 
-      {/* Crop Modal */}
       <ImageCropModal
         open={cropOpen}
         image={form.imageUrl ?? ""}
@@ -171,7 +172,6 @@ export default function BannerModal({
         onCropComplete={handleCropComplete}
       />
 
-      {/* Panel */}
       <div className="fixed inset-0 z-[101] flex items-center justify-center pointer-events-none">
         <div
           className="pointer-events-auto w-full max-w-lg bg-white rounded-xl shadow-xl"
@@ -182,7 +182,7 @@ export default function BannerModal({
             <h2 className="text-base font-semibold text-gray-900">
               {mode === "create" ? "Add Banner" : "Edit Banner"}
             </h2>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none cursor-pointer">
               ×
             </button>
           </div>
@@ -212,11 +212,7 @@ export default function BannerModal({
                 )}
               </div>
               {form.imageUrl && (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="mt-1 text-xs text-[#DB313E] hover:underline"
-                >
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="mt-1 text-xs text-[#DB313E] hover:underline cursor-pointer">
                   Change image
                 </button>
               )}
@@ -232,7 +228,11 @@ export default function BannerModal({
                 value={form.description}
                 onChange={(e) => {
                   const val = e.target.value;
-                  setForm(prev => { const errors = { ...prev.errors }; delete errors.description; return { ...prev, description: val, errors }; });
+                  setForm((prev) => {
+                    const errors = { ...prev.errors };
+                    delete errors.description;
+                    return { ...prev, description: val, errors };
+                  });
                 }}
                 maxLength={200}
                 placeholder="Enter banner description…"
@@ -248,40 +248,76 @@ export default function BannerModal({
               </div>
             </div>
 
-            {/* Priority */}
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Priority *</label>
-              <select
-                value={form.priority}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setForm(prev => { const errors = { ...prev.errors }; delete errors.priority; return { ...prev, priority: val === "" ? "" : Number(val), errors }; });
-                }}
-                className={inp(form.errors.priority)}
+            {/* isShow toggle */}
+            <div className="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-gray-50">
+              <div>
+                <p className="text-sm font-medium text-gray-800">Show to users</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {form.isShow ? "This banner will appear in the carousel" : "Banner is saved but hidden from users"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setForm((prev) => {
+                    const errors = { ...prev.errors };
+                    delete errors.priority;
+                    return { ...prev, isShow: !prev.isShow, priority: !prev.isShow ? prev.priority : "", errors };
+                  })
+                }
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+                  form.isShow ? "bg-[#DB313E]" : "bg-gray-300"
+                }`}
               >
-                <option value="">Select priority…</option>
-                {availablePriorities.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-              {form.errors.priority && <p className="text-xs text-red-500 mt-0.5">{form.errors.priority}</p>}
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
+                    form.isShow ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
             </div>
+
+            {/* Priority — only when isShow=true */}
+            {form.isShow && (
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Priority * <span className="text-gray-400">(1 = highest, 5 = lowest)</span>
+                </label>
+                <select
+                  value={form.priority}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setForm((prev) => {
+                      const errors = { ...prev.errors };
+                      delete errors.priority;
+                      return { ...prev, priority: val === "" ? "" : Number(val), errors };
+                    });
+                  }}
+                  className={inp(form.errors.priority)}
+                >
+                  <option value="">Select priority…</option>
+                  {availablePriorities.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+                {availablePriorities.length === 0 && (
+                  <p className="text-xs text-amber-600 mt-0.5">
+                    All 5 priority slots are taken. Hide another banner first.
+                  </p>
+                )}
+                {form.errors.priority && <p className="text-xs text-red-500 mt-0.5">{form.errors.priority}</p>}
+              </div>
+            )}
 
             {/* Footer */}
             <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-              >
+              <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 cursor-pointer">
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading || uploading}
-                className="px-4 py-2 text-sm font-medium bg-[#DB313E] text-white rounded-md hover:bg-[#c02535] disabled:opacity-50 transition-colors"
+                className="px-4 py-2 text-sm font-medium bg-[#DB313E] text-white rounded-md hover:bg-[#c02535] disabled:opacity-50 transition-colors cursor-pointer"
               >
                 {uploading ? "Uploading…" : loading ? "Saving…" : mode === "create" ? "Add Banner" : "Save Changes"}
               </button>

@@ -11,5 +11,7 @@ export interface IBannerRepository {
 
   countDocument(query: Record<string, any>): Promise<number>;
   deleteById(id: string): Promise<void>;
-  getAllPriorities(): Promise<number[]>;
+
+  /** Returns priorities already taken by visible (isShow=true) banners, optionally excluding one id */
+  getActivePriorities(excludeId?: string): Promise<number[]>;
 }

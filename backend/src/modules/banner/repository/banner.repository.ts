@@ -12,7 +12,6 @@ import type { IBannerRepository } from "./banner.repository.interface.js";
 export class BannerRepository implements IBannerRepository {
   async create(bannerEntity: Banner): Promise<Banner> {
     const persistenceData = BannerMapper.toPersistence(bannerEntity);
-
     const created = await BannerModel.create(persistenceData);
     const domainBanner = BannerMapper.toDomain(created);
 
@@ -80,8 +79,12 @@ export class BannerRepository implements IBannerRepository {
       .filter((b): b is Banner => b !== null);
   }
 
+  /* Only isShow=true banners, sorted by priority, max 5 for user display */
   async findAllForUser(): Promise<Banner[]> {
-    const documents = await BannerModel.find({}).sort({ priority: 1 }).lean();
+    const documents = await BannerModel.find({ isShow: true })
+      .sort({ priority: 1 })
+      .limit(5)
+      .lean();
 
     return documents
       .map(BannerMapper.toDomain)
@@ -103,11 +106,18 @@ export class BannerRepository implements IBannerRepository {
     }
   }
 
-  async getAllPriorities(): Promise<number[]> {
-    const documents = await BannerModel.find({})
+  /* Only priorities already taken by isShow=true banners */
+  async getActivePriorities(excludeId?: string): Promise<number[]> {
+    const query: Record<string, any> = { isShow: true, priority: { $ne: null } };
+    if (excludeId) {
+      query._id = { $ne: excludeId };
+    }
+    const documents = await BannerModel.find(query)
       .select({ priority: 1, _id: 0 })
       .lean();
 
-    return documents.map((doc) => doc.priority);
+    return documents
+      .map((doc) => doc.priority)
+      .filter((p): p is number => p !== null);
   }
 }

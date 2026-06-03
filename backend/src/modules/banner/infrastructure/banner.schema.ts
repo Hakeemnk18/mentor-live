@@ -6,7 +6,8 @@ export interface IBanner extends Document {
     publicId: string;
   };
   description: string;
-  priority: number;
+  priority: number | null;
+  isShow: boolean;
   isDeleted: boolean;
 }
 
@@ -32,8 +33,14 @@ const bannerSchema = new Schema<IBanner>(
 
     priority: {
       type: Number,
-      required: true,
+      default: null,
       min: 1,
+      max: 5,
+    },
+
+    isShow: {
+      type: Boolean,
+      default: false,
     },
 
     isDeleted: {
@@ -49,5 +56,7 @@ const bannerSchema = new Schema<IBanner>(
 /* ---------- Indexes ---------- */
 bannerSchema.index({ priority: 1 });
 bannerSchema.index({ isDeleted: 1 });
+bannerSchema.index({ isShow: 1 });
+bannerSchema.index({ isShow: 1, priority: 1 });
 
 export const BannerModel = model<IBanner>("Banner", bannerSchema);
