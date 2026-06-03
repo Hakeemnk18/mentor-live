@@ -31,11 +31,15 @@ const BookTutorPage: React.FC = () => {
   };
 
   const handleFindFaculty = () => {
-    navigate("/faculty", { state: { syllabusId, classId } });
+    const syllabusName = syllabuses.find((s) => s._id === syllabusId)?.name ?? "";
+    const className = classes.find((c) => c._id === classId)?.name ?? "";
+    navigate("/faculty", { state: { syllabusId, classId, syllabusName, className } });
   };
 
   const handleFindChapters = () => {
-    navigate("/chapters", { state: { syllabusId, classId } });
+    const syllabusName = syllabuses.find((s) => s._id === syllabusId)?.name ?? "";
+    const className = classes.find((c) => c._id === classId)?.name ?? "";
+    navigate("/chapters", { state: { syllabusId, classId, syllabusName, className } });
   };
 
   return (

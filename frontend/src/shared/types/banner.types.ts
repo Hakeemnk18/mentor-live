@@ -9,6 +9,8 @@ export interface Banner {
   description: string;
   priority: number | null;
   isShow: boolean;
+  isClickable: boolean;
+  buttonText: string;
   isDeleted: boolean;
 }
 
@@ -17,6 +19,8 @@ export interface BannerPayload {
   description: string;
   priority?: number | null;
   isShow: boolean;
+  isClickable: boolean;
+  buttonText?: string;
 }
 
 export interface GetBannersAdminParams {
@@ -38,4 +42,6 @@ export interface UserBanner {
   image: string;
   description: string;
   priority: number | null;
+  isClickable: boolean;
+  buttonText: string;
 }

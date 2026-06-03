@@ -1,4 +1,5 @@
 import AdminBootstrap from "../features/admin/components/AdminBootstrap"
+import LeadsPage from "../features/admin/pages/LeadsPage"
 import ChapterPage from "../features/admin/pages/ChapterTable"
 import ClassPage from "../features/admin/pages/ClassTable"
 import FacultyPage from "../features/admin/pages/FacultyTable"
@@ -139,6 +140,14 @@ const adminRoutes = [
         element: (
             <AdminBootstrap>
                 <UsersPage />
+            </AdminBootstrap>
+        )
+    },
+    {
+        path: "leads",
+        element: (
+            <AdminBootstrap>
+                <LeadsPage />
             </AdminBootstrap>
         )
     },

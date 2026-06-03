@@ -7,6 +7,8 @@ export interface BannerProps {
   description: string;
   priority: number | null;
   isShow?: boolean;
+  isClickable?: boolean;
+  buttonText?: string;
   isDeleted?: boolean;
 }
 
@@ -16,6 +18,8 @@ export class Banner {
   public readonly description: string;
   public readonly priority: number | null;
   public readonly isShow: boolean;
+  public readonly isClickable: boolean;
+  public readonly buttonText: string;
   public readonly isDeleted: boolean;
 
   constructor(props: BannerProps) {
@@ -24,6 +28,8 @@ export class Banner {
     this.description = props.description;
     this.priority = props.priority ?? null;
     this.isShow = props.isShow ?? false;
+    this.isClickable = props.isClickable ?? false;
+    this.buttonText = props.buttonText ?? "Get In Touch";
     this.isDeleted = props.isDeleted ?? false;
   }
 

@@ -8,6 +8,8 @@ export interface IBanner extends Document {
   description: string;
   priority: number | null;
   isShow: boolean;
+  isClickable: boolean;
+  buttonText: string;
   isDeleted: boolean;
 }
 
@@ -41,6 +43,17 @@ const bannerSchema = new Schema<IBanner>(
     isShow: {
       type: Boolean,
       default: false,
+    },
+
+    isClickable: {
+      type: Boolean,
+      default: false,
+    },
+
+    buttonText: {
+      type: String,
+      trim: true,
+      default: "Get In Touch",
     },
 
     isDeleted: {
