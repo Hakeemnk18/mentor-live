@@ -11,6 +11,10 @@ export const CreateBannerSchema = z
 
     isShow: z.boolean().default(false),
 
+    isClickable: z.boolean().default(false),
+
+    buttonText: z.string().trim().max(50).optional().default("Get In Touch"),
+
     priority: z.number().int().min(1).max(5).nullable().optional(),
   })
   .superRefine((data, ctx) => {

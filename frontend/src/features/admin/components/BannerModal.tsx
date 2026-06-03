@@ -20,6 +20,8 @@ interface Props {
 type FormState = {
   description: string;
   isShow: boolean;
+  isClickable: boolean;
+  buttonText: string;
   priority: number | "";
   imageFile: File | null;
   imageUrl: string | null;
@@ -30,6 +32,8 @@ type FormState = {
 const emptyForm: FormState = {
   description: "",
   isShow: false,
+  isClickable: false,
+  buttonText: "Get In Touch",
   priority: "",
   imageFile: null,
   imageUrl: null,
@@ -61,6 +65,8 @@ export default function BannerModal({
         setForm({
           description: initialData.description,
           isShow: initialData.isShow,
+          isClickable: initialData.isClickable ?? false,
+          buttonText: initialData.buttonText ?? "Get In Touch",
           priority: initialData.priority ?? "",
           imageFile: null,
           imageUrl: initialData.image.url,
@@ -147,6 +153,8 @@ export default function BannerModal({
         image: finalImage,
         description: form.description.trim(),
         isShow: form.isShow,
+        isClickable: form.isClickable,
+        buttonText: form.buttonText.trim() || "Get In Touch",
         priority: form.isShow && form.priority !== "" ? Number(form.priority) : null,
       });
     } catch (err) {
@@ -174,11 +182,11 @@ export default function BannerModal({
 
       <div className="fixed inset-0 z-[101] flex items-center justify-center pointer-events-none">
         <div
-          className="pointer-events-auto w-full max-w-lg bg-white rounded-xl shadow-xl"
+          className="pointer-events-auto w-full max-w-lg bg-white rounded-xl shadow-xl flex flex-col max-h-[92vh]"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b px-6 py-4">
+          {/* Header — sticky */}
+          <div className="flex items-center justify-between border-b px-6 py-4 shrink-0">
             <h2 className="text-base font-semibold text-gray-900">
               {mode === "create" ? "Add Banner" : "Edit Banner"}
             </h2>
@@ -187,8 +195,8 @@ export default function BannerModal({
             </button>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          {/* Form — scrollable body */}
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
             {/* Image */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -277,6 +285,46 @@ export default function BannerModal({
               </button>
             </div>
 
+            {/* isClickable toggle */}
+            <div className="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-gray-50">
+              <div>
+                <p className="text-sm font-medium text-gray-800">Clickable Banner</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {form.isClickable ? "Shows a button on the banner — clicking opens an inquiry form" : "Banner is display-only, no action button"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setForm((prev) => ({ ...prev, isClickable: !prev.isClickable }))}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+                  form.isClickable ? "bg-[#DB313E]" : "bg-gray-300"
+                }`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
+                    form.isClickable ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Button text — only when isClickable=true */}
+            {form.isClickable && (
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Button Text <span className="text-gray-400">(shown on the banner)</span>
+                </label>
+                <input
+                  value={form.buttonText}
+                  onChange={(e) => setForm((prev) => ({ ...prev, buttonText: e.target.value }))}
+                  maxLength={50}
+                  placeholder="e.g. Get In Touch, Join Now, Learn More"
+                  className={inp()}
+                />
+                <p className="text-xs text-gray-400 mt-0.5">{form.buttonText.length}/50</p>
+              </div>
+            )}
+
             {/* Priority — only when isShow=true */}
             {form.isShow && (
               <div>
@@ -309,20 +357,21 @@ export default function BannerModal({
               </div>
             )}
 
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 cursor-pointer">
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading || uploading}
-                className="px-4 py-2 text-sm font-medium bg-[#DB313E] text-white rounded-md hover:bg-[#c02535] disabled:opacity-50 transition-colors cursor-pointer"
-              >
-                {uploading ? "Uploading…" : loading ? "Saving…" : mode === "create" ? "Add Banner" : "Save Changes"}
-              </button>
-            </div>
           </form>
+
+          {/* Footer — sticky at bottom */}
+          <div className="shrink-0 border-t px-6 py-4 flex items-center justify-end gap-3 bg-white rounded-b-xl">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 cursor-pointer">
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={loading || uploading}
+              className="px-4 py-2 text-sm font-medium bg-[#DB313E] text-white rounded-md hover:bg-[#c02535] disabled:opacity-50 transition-colors cursor-pointer"
+            >
+              {uploading ? "Uploading…" : loading ? "Saving…" : mode === "create" ? "Add Banner" : "Save Changes"}
+            </button>
+          </div>
         </div>
       </div>
     </>

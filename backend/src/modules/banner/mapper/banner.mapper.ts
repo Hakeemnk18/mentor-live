@@ -21,6 +21,8 @@ export class BannerMapper {
       description: bannerModelData.description,
       priority: bannerModelData.priority ?? null,
       isShow: bannerModelData.isShow ?? false,
+      isClickable: bannerModelData.isClickable ?? false,
+      buttonText: bannerModelData.buttonText ?? "Get In Touch",
       isDeleted: bannerModelData.isDeleted ?? false,
     });
   }
@@ -34,6 +36,8 @@ export class BannerMapper {
       description: bannerEntity.description,
       priority: bannerEntity.priority,
       isShow: bannerEntity.isShow,
+      isClickable: bannerEntity.isClickable,
+      buttonText: bannerEntity.buttonText,
       isDeleted: bannerEntity.isDeleted,
     };
   }

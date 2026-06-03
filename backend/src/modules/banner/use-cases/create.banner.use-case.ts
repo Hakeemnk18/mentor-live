@@ -33,6 +33,8 @@ export class CreateBannerUseCase implements ICreateBannerUseCase {
       description: dto.description,
       priority: dto.priority ?? null,
       isShow: dto.isShow ?? false,
+      isClickable: dto.isClickable ?? false,
+      buttonText: dto.buttonText ?? "Get In Touch",
       isDeleted: false,
     });
 

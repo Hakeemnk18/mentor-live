@@ -122,6 +122,8 @@ export class BannerController implements IBannerController {
         description: b.description,
         priority: b.priority,
         isShow: b.isShow,
+        isClickable: b.isClickable,
+        buttonText: b.buttonText,
         isDeleted: b.isDeleted,
       }));
 
@@ -147,6 +149,8 @@ export class BannerController implements IBannerController {
         image: b.image.url,
         description: b.description,
         priority: b.priority,
+        isClickable: b.isClickable,
+        buttonText: b.buttonText,
       }));
 
       res.status(HttpStatusCode.OK).json({

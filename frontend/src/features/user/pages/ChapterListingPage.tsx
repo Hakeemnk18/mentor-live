@@ -5,15 +5,20 @@ import { getChaptersList, getSubjectVariants } from "../../../api/chapter.api";
 import ChapterCard from "../components/ChapterCard";
 import SubjectPills from "../components/SubjectPills";
 import SearchInput from "../components/SearchInput";
+import LeadFormModal from "../components/LeadFormModal";
 
 const ChapterListingPage: React.FC = () => {
   const location = useLocation();
-  const { syllabusId = "", classId = "" } = (location.state ?? {}) as {
-    syllabusId?: string;
-    classId?: string;
-  };
+  const { syllabusId = "", classId = "", syllabusName = "", className = "" } =
+    (location.state ?? {}) as {
+      syllabusId?: string;
+      classId?: string;
+      syllabusName?: string;
+      className?: string;
+    };
 
   const [search, setSearch] = useState("");
+  const [requestOpen, setRequestOpen] = useState(false);
   const [subjectId, setSubjectId] = useState<string | undefined>();
 
   /* ── Fetch subject variants for filter pills ── */
@@ -111,10 +116,45 @@ const ChapterListingPage: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
               </svg>
             </div>
-            <p className="text-gray-500 text-lg font-medium">No chapters found</p>
-            <p className="text-gray-400 text-sm mt-1">Try adjusting your filters or search term.</p>
+            <p className="text-gray-900 text-lg font-bold">No chapters found</p>
+            <p className="text-gray-400 text-sm mt-1 mb-6">
+              {classId && syllabusId
+                ? `No chapters available for ${className || "this class"}${syllabusName ? ` (${syllabusName})` : ""} yet.`
+                : "Try adjusting your filters or search term."}
+            </p>
+            {classId && syllabusId && (
+              <button
+                onClick={() => setRequestOpen(true)}
+                className="inline-flex items-center gap-2 bg-[#DB313E] text-white text-sm font-semibold px-6 py-3 rounded-full shadow-md hover:bg-[#c12a36] transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Request a Chapter
+              </button>
+            )}
           </div>
         )}
+
+        {/* Chapter request modal */}
+        <LeadFormModal
+          open={requestOpen}
+          onClose={() => setRequestOpen(false)}
+          type="request"
+          purpose={
+            className && syllabusName
+              ? `I'm looking for ${className} class ${syllabusName} chapters`
+              : className
+              ? `I'm looking for ${className} class chapters`
+              : syllabusName
+              ? `I'm looking for ${syllabusName} chapters`
+              : "I'm looking for chapters"
+          }
+          classId={classId || null}
+          syllabusId={syllabusId || null}
+          className={className || null}
+          syllabusName={syllabusName || null}
+        />
 
         {/* Chapter grid */}
         {chapters.length > 0 && !isError && !isLoading && (

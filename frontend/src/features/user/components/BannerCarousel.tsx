@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getUserBanners } from "../../../api/banner.api";
 import type { UserBanner } from "../../../shared/types/banner.types";
+import LeadFormModal from "./LeadFormModal";
 
 const AUTO_MS = 5000;
 
@@ -11,6 +12,8 @@ export default function BannerCarousel() {
   const [animKey, setAnimKey]   = useState(0);   // restarts CSS animations on slide change
   const [hovered, setHovered]   = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [leadOpen, setLeadOpen] = useState(false);
+  const [leadBanner, setLeadBanner] = useState<UserBanner | null>(null);
 
   const currentRef   = useRef(0);          // stable ref so interval doesn't go stale
   const dragStartX   = useRef(0);
@@ -73,6 +76,7 @@ export default function BannerCarousel() {
 
   /* ── render ─────────────────────────────────────────────────────── */
   return (
+    <>
     <section
       className="relative w-full overflow-hidden select-none bg-black"
       onMouseEnter={() => setHovered(true)}
@@ -134,6 +138,21 @@ export default function BannerCarousel() {
                 <p className="text-white text-sm sm:text-base md:text-xl font-semibold leading-snug max-w-2xl drop-shadow-lg line-clamp-2 sm:line-clamp-none">
                   {b.description}
                 </p>
+                {b.isClickable && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setLeadBanner(b);
+                      setLeadOpen(true);
+                    }}
+                    className="mt-4 inline-flex items-center gap-2 bg-white text-[#DB313E] text-sm font-semibold px-5 py-2.5 rounded-full shadow-lg hover:bg-[#DB313E] hover:text-white transition-all duration-200 active:scale-95"
+                  >
+                    {b.buttonText || "Get In Touch"}
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -314,5 +333,16 @@ export default function BannerCarousel() {
         }
       `}</style>
     </section>
+
+    {/* ── Lead inquiry modal ── */}
+    {leadOpen && leadBanner && (
+      <LeadFormModal
+        open={leadOpen}
+        onClose={() => { setLeadOpen(false); setLeadBanner(null); }}
+        type="inquiry"
+        purpose={leadBanner.description}
+      />
+    )}
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import { registerAnalysisDependencies } from "./analysis.container.js";
+import { registerLeadDependencies } from "./lead.container.js";
 import { registerBannerDependencies } from "./banner.container.js";
 import { registerBlogDependencies } from "./blog.container.js";
 import { registerBookingDependencies } from "./booking.container.js";
@@ -29,5 +30,6 @@ registerBannerDependencies();
 registerTestimonialDependencies();
 registerBlogDependencies();
 registerAnalysisDependencies();
+registerLeadDependencies();
 
 export { container } from "tsyringe";

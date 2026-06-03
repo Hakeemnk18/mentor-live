@@ -45,6 +45,8 @@ export class EditBannerUseCase implements IEditBannerUseCase {
       description: dto.description,
       priority: dto.priority ?? existing.priority,
       isShow: dto.isShow ?? existing.isShow,
+      isClickable: dto.isClickable ?? existing.isClickable,
+      buttonText: dto.buttonText ?? existing.buttonText,
       isDeleted: existing.isDeleted,
     });
 
