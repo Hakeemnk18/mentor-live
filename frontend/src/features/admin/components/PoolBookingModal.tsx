@@ -34,10 +34,11 @@ interface Props {
   booking: PoolBooking | null;
   onClose: () => void;
   onConfirmed: () => void;
+  readOnly?: boolean;
 }
 
 /* ───── component ───────────────────────────────────────── */
-export default function PoolBookingModal({ booking, onClose, onConfirmed }: Props) {
+export default function PoolBookingModal({ booking, onClose, onConfirmed, readOnly = false }: Props) {
   const [detail, setDetail] = useState<PoolStudentsResponse | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
@@ -233,8 +234,8 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed }: Prop
               )}
             </div>
 
-            {/* Slot picker — chapter mode confirm */}
-            {booking.mode === "chapter" && (
+            {/* Slot picker — chapter mode confirm, hidden for read-only roles */}
+            {booking.mode === "chapter" && !readOnly && (
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                   Assign Time Slot(s) to Confirm
@@ -276,16 +277,18 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed }: Prop
             >
               Close
             </button>
-            <button
-              onClick={handleConfirm}
-              disabled={
-                confirming ||
-                (booking.mode === "chapter" && !selectedSlotId)
-              }
-              className="px-4 py-2 text-sm font-medium bg-[#DB313E] text-white rounded-md hover:bg-[#c02535] disabled:opacity-50 transition-colors"
-            >
-              {confirming ? "Confirming…" : "Confirm Booking"}
-            </button>
+            {!readOnly && (
+              <button
+                onClick={handleConfirm}
+                disabled={
+                  confirming ||
+                  (booking.mode === "chapter" && !selectedSlotId)
+                }
+                className="px-4 py-2 text-sm font-medium bg-[#DB313E] text-white rounded-md hover:bg-[#c02535] disabled:opacity-50 transition-colors"
+              >
+                {confirming ? "Confirming…" : "Confirm Booking"}
+              </button>
+            )}
           </div>
         </div>
       </div>

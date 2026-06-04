@@ -10,53 +10,63 @@ const authenticate = container.resolve(Authenticate);
 const chapterController = container.resolve(ChapterController);
 
 
-
+// create chapter
 router.post(
   "/",
-  
+  authenticate.authenticate,
+  authorizeRoles("admin"),
   (req, res) => chapterController.createChapter(req, res)
 );
 
+// edit chapter
 router.put(
   "/:id",
-  
+  authenticate.authenticate,
+  authorizeRoles("admin"),
   (req, res) => chapterController.editChapter(req, res)
 );
 
+// block chapter
 router.patch(
   "/:id/block",
-  
+  authenticate.authenticate,
+  authorizeRoles("admin"),
   (req, res) => chapterController.blockChapter(req, res)
 );
 
+// unblock chapter
 router.patch(
   "/:id/unblock",
-  
+  authenticate.authenticate,
+  authorizeRoles("admin"),
   (req, res) => chapterController.unblockChapter(req, res)
 );
 
-
+// get all chapters for user
 router.get(
   "/list",
   (req, res) => chapterController.getChaptersForUser(req, res)
 );
 
-
+// get chapter name and id for dropdowns
 router.get("/names", (req, res) =>
   chapterController.getChapterNameAndId(req, res)
 );
 
+// get all chapters for admin with search and pagination
 router.get(
   "/",
-  
+  authenticate.authenticate,
+  authorizeRoles("admin"),
   (req, res) => chapterController.getChaptersForAdmin(req, res)
 );
 
 
-
+// get chapter details for admin
 router.get(
   "/:id",
-  
+  authenticate.authenticate,
+  authorizeRoles("admin"),
   (req, res) => chapterController.getChaptersForAdmin(req, res) 
 );
 

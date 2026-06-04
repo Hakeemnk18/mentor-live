@@ -32,11 +32,12 @@ const Detail = ({ label, value }: { label: string; value: React.ReactNode }) => 
 interface Props {
   booking: OneOnOneBooking | null;
   onClose: () => void;
-  onConfirmed: () => void; // refresh parent table
+  onConfirmed: () => void;
+  readOnly?: boolean;
 }
 
 /* ───── component ───────────────────────────────────────── */
-export default function OneOnOneBookingModal({ booking, onClose, onConfirmed }: Props) {
+export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, readOnly = false }: Props) {
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -211,8 +212,8 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed }: 
               <Detail label="Booked On" value={fmtDate(booking.createdAt)} />
             </div>
 
-            {/* Slot picker — chapter mode only */}
-            {booking.mode === "chapter" && !isConfirmed && (
+            {/* Slot picker — chapter mode only, hidden for read-only roles */}
+            {booking.mode === "chapter" && !isConfirmed && !readOnly && (
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                   Assign Time Slot(s)
@@ -256,7 +257,7 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed }: 
             >
               Close
             </button>
-            {!isConfirmed && (
+            {!isConfirmed && !readOnly && (
               <button
                 onClick={handleConfirm}
                 disabled={

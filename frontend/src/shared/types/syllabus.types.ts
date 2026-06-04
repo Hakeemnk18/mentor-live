@@ -26,10 +26,19 @@ export type GetSyllabusApiResponse = {
     name: string;
     isDeleted: boolean;
   }[];
+  currentPage: number;
+  totalPages: number;
+  total: number;
 };
 
 export type SyllabusRow = {
   _id: string;
   name: string;
   isDeleted: boolean;
+};
+
+/** Returned by GET /syllabuses/list — lightweight dropdown items */
+export type SyllabusListItem = {
+  _id: string;
+  name: string;
 };

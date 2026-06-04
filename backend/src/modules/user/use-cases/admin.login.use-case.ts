@@ -23,11 +23,11 @@ export class AdminLoginUseCase implements IAdminLoginUseCase {
     accessToken: string;
     refreshToken: string;
   }> {
-    console.log("email", dto.email);
+    
 
     const user = await this._userRepository.findByEmail(dto.email);
 
-    console.log("user", user);
+    
 
     if (!user) {
       throw new CustomError(
@@ -62,7 +62,7 @@ export class AdminLoginUseCase implements IAdminLoginUseCase {
       );
     }
 
-    if (user.role !== "admin") {
+    if (user.role !== "admin" && user.role !== "salesPerson") {
       throw new CustomError(
         ResponseMessages.UNAUTHORIZED,
         HttpStatusCode.BAD_REQUEST,

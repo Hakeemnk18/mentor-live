@@ -12,14 +12,19 @@ const authenticate = container.resolve(Authenticate);
 const subjectController = container.resolve(SubjectController);
 
 
+// create subject
 router.post(
   "/",
+  authenticate.authenticate,
+  authorizeRoles("admin"),
   (req, res) => subjectController.createSubject(req, res)
 );
 
-
+// edit subject name
 router.put(
   "/:id",
+  authenticate.authenticate,
+  authorizeRoles("admin"),
   (req, res) => subjectController.editSubjectName(req, res)
 );
 
@@ -28,14 +33,19 @@ router.get(
   (req,res) => subjectController.getAllSubjectForUser(req,res)
 )
 
+// get all subjects for admin with search and pagination
 router.get(
   "/",
+  authenticate.authenticate,
+  authorizeRoles("admin"),
   (req, res) => subjectController.getAllSubjectForAdmin(req, res)
 );
 
-
+// get subject details for admin
 router.get(
   "/:id",
+  authenticate.authenticate,
+  authorizeRoles("admin"),
   (req, res) => subjectController.getSubjectDetails(req, res)
 );
 
