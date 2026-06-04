@@ -1,0 +1,1 @@
+{"version":3,"file":"update.lead.status.use-case.interface.d.ts","sourceRoot":"","sources":["../../../../../src/modules/lead/use-cases/interfaces/update.lead.status.use-case.interface.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,UAAU,EAAE,MAAM,+BAA+B,CAAC;AAEhE,MAAM,WAAW,wBAAwB;IACvC,OAAO,CAAC,EAAE,EAAE,MAAM,EAAE,MAAM,EAAE,UAAU,GAAG,OAAO,CAAC,IAAI,CAAC,CAAC;CACxD"}

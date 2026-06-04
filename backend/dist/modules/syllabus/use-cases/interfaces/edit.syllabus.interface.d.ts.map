@@ -1,0 +1,1 @@
+{"version":3,"file":"edit.syllabus.interface.d.ts","sourceRoot":"","sources":["../../../../../src/modules/syllabus/use-cases/interfaces/edit.syllabus.interface.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,qBAAqB,EAAE,MAAM,yCAAyC,CAAC;AAGrF,MAAM,WAAW,oBAAoB;IACnC,OAAO,CAAC,EAAE,EAAE,MAAM,EAAE,GAAG,EAAE,qBAAqB,GAAG,OAAO,CAAC,IAAI,CAAC,CAAC;CAChE"}

@@ -1,0 +1,1 @@
+{"version":3,"file":"update.lead.status.dto.js","sourceRoot":"","sources":["../../../../src/modules/lead/dto/update.lead.status.dto.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,CAAC,EAAE,MAAM,KAAK,CAAC;AAExB,MAAM,CAAC,MAAM,sBAAsB,GAAG,CAAC,CAAC,MAAM,CAAC;IAC7C,MAAM,EAAE,CAAC,CAAC,IAAI,CAAC,CAAC,KAAK,EAAE,WAAW,EAAE,UAAU,CAAC,EAAE;QAC/C,OAAO,EAAE,kDAAkD;KAC5D,CAAC;CACH,CAAC,CAAC"}
