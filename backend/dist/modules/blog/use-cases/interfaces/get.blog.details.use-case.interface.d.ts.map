@@ -1,0 +1,1 @@
+{"version":3,"file":"get.blog.details.use-case.interface.d.ts","sourceRoot":"","sources":["../../../../../src/modules/blog/use-cases/interfaces/get.blog.details.use-case.interface.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,IAAI,EAAE,MAAM,+BAA+B,CAAC;AAE1D,MAAM,WAAW,sBAAsB;IACrC,OAAO,CAAC,MAAM,EAAE,MAAM,GAAG,OAAO,CAAC,IAAI,GAAG,IAAI,CAAC,CAAC;CAC/C"}

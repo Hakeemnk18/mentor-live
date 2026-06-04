@@ -1,0 +1,1 @@
+{"version":3,"file":"get.faculty.details.use-case.interface.d.ts","sourceRoot":"","sources":["../../../../../src/modules/faculty/use-cases/interfaces/get.faculty.details.use-case.interface.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,oBAAoB,EAAE,MAAM,6BAA6B,CAAC;AAExE,MAAM,WAAW,yBAAyB;IACxC,OAAO,CAAC,SAAS,EAAE,MAAM,GAAG,OAAO,CAAC,oBAAoB,CAAC,CAAC;CAC3D"}

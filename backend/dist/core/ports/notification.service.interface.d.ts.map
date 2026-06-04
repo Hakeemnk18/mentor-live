@@ -1,0 +1,1 @@
+{"version":3,"file":"notification.service.interface.d.ts","sourceRoot":"","sources":["../../../src/core/ports/notification.service.interface.ts"],"names":[],"mappings":"AAAA,8BAAsB,oBAAoB;IACxC,QAAQ,CAAC,uBAAuB,CAC9B,WAAW,EAAE,MAAM,EACnB,SAAS,EAAE,MAAM,GAChB,OAAO,CAAC,IAAI,CAAC;CACjB"}

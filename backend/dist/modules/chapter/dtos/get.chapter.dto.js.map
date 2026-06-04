@@ -1,0 +1,1 @@
+{"version":3,"file":"get.chapter.dto.js","sourceRoot":"","sources":["../../../../src/modules/chapter/dtos/get.chapter.dto.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,2BAA2B,EAAE,MAAM,gDAAgD,CAAC;AAC7F,OAAO,EAAE,cAAc,EAAE,MAAM,6CAA6C,CAAC;AAE7E,MAAM,CAAC,MAAM,sBAAsB,GAAG,2BAA2B,CAAC,MAAM,CAAC;IACvE,OAAO,EAAE,cAAc;IACvB,UAAU,EAAE,cAAc;CAC3B,CAAC,CAAC"}
