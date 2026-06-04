@@ -8,5 +8,9 @@ export const setQueryClient = (client: QueryClient) => {
 
 export const logout = () => {
   queryClientRef?.removeQueries({ queryKey: ["auth-user"] });
-  window.location.reload()
+  /* Do NOT call window.location.reload() here.
+     AdminBootstrap detects the missing cache entry and navigates
+     to /admin/login via React Router <Navigate>.
+     Calling reload() on the user-side causes an infinite reload
+     loop: 401 → refresh fails → logout() → reload → 401 again. */
 };

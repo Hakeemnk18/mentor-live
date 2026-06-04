@@ -12,41 +12,74 @@ const bookingController = container.resolve(BookingController);
 // create booking
 router.post("/", (req, res) => bookingController.createBooking(req, res));
 
-// get all one to one booking
-router.get("/one-to-one", (req, res) =>
-  bookingController.getAllOneToOneBooking(req, res),
+// get all one to one booking for admin
+router.get("/one-to-one", 
+  authenticate.authenticate,
+  authorizeRoles("admin", "salesPerson"),
+  (req, res) =>
+    bookingController.getAllOneToOneBooking(req, res),
 );
 
 // get all booking
-router.get("/", (req, res) => bookingController.getAllBookings(req, res));
+router.get("/", 
+  authenticate.authenticate,
+  authorizeRoles("admin", "salesPerson"),
+  (req, res) => bookingController.getAllBookings(req, res)
+);
 
 // get all pooling booking
-router.get("/pooling", (req, res) =>
-  bookingController.getAllPoolingBooking(req, res),
+router.get("/pooling", 
+  authenticate.authenticate,
+  authorizeRoles("admin", "salesPerson"),
+  (req, res) =>
+    bookingController.getAllPoolingBooking(req, res),
 );
 
 // get pooling students
-router.get("/pooling/students", (req, res) =>
-  bookingController.getPoolingStudents(req, res),
+router.get("/pooling/students", 
+  authenticate.authenticate,
+  authorizeRoles("admin", "salesPerson"),
+  (req, res) =>
+    bookingController.getPoolingStudents(req, res),
 );
 
-router.patch("/one-to-one/slot/:bookingId/confirm", (req, res) =>
+// confirm one to one booking
+router.patch("/one-to-one/slot/:bookingId/confirm",
+  authenticate.authenticate,
+  authorizeRoles("admin"),
+   (req, res) =>
   bookingController.confirmOneToOneBooking(req, res),
 );
 
-router.patch("/one-to-one/chapter/:bookingId/confirm", (req, res) =>
+// confirm chapter one to one booking
+router.patch("/one-to-one/chapter/:bookingId/confirm", 
+  authenticate.authenticate,
+  authorizeRoles("admin"),
+  (req, res) =>
   bookingController.confirmChapterOneToOneBooking(req, res),
 );
 
-router.patch("/pooling/slot/confirm", (req, res) =>
+// confirm pooling booking
+router.patch("/pooling/slot/confirm", 
+  authenticate.authenticate,
+  authorizeRoles("admin"),
+  (req, res) =>
   bookingController.confirmPoolingBookings(req, res),
 );
 
-router.patch("/pooling/chapter/confirm", (req, res) =>
+// confirm chapter pooling booking
+router.patch("/pooling/chapter/confirm", 
+  authenticate.authenticate,
+  authorizeRoles("admin"),
+  (req, res) =>
   bookingController.confirmChapterPoolingBooking(req, res),
 );
 
-router.patch("/pooling/remove-student", (req, res) =>
+// remove student from pooling
+router.patch("/pooling/remove-student", 
+  authenticate.authenticate,
+  authorizeRoles("admin"),
+  (req, res) =>
   bookingController.removeStudentFromPooling(req, res),
 );
 

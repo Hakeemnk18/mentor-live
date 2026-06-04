@@ -13,18 +13,24 @@ const blogController = container.resolve(BlogController);
 /* ---------- CREATE ---------- */
 router.post(
   "/",
+    authenticate.authenticate,
+  authorizeRoles("admin"),
   (req, res) => blogController.createBlog(req, res)
 );
 
 /* ---------- EDIT ---------- */
 router.put(
   "/:id",
+  authenticate.authenticate,
+  authorizeRoles("admin"),
   (req, res) => blogController.editBlog(req, res)
 );
 
 /* ---------- DELETE (soft delete) ---------- */
 router.patch(
   "/:id/block",
+  authenticate.authenticate,
+  authorizeRoles("admin"),
   (req, res) => blogController.blockBlog(req, res)
 );
 
@@ -32,18 +38,23 @@ router.patch(
 
 router.patch(
   "/:id/unblock",
+  authenticate.authenticate,
+  authorizeRoles("admin"),
   (req, res) => blogController.unblockBlog(req, res)
 );
 
 /* ---------- USER: get all blogs ---------- */
 router.get(
   "/list",
+
   (req, res) => blogController.getAllBlogForUser(req, res)
 );
 
 /* ---------- ADMIN: get all blogs ---------- */
 router.get(
   "/",
+  authenticate.authenticate,
+  authorizeRoles("admin"),
   (req, res) => blogController.getAllBlogForAdmin(req, res)
 );
 

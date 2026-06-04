@@ -1,28 +1,39 @@
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { logout } from "../../../shared/utils/logout";
 import { useLogout } from "../../auth/hooks/useLogout";
 import toast from "react-hot-toast";
+import type { AuthUser } from "../../auth/type/auth.type";
 
-const navItems = [
-  { label: "Faculty", path: "/admin/faculty" },
-  { label: "Classes", path: "/admin/class" },
-  { label: "Syllabus", path: "/admin/syllabus" },
-  { label: "Subjects", path: "/admin/subjects" },
-  { label: "Chapters", path: "/admin/chapters" },
-  { label: "Bookings", path: "/admin/bookings" },
+const ALL_NAV_ITEMS = [
+  { label: "Faculty",      path: "/admin/faculty" },
+  { label: "Classes",      path: "/admin/class" },
+  { label: "Syllabus",     path: "/admin/syllabus" },
+  { label: "Subjects",     path: "/admin/subjects" },
+  { label: "Chapters",     path: "/admin/chapters" },
+  { label: "Bookings",     path: "/admin/bookings" },
   { label: "Testimonials", path: "/admin/testimonials" },
-  { label: "Blogs", path: "/admin/blogs" },
-  { label: "Banners", path: "/admin/banners" },
-  { label: "Students", path: "/admin/students" },
-  { label: "Users", path: "/admin/users" },
-  { label: "Leads", path: "/admin/leads" },
+  { label: "Blogs",        path: "/admin/blogs" },
+  { label: "Banners",      path: "/admin/banners" },
+  { label: "Students",     path: "/admin/students" },
+  { label: "Users",        path: "/admin/users" },
+  { label: "Leads",        path: "/admin/leads" },
 ];
+
+const SALES_PERSON_PATHS = new Set(["/admin/bookings"]);
 
 const AdminNavbar: React.FC = () => {
   const [open, setOpen] = useState(false);
   const { mutateAsync } = useLogout();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const user = queryClient.getQueryData<AuthUser>(["auth-user"]);
+
+  const navItems =
+    user?.role === "salesPerson"
+      ? ALL_NAV_ITEMS.filter((item) => SALES_PERSON_PATHS.has(item.path))
+      : ALL_NAV_ITEMS;
 
   const handleLogout = async () => {
     try {

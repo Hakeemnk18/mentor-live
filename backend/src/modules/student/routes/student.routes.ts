@@ -14,21 +14,26 @@ const studentController = container.resolve(StudentController);
 
 
 
-
+// get all students for admin with search and pagination
 router.get(
   "/",
+  authenticate.authenticate,
+  authorizeRoles("admin"),
   (req, res) => studentController.getStudentsForAdmin(req, res)
 );
 
+// block student
 router.patch(
   "/:id/block",
-  
+  authenticate.authenticate,
+  authorizeRoles("admin"),
   (req, res) => studentController.blockStudent(req, res)
 );
 
 router.patch(
   "/:id/unblock",
-  
+  authenticate.authenticate,
+  authorizeRoles("admin"),
   (req, res) => studentController.unblockStudent(req, res)
 );
 

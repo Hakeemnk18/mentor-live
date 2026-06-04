@@ -20,6 +20,12 @@ export const updateClass = async (
   return res.data;
 };
 
+/** Lightweight dropdown list — only name + id, no pagination */
+export const getClassesList = async (): Promise<{ _id: string; name: string }[]> => {
+  const res = await axiosInstance.get("/classes/list");
+  return (res.data.data ?? []).map((c: any) => ({ _id: c.id ?? c._id, name: c.name }));
+};
+
 export const getClasses = async (
   params: GetClassesParams
 ): Promise<GetClassesResult> => {

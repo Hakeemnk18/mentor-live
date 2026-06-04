@@ -14,18 +14,24 @@ const testimonialController = container.resolve(TestimonialController);
 /* ---------- CREATE ---------- */
 router.post(
   "/",
+  authenticate.authenticate,
+  authorizeRoles('admin'),
   (req, res) => testimonialController.createTestimonial(req, res)
 );
 
 /* ---------- EDIT ---------- */
 router.put(
   "/:id",
+  authenticate.authenticate,
+  authorizeRoles('admin'),
   (req, res) => testimonialController.editTestimonial(req, res)
 );
 
 /* ---------- DELETE (hard delete) ---------- */
 router.delete(
   "/:id",
+  authenticate.authenticate,  
+  authorizeRoles('admin'),
   (req, res) => testimonialController.deleteTestimonial(req, res)
 );
 
@@ -38,6 +44,8 @@ router.get(
 /* ---------- ADMIN: get all Testimonials ---------- */
 router.get(
   "/",
+  authenticate.authenticate,
+  authorizeRoles('admin'),
   (req, res) => testimonialController.getAllTestimonialForAdmin(req, res)
 );
 

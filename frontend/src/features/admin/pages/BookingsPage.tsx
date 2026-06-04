@@ -14,11 +14,13 @@ import {
   type 
   type 
 } from "../../../api/booking.api";
-import { getClasses } from "../../../api/class.api";
-import { getSyllabus } from "../../../api/syllabus.api";
+import { getClassesList } from "../../../api/class.api";
+import { getSyllabusList } from "../../../api/syllabus.api";
 import OneOnOneBookingModal from "../components/OneOnOneBookingModal";
 import PoolBookingModal from "../components/PoolBookingModal";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
+import { useQueryClient } from "@tanstack/react-query";
+import type { AuthUser } from "../../auth/type/auth.type";
 
 import type { OneOnOneBooking, PoolBooking, BookingType } from "../../../shared/types/booking.types";
 import type { Student } from "../../../shared/types/student.types";
@@ -132,6 +134,10 @@ const poolColumns: Column<PoolBooking>[] = [
 type BookingType = "one-on-one" | "pool";
 
 export default function BookingsPage() {
+  const queryClient = useQueryClient();
+  const user = queryClient.getQueryData<AuthUser>(["auth-user"]);
+  const readOnly = user?.role === "salesPerson";
+
   const [bookingType, setBookingType] = useState<BookingType>("one-on-one");
 
   /* modal */
@@ -161,15 +167,12 @@ export default function BookingsPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
-  /* load dropdowns once */
+  /* load dropdowns once — use lightweight /list endpoints (name + id only) */
   useEffect(() => {
-    Promise.all([
-      getClasses({ page: 1, limit: 100 }),
-      getSyllabus({ page: 1, limit: 100 }),
-    ])
-      .then(([c, s]) => {
-        setClassesList(c.rows);
-        setSyllabusList(s.rows);
+    Promise.all([getClassesList(), getSyllabusList()])
+      .then(([classes, syllabuses]) => {
+        setClassesList(classes);
+        setSyllabusList(syllabuses);
       })
       .catch(handleApiError);
   }, []);
@@ -368,6 +371,7 @@ export default function BookingsPage() {
     {/* One-on-One detail modal */}
     <OneOnOneBookingModal
       booking={selectedBooking}
+      readOnly={readOnly}
       onClose={() => { setSelectedBooking(null); triggerRefresh(); }}
       onConfirmed={() => { setSelectedBooking(null); triggerRefresh(); }}
     />
@@ -375,6 +379,7 @@ export default function BookingsPage() {
     {/* Pool booking detail modal */}
     <PoolBookingModal
       booking={selectedPoolBooking}
+      readOnly={readOnly}
       onClose={() => { setSelectedPoolBooking(null); triggerRefresh(); }}
       onConfirmed={() => { setSelectedPoolBooking(null); triggerRefresh(); }}
     />

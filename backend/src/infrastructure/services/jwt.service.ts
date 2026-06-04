@@ -27,11 +27,11 @@ export class JwtService implements ITokenService {
   }
 
   async signAccessToken(payload: ITokenPayload): Promise<string> {
-    return sign(payload, this.accessSecret!, { expiresIn: "10m" });
+    return sign(payload, this.accessSecret!, { expiresIn: "30m" });
   }
 
   async signRefreshToken(payload: IRefreshTokenPayload): Promise<string> {
-    return sign(payload, this.refreshSecret!, { expiresIn: "30m" });
+    return sign(payload, this.refreshSecret!, { expiresIn: "60m" });
   }
 
   async verifyAccessToken(token: string): Promise<ITokenPayload> {

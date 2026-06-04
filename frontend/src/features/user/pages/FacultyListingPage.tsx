@@ -80,6 +80,7 @@ const FacultyListingPage: React.FC = () => {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const faculties = data?.pages.flatMap((page) => page.data ?? []) ?? [];
+  console.log("subjects in faculty listing page", subjects);
 
   return (
     <div className="min-h-[80vh] bg-[#F5F5F5]">
