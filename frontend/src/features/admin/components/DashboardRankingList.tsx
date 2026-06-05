@@ -1,5 +1,3 @@
-import React from "react";
-
 type FacultyItem = {
   facultyId: string;
   name: string;

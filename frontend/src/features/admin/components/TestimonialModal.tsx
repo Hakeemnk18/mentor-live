@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import type { Student } from "../../../shared/types/student.types";
 import type { Testimonial, TestimonialPayload } from "../../../shared/types/testimonial.types";
 interface Props {
   open: boolean;

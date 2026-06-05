@@ -1,6 +1,6 @@
 ﻿import axiosInstance from "./axios.instance";
 
-import type { CreateBookingUserPayload, CreateBookingPayload, BookingFilters, OneOnOneBooking, PoolBooking, PoolStudent, PoolStudentsResponse } from "../shared/types/booking.types";
+import type { CreateBookingPayload, BookingFilters, OneOnOneBooking, PoolBooking, PoolStudentsResponse } from "../shared/types/booking.types";
 
 export const createBooking = async (payload: CreateBookingPayload) => {
   try {

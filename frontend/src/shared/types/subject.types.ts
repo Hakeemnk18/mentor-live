@@ -27,7 +27,7 @@ export type SubjectResponse = {
 };
 
 export type GetSubjectsResult = {
-  rows: SubjectResponse[];
+  rows: SubjectRow[];
   currentPage: number;
   totalPages: number;
   total: number;

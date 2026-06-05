@@ -18,8 +18,6 @@ import { getSyllabus } from "../../../api/syllabus.api";
 import { getClasses } from "../../../api/class.api";
 import SubjectFormModal from "../components/SubjectFormModal";
 import type { CreateSubjectPayload, SubjectRow, SubjectVariantForm } from "../../../shared/types/subject.types";
-const getErrorMessage = (err: any, fallback: string) =>
-  err?.response?.data?.message || fallback;
 
 export default function SubjectPage() {
   const [subjects, setSubjects] = useState<SubjectRow[]>([]);
@@ -39,7 +37,7 @@ export default function SubjectPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(5);
   const [search, setSearch] = useState("");
-  const [isDeleted, setIsDeleted] = useState<boolean | undefined>(undefined);
+  const [isDeleted] = useState<boolean | undefined>(undefined);
   const [totalPages, setTotalPages] = useState(1);
   const [syllabuses, setSyllabuses] = useState<{ _id: string; name: string }[]>(
     []

@@ -15,6 +15,7 @@ export const getSubjects = async (
       _id: s.id,
       name: s.name,
       isDeleted: s.isDeleted,
+      variants: 0, // count not returned by the list endpoint
     })),
     currentPage: apiData.currentPage,
     totalPages: apiData.totalPages,

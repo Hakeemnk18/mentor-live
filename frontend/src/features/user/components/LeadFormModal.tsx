@@ -1,5 +1,4 @@
 import { useState } from "react";
-import toast from "react-hot-toast";
 import { createLead } from "../../../api/lead.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 import type { CreateLeadPayload, LeadType } from "../../../shared/types/lead.types";

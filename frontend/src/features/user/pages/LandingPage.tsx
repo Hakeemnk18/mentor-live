@@ -3,17 +3,13 @@ import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import heroImage from "/hero-image.png";
 import { getFaculties } from "../../../api/faculty.api";
-import { getBlogs, getFeaturedBlogs } from "../../../api/blog.api";
+import { getFeaturedBlogs } from "../../../api/blog.api";
 import { getTestimonials } from "../../../api/testimonial.api";
 import FacultyCard from "../components/FacultyCard";
 import BlogCard from "../components/BlogCard";
 import TestimonialCard from "../components/TestimonialCard";
 import BannerCarousel from "../components/BannerCarousel";
 
-import type { Student } from "../../../shared/types/student.types";
-import type { Banner } from "../../../shared/types/banner.types";
-import type { Blog } from "../../../shared/types/blog.types";
-import type { Testimonial } from "../../../shared/types/testimonial.types";
 const stats = [
   { value: "500+", label: "QUALIFIED TUTORS" },
   { value: "50+", label: "SUBJECTS COVERED" },

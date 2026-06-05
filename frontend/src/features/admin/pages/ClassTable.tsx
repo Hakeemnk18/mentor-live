@@ -20,7 +20,7 @@ export default function ClassPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(5);
   const [search, setSearch] = useState("");
-  const [isDeleted, setIsDeleted] = useState<boolean | undefined>(undefined);
+  const [isDeleted] = useState<boolean | undefined>(undefined);
 
   const [totalPages, setTotalPages] = useState(1);
 

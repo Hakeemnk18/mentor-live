@@ -50,6 +50,7 @@ export type FacultyByChapterParams = {
   chapterId: string;
   page?: number;
   limit?: number;
+  search?: string;
 };
 
 export type FacultyRow = {

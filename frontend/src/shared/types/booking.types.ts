@@ -8,22 +8,42 @@ export interface CreateBookingUserPayload {
 }
 
 export interface CreateBookingPayload {
+  /** Existing registered user */
   userId?: string;
+  /** Guest user details (legacy key) */
   newUser?: CreateBookingUserPayload;
-  facultyId: string;
-  bookingType: "one-on-one" | "pool";
-  mode: "slot" | "chapter";
+  /** Guest user details (used by BookingModal) */
+  user?: CreateBookingUserPayload;
+  facultyId?: string;
+  bookingType?: "one-on-one" | "pool";
+  mode?: "slot" | "chapter";
   slotId?: string;
   chapterId?: string;
   time?: string;
-  price: number;
-  status: "pending" | "confirmed" | "cancelled";
+  price?: number;
+  status?: "pending" | "confirmed" | "cancelled";
+  /** Booking details wrapper used by BookingModal */
+  booking?: {
+    facultyId: string;
+    type: string;
+    mode: "slot" | "chapter";
+    slotId?: string[];
+    chapterId?: string;
+  };
 }
 
 export interface BookingFilters {
   page?: number;
   limit?: number;
   type?: "one-on-one" | "pool";
+  search?: string;
+  mode?: "chapter" | "slot";
+  chapterId?: string;
+  slotId?: string;
+  faculty?: string;
+  classId?: string;
+  syllabusId?: string;
+  isContacted?: boolean;
 }
 
 export interface OneOnOneBooking {

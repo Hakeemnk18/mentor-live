@@ -16,10 +16,7 @@ import { getSyllabus } from "../../../api/syllabus.api";
 import EditFacultyBasicModal from "../components/EditFacultyBasicModal";
 import PoolBookingModal from "../components/PoolBookingModal";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
-import TopLoader from "../../../shared/components/TopLoader";
-import { timeStringToISOSlot } from "../components/FacultyModal";
-
-import type { SubjectOffering, TimeSlot, ChapterSlot, FacultyData } from "../../../shared/types/faculty.types";
+import type { TimeSlot, ChapterSlot, FacultyData } from "../../../shared/types/faculty.types";
 import type { PoolBooking } from "../../../shared/types/booking.types";
 /* ================================================================== */
 /* HELPERS                                                              */

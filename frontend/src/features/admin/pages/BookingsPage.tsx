@@ -6,13 +6,10 @@ import { AdminPageActions } from "../components/AdminPageActions";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
 import TopLoader from "../../../shared/components/TopLoader";
-import toast from "react-hot-toast";
 import type { Column } from "../components/AdminTable";
 import {
   getOneOnOneBookings,
   getPoolBookings,
-  type 
-  type 
 } from "../../../api/booking.api";
 import { getClassesList } from "../../../api/class.api";
 import { getSyllabusList } from "../../../api/syllabus.api";
@@ -23,7 +20,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { AuthUser } from "../../auth/type/auth.type";
 
 import type { OneOnOneBooking, PoolBooking, BookingType } from "../../../shared/types/booking.types";
-import type { Student } from "../../../shared/types/student.types";
 /* ─── helpers ─────────────────────────────────────────── */
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-IN", {
@@ -42,8 +38,8 @@ const oneOnOneColumns: Column<OneOnOneBooking>[] = [
     label: "Student",
     render: (b) => (
       <div>
-        <p className="font-medium text-gray-900">{b.student.name}</p>
-        <p className="text-xs text-gray-400">{b.student.phone}</p>
+        <p className="font-medium text-gray-900">{b.user.name}</p>
+        <p className="text-xs text-gray-400">{b.user.phoneNumber}</p>
       </div>
     ),
   },
@@ -56,8 +52,8 @@ const oneOnOneColumns: Column<OneOnOneBooking>[] = [
         ? b.chapter?.name ?? "—"
         : formatTimeAMPM(b.slot?.time) ?? "—",
   },
-  { key: "class", label: "Class", render: (b) => b.class.name },
-  { key: "syllabus", label: "Syllabus", render: (b) => b.syllabus.name },
+  { key: "class", label: "Class", render: (b) => b.user.class.name },
+  { key: "syllabus", label: "Syllabus", render: (b) => b.user.syllabus.name },
   {
     key: "status",
     label: "Status",
@@ -66,7 +62,7 @@ const oneOnOneColumns: Column<OneOnOneBooking>[] = [
         className={`px-2 py-1 rounded text-xs font-medium ${
           b.status === "confirmed"
             ? "bg-green-100 text-green-700"
-            : b.status === "interested"
+            : b.status === "pending"
             ? "bg-blue-100 text-blue-700"
             : "bg-gray-100 text-gray-600"
         }`}
@@ -76,17 +72,17 @@ const oneOnOneColumns: Column<OneOnOneBooking>[] = [
     ),
   },
   {
-    key: "isContacted",
+    key: "contactStatus",
     label: "Contacted",
     render: (b) => (
       <span
         className={`px-2 py-1 rounded text-xs font-medium ${
-          b.isContacted
+          b.contactStatus !== "pending_contact"
             ? "bg-green-100 text-green-700"
             : "bg-yellow-100 text-yellow-700"
         }`}
       >
-        {b.isContacted ? "Yes" : "Pending"}
+        {b.contactStatus !== "pending_contact" ? "Yes" : "Pending"}
       </span>
     ),
   },
@@ -131,7 +127,6 @@ const poolColumns: Column<PoolBooking>[] = [
 ];
 
 /* ─── component ───────────────────────────────────────── */
-type BookingType = "one-on-one" | "pool";
 
 export default function BookingsPage() {
   const queryClient = useQueryClient();
@@ -348,7 +343,7 @@ export default function BookingsPage() {
           data={oneOnOneData}
           columns={oneOnOneColumns}
           actions={[{ label: "View", onClick: (row) => setSelectedBooking(row) }]}
-          getRowId={(row) => row.id}
+          getRowId={(row) => row._id}
         />
       ) : (
         <AdminTable
