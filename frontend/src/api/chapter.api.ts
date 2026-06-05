@@ -1,6 +1,6 @@
 import axiosInstance from "./axios.instance";
 
-import type { GetChaptersParams, GetChaptersResult, GetChaptersListParams, ChapterListItem, CreateChapterPayload, SubjectVariantsForChapterApi, GetSubjectVariantsParams } from "../shared/types/chapter.types";
+import type { GetChaptersParams, GetChaptersResult, GetChaptersListParams, ChapterListItem, ChapterInitialData, CreateChapterPayload, SubjectVariantsForChapterApi, GetSubjectVariantsParams } from "../shared/types/chapter.types";
 
 type RawSubjectVariant = {
   _id?: string; id?: string;
@@ -40,6 +40,20 @@ console.log("fetching chapters resonse ",res)
     total: apiData.total,
   };
 };
+export const getChapterById = async (id: string): Promise<ChapterInitialData> => {
+  const res = await axiosInstance.get(`/chapters/${id}`);
+  const c = res.data.data;
+  return {
+    _id: c.id,
+    name: c.name,
+    price: c.price,
+    icon: c.icon,                         // { url, publicId } — full object from backend
+    syllabusId: c.subjectVariant.syllabus.id,
+    classId: c.subjectVariant.class.id,
+    subjectVariantId: c.subjectVariant.id,
+  };
+};
+
 export const createChapter = async (
   payload: CreateChapterPayload
 ) => {

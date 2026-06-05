@@ -7,6 +7,7 @@ import { uploadToCloudinary } from "../../../shared/utils/cloudinary";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
 import type { ChapterInitialData } from "../../../shared/types/chapter.types";
+import type { FacultyListItem } from "../../../shared/types/faculty.types";
 /* ---------------- TYPES ---------------- */
 
 type SubjectVariant = {
@@ -29,6 +30,10 @@ type Props = {
 
   syllabuses: { _id: string; name: string }[];
   classes: { _id: string; name: string }[];
+
+  /** Faculties that teach this chapter (edit mode only) */
+  faculties?: FacultyListItem[];
+  facultiesLoading?: boolean;
 
   onCreate: (data: {
     name: string;
@@ -58,6 +63,8 @@ export default function ChapterFormModal({
   loading,
   syllabuses,
   classes,
+  faculties = [],
+  facultiesLoading = false,
   onCreate,
   onUpdate,
 }: Props) {
@@ -247,7 +254,7 @@ export default function ChapterFormModal({
 
   return (
     <>
-      <div className="fixed inset-0 z-[1000] flex items-center justify-center">
+      <div className="fixed inset-0 z-1000 flex items-center justify-center">
         <div
           className="absolute inset-0 bg-black/30"
           onClick={!loading ? onClose : undefined}
@@ -387,6 +394,61 @@ export default function ChapterFormModal({
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
+            </div>
+          )}
+
+          {/* Assigned Faculties — edit mode only */}
+          {mode === "edit" && (
+            <div className="mt-6">
+              <p className="text-sm font-medium text-gray-700 mb-2">
+                Assigned Faculties
+              </p>
+
+              {facultiesLoading ? (
+                <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                  Loading faculties…
+                </div>
+              ) : faculties.length === 0 ? (
+                <p className="text-sm text-gray-400 italic">
+                  No faculty assigned to this chapter yet.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {faculties.map((f) => (
+                    <div
+                      key={f.id}
+                      className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2"
+                    >
+                      {f.image ? (
+                        <img
+                          src={f.image}
+                          alt={f.name}
+                          className="w-9 h-9 rounded-full object-cover shrink-0 border border-gray-200"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-[#DB313E]/10 text-[#DB313E] flex items-center justify-center text-sm font-semibold shrink-0">
+                          {f.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate">{f.name}</p>
+                        {f.qualifications.length > 0 && (
+                          <p className="text-xs text-gray-500 truncate">
+                            {f.qualifications.join(", ")}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-sm font-semibold text-[#DB313E] shrink-0">
+                        ₹{f.price}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

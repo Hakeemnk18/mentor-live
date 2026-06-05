@@ -62,12 +62,12 @@ router.get(
 );
 
 
-// get chapter details for admin
+// get chapter details by id for admin
 router.get(
   "/:id",
   authenticate.authenticate,
   authorizeRoles("admin"),
-  (req, res) => chapterController.getChaptersForAdmin(req, res) 
+  (req, res) => chapterController.getChapterDetailsForAdmin(req, res)
 );
 
 export default router;
