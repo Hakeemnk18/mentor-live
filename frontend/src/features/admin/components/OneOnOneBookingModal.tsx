@@ -112,16 +112,16 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[1000] flex items-center justify-center"
+        className="fixed inset-0 z-1000 flex items-center justify-center"
         onClick={onClose}
       >
         <div className="absolute inset-0 bg-black/40" />
       </div>
 
       {/* Panel */}
-      <div className="fixed inset-0 z-[1001] flex items-center justify-center pointer-events-none">
+      <div className="fixed inset-0 z-1001 flex items-center justify-center pointer-events-none">
         <div
-          className="pointer-events-auto relative w-full max-w-lg bg-white rounded-xl shadow-xl flex flex-col max-h-[90vh]"
+          className="pointer-events-auto relative w-full max-w-lg mx-4 bg-white rounded-xl shadow-xl flex flex-col max-h-[90vh]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}

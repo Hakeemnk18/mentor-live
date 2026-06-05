@@ -76,7 +76,7 @@ export default function NameFormModal({
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+      <div className="relative w-full max-w-md mx-4 rounded-lg bg-white p-6 shadow-lg">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">
           {mode === "create" ? `Create ${title}` : `Edit ${title}`}
         </h2>

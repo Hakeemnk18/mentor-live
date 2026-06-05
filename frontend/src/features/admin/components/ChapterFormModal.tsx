@@ -253,7 +253,7 @@ export default function ChapterFormModal({
           onClick={!loading ? onClose : undefined}
         />
 
-        <div className="relative w-full max-w-lg bg-white rounded-lg p-6 shadow-lg">
+        <div className="relative w-full max-w-lg mx-4 bg-white rounded-lg p-6 shadow-lg">
           <h2 className="text-lg font-semibold mb-4">
             {mode === "create" ? "Create Chapter" : "Edit Chapter"}
           </h2>

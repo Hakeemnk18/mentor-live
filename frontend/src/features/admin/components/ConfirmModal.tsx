@@ -32,7 +32,7 @@ export default function ConfirmModal({
         className="absolute inset-0 bg-black/30"
         onClick={!loading ? onClose : undefined}
       />
-      <div className="relative w-full max-w-sm rounded-lg bg-white p-6 shadow-lg">
+      <div className="relative w-full max-w-sm mx-4 rounded-lg bg-white p-6 shadow-lg">
         <h2 className="text-base font-semibold text-gray-800 mb-2">{title}</h2>
         <p className="text-sm text-gray-600 mb-6">{message}</p>
 

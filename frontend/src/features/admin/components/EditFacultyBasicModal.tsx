@@ -264,7 +264,7 @@ export default function EditFacultyBasicModal({
         onClick={!isLoading ? onClose : undefined}
       />
 
-      <div className="relative w-full max-w-xl bg-white rounded-xl shadow-xl flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-xl mx-4 bg-white rounded-xl shadow-xl flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="border-b px-6 py-4">
           <h2 className="text-base font-semibold text-gray-900">

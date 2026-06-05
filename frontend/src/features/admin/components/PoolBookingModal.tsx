@@ -158,7 +158,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
       {/* Panel */}
       <div className="fixed inset-0 z-[1001] flex items-center justify-center pointer-events-none">
         <div
-          className="pointer-events-auto relative w-full max-w-xl bg-white rounded-xl shadow-xl flex flex-col max-h-[90vh]"
+          className="pointer-events-auto relative w-full max-w-xl mx-4 bg-white rounded-xl shadow-xl flex flex-col max-h-[90vh]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
