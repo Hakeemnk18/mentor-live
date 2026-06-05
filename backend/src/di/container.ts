@@ -7,6 +7,7 @@ import { registerChapterDependencies } from "./chapter.container.js";
 import { registerClassDependencies } from "./class.container.js";
 import { registerCommonDependencies } from "./common.container.js";
 import { registerFacultyDependencies } from "./faculty.container.js";
+import { registerFacultySlotDependencies } from "./faculty.slot.container.js";
 import { registerMediaDependencies } from "./media.container.js";
 import { registerStudentDependencies } from "./student.container.js";
 import { registerSubjectDependencies } from "./subject.container.js";
@@ -23,6 +24,7 @@ registerSyllabusDependencies();
 registerSubjectDependencies();
 registerSubjectVariantDependencies();
 registerChapterDependencies();
+registerFacultySlotDependencies();   // must come before Faculty (use cases depend on it)
 registerFacultyDependencies();
 registerStudentDependencies();
 registerBookingDependencies();

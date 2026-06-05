@@ -2,12 +2,20 @@ import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  getFacultyById,
-  getFacultyByChapter,
+  getFacultyPublicProfile,
   getFacultyAvailableSlots,
   getFacultySlotDetails,
+  getFacultyByChapter,
 } from "../../../api/faculty.api";
 import BookingModal from "../components/BookingModal";
+
+type OfferingItem = {
+  variantId: string;
+  subjectName: string;
+  className: string;
+  syllabusName: string;
+  price: number;
+};
 
 type SlotData = {
   id: string;
@@ -29,79 +37,137 @@ type FacultyData = {
   slot?: SlotData;
 };
 
+/** Extract YouTube video ID from various URL formats */
+const getYoutubeId = (url: string): string | null => {
+  if (!url) return null;
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=)([\w-]{11})/,
+    /(?:youtu\.be\/)([\w-]{11})/,
+    /(?:youtube\.com\/embed\/)([\w-]{11})/,
+    /(?:youtube\.com\/v\/)([\w-]{11})/,
+    /(?:youtube\.com\/live\/)([\w-]{11})/,
+    /(?:youtube\.com\/shorts\/)([\w-]{11})/,
+  ];
+  for (const p of patterns) {
+    const match = url.match(p);
+    if (match) return match[1];
+  }
+  return null;
+};
+
 const formatTime = (time: string) => {
   const d = new Date(time);
   return d.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
-    timeZone: "UTC", // ← key fix: read as UTC, not local IST
+    timeZone: "UTC",
   });
 };
 
 const FacultyDetailsPage = () => {
   const location = useLocation();
-  const { facultyId = "", chapterId, syllabusId = "", classId = "" } = (location.state ?? {}) as {
+  const {
+    facultyId = "",
+    chapterId,
+    syllabusId = "",
+    classId = "",
+    variantId: initialVariantId = "",
+  } = (location.state ?? {}) as {
     facultyId?: string;
     chapterId?: string;
     syllabusId?: string;
     classId?: string;
+    variantId?: string;
   };
 
   const isChapterMode = !!chapterId;
+
+  /* ─── Slot mode: which variant is currently selected ─── */
+  const [activeVariantId, setActiveVariantId] = useState<string>(initialVariantId);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [bookingType, setBookingType] = useState<"oneToOne" | "pooling">("pooling");
 
-  /* ── Fetch faculty details (slot-based or chapter-based) ── */
+  /* ─── Chapter mode: fetch via existing chapter endpoint ─── */
   const {
-    data: faculty,
-    isLoading,
-    isError,
+    data: chapterFaculty,
+    isLoading: chapterLoading,
+    isError: chapterError,
   } = useQuery<FacultyData>({
-    queryKey: isChapterMode
-      ? ["faculty-detail-chapter", facultyId, chapterId]
-      : ["faculty-detail", facultyId],
+    queryKey: ["faculty-detail-chapter", facultyId, chapterId],
+    queryFn: () => getFacultyByChapter(facultyId, chapterId!),
+    enabled: isChapterMode && !!facultyId,
+    refetchOnWindowFocus: false,
+  });
+
+  /* ─── Slot mode: always load public profile (no variantId needed) ─── */
+  const {
+    data: profile,
+    isLoading: profileLoading,
+    isError: profileError,
+  } = useQuery({
+    queryKey: ["faculty-public-profile", facultyId, classId, syllabusId],
     queryFn: () =>
-      isChapterMode
-        ? getFacultyByChapter(facultyId, chapterId!)
-        : getFacultyById(facultyId),
-    enabled: !!facultyId,
+      getFacultyPublicProfile(facultyId, {
+        classId: classId || undefined,
+        syllabusId: syllabusId || undefined,
+      }),
+    enabled: !isChapterMode && !!facultyId,
     refetchOnWindowFocus: false,
   });
 
-  /* ── Fetch available slots (only in slot mode) ── */
+  /* ─── Slot mode: available slots for the chosen variant ─── */
   const { data: slots } = useQuery({
-    queryKey: ["faculty-slots", facultyId],
-    queryFn: () => getFacultyAvailableSlots(facultyId),
-    enabled: !!facultyId && !isChapterMode,
+    queryKey: ["faculty-slots", facultyId, activeVariantId],
+    queryFn: () => getFacultyAvailableSlots(facultyId, activeVariantId),
+    enabled: !isChapterMode && !!facultyId && !!activeVariantId,
     refetchOnWindowFocus: false,
   });
 
-  /* ── Fetch selected slot details (only in slot mode) ── */
+  /* ─── Slot mode: details of the currently selected slot ─── */
   const { data: selectedSlotData } = useQuery({
     queryKey: ["slot-details", facultyId, selectedSlotId],
     queryFn: () => getFacultySlotDetails(facultyId, selectedSlotId!),
-    enabled: !!facultyId && !!selectedSlotId && !isChapterMode,
+    enabled: !isChapterMode && !!facultyId && !!selectedSlotId,
     refetchOnWindowFocus: false,
   });
 
-  const availableSlots = slots ?? [];
-  // Use selected slot data if available, otherwise fall back to initial slot from faculty
-  const activeSlot = selectedSlotData ?? faculty?.slot;
-  const poolCount = activeSlot?.pool?.length ?? 0;
-  const poolLimit = activeSlot?.poolLimit ?? 5;
-  const slotPrice = faculty?.price ?? 0;
+  /* ─── Derived values ─── */
+  const isLoading = isChapterMode ? chapterLoading : profileLoading;
+  const isError   = isChapterMode ? chapterError   : profileError;
 
-  // Price tiers for pooling visualization
+  const availableSlots = slots ?? [];
+  const activeSlot = selectedSlotData ?? chapterFaculty?.slot;
+  const poolCount  = activeSlot?.pool?.length ?? 0;
+  const poolLimit  = activeSlot?.poolLimit ?? 5;
+
+  // Price: from the selected variant's offering, or chapter faculty price
+  const selectedOffering: OfferingItem | undefined = (profile?.subjectOffering ?? []).find(
+    (o) => o.variantId === activeVariantId,
+  );
+  const slotPrice = isChapterMode
+    ? (chapterFaculty?.price ?? 0)
+    : (selectedOffering?.price ?? 0);
+
+  // Price tiers for pooling visualisation
   const priceTiers = [
-    { count: 1, label: `${slotPrice}`, suffix: "/each" },
-    { count: 2, label: `${Math.round(slotPrice / 2)}`, suffix: "/each" },
-    { count: 3, label: `${Math.round(slotPrice / 3)}`, suffix: "/each" },
-    { count: 4, label: `${Math.round(slotPrice / 4)}`, suffix: "/each" },
-    { count: 5, label: `${Math.round(slotPrice / 5)}`, suffix: "/each" },
+    { label: `${slotPrice}`,                      suffix: "/each" },
+    { label: `${Math.round(slotPrice / 2)}`,      suffix: "/each" },
+    { label: `${Math.round(slotPrice / 3)}`,      suffix: "/each" },
+    { label: `${Math.round(slotPrice / 4)}`,      suffix: "/each" },
+    { label: `${Math.round(slotPrice / 5)}`,      suffix: "/each" },
   ];
 
+  // Names for header display
+  const displayName    = isChapterMode ? chapterFaculty?.name    : profile?.name    ?? "";
+  const displayQuals   = isChapterMode ? chapterFaculty?.qualifications : profile?.qualifications ?? [];
+  const displayDesc    = isChapterMode ? chapterFaculty?.description  : profile?.description    ?? "";
+  const displayDemo    = isChapterMode ? chapterFaculty?.demoClass    : profile?.demoClass      ?? "";
+  const displayImage   = isChapterMode ? chapterFaculty?.image        : profile?.image          ?? "";
+  const offerings: OfferingItem[] = profile?.subjectOffering ?? [];
+
+  /* ─── Loading skeleton ─── */
   if (isLoading) {
     return (
       <div className="min-h-[80vh] bg-[#F5F5F5]">
@@ -120,7 +186,7 @@ const FacultyDetailsPage = () => {
     );
   }
 
-  if (isError || !faculty) {
+  if (isError || (!isChapterMode && !profile) || (isChapterMode && !chapterFaculty)) {
     return (
       <div className="min-h-[80vh] bg-[#F5F5F5] flex items-center justify-center">
         <div className="text-center">
@@ -140,11 +206,11 @@ const FacultyDetailsPage = () => {
       <div className="max-w-5xl mx-auto px-5 md:px-8 -mt-24">
         <div className="flex items-end gap-6 mb-10">
           {/* Avatar */}
-          <div className="w-36 h-36 rounded-full bg-gray-200 border-4 border-white shadow-lg overflow-hidden flex-shrink-0">
-            {faculty.image ? (
+          <div className="w-36 h-36 rounded-full bg-gray-200 border-4 border-white shadow-lg overflow-hidden shrink-0">
+            {displayImage ? (
               <img
-                src={faculty.image}
-                alt={faculty.name}
+                src={displayImage}
+                alt={displayName}
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -158,12 +224,12 @@ const FacultyDetailsPage = () => {
 
           {/* Name + badges */}
           <div className="pb-2">
-            <h1 className="text-2xl md:text-3xl font-extrabold text-white [text-shadow:_0_2px_4px_rgba(0,0,0,0.8),_0_0_8px_rgba(0,0,0,0.6)]">
-              {faculty.name}
+            <h1 className="text-2xl md:text-3xl font-extrabold text-white [text-shadow:0_2px_4px_rgba(0,0,0,0.8),0_0_8px_rgba(0,0,0,0.6)]">
+              {displayName}
             </h1>
             <div className="flex items-center gap-3 mt-1 flex-wrap">
               <span className="bg-[#DB313E] text-white text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
-                {faculty.qualifications[0] ?? "Faculty"}
+                {(displayQuals ?? [])[0] ?? "Faculty"}
               </span>
               {isChapterMode && activeSlot?.chapter && (
                 <span className="bg-gray-700 text-white text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
@@ -178,29 +244,18 @@ const FacultyDetailsPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 pb-16">
           {/* LEFT COLUMN (3/5) */}
           <div className="lg:col-span-3 space-y-10">
+
             {/* Introduction */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-1 h-6 bg-[#DB313E] rounded-full" />
-                <h2 className="text-base font-extrabold text-gray-900 uppercase tracking-wide">
-                  Introduction
-                </h2>
-              </div>
-              <p className="text-gray-500 text-sm leading-relaxed pl-3">
-                {faculty.description}
-              </p>
+              <SectionHeading label="Introduction" />
+              <p className="text-gray-500 text-sm leading-relaxed pl-3">{displayDesc}</p>
             </div>
 
             {/* Qualifications */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-1 h-6 bg-[#DB313E] rounded-full" />
-                <h2 className="text-base font-extrabold text-gray-900 uppercase tracking-wide">
-                  Qualifications
-                </h2>
-              </div>
+              <SectionHeading label="Qualifications" />
               <div className="flex flex-wrap gap-3 pl-3">
-                {faculty.qualifications.map((q, i) => (
+                {(displayQuals ?? []).map((q, i) => (
                   <span
                     key={i}
                     className="bg-gray-100 text-gray-700 text-sm font-medium px-4 py-2 rounded-md border border-gray-200"
@@ -212,54 +267,74 @@ const FacultyDetailsPage = () => {
             </div>
 
             {/* Demo Class */}
-            {faculty.demoClass && (
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-1 h-6 bg-[#DB313E] rounded-full" />
-                  <h2 className="text-base font-extrabold text-gray-900 uppercase tracking-wide">
-                    Demo Class
-                  </h2>
+            {displayDemo && (() => {
+              const videoId = getYoutubeId(displayDemo);
+              return (
+                <div>
+                  <SectionHeading label="Demo Class" />
+                  <div className="pl-3">
+                    {videoId ? (
+                      <a
+                        href={displayDemo}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group relative inline-block rounded-xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <img
+                          src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
+                          alt="Demo class thumbnail"
+                          className="w-64 h-36 object-cover"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+                          <div className="w-12 h-12 rounded-full bg-[#DB313E] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                            <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                          </div>
+                        </div>
+                      </a>
+                    ) : (
+                      <a
+                        href={displayDemo}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-[#DB313E] text-sm font-semibold hover:underline"
+                      >
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                        Watch Demo Class
+                      </a>
+                    )}
+                  </div>
                 </div>
-                <a
-                  href={faculty.demoClass}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-[#DB313E] text-sm font-semibold hover:underline pl-3"
-                >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                  Watch Demo Class
-                </a>
-              </div>
-            )}
+              );
+            })()}
 
-            {/* Available Slots — only in slot mode */}
-            {!isChapterMode && (
+            {/* ── Slot mode: Subject Variant Selector ── */}
+            {!isChapterMode && offerings.length > 0 && (
               <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-1 h-6 bg-[#DB313E] rounded-full" />
-                  <h2 className="text-base font-extrabold text-gray-900 uppercase tracking-wide">
-                    Available Slots
-                  </h2>
-                </div>
+                <SectionHeading label="Select Subject" />
                 <div className="flex flex-wrap gap-2 pl-3">
-                  {availableSlots.length === 0 && (
-                    <p className="text-gray-400 text-sm">No available slots at the moment.</p>
-                  )}
-                  {availableSlots.map((s) => {
-                    const isSelected = selectedSlotId === s.id;
+                  {offerings.map((o) => {
+                    const isActive = activeVariantId === o.variantId;
                     return (
                       <button
-                        key={s.id}
-                        onClick={() => setSelectedSlotId(s.id)}
-                        className={`px-4 py-2 text-xs font-bold rounded-md transition-all cursor-pointer ${
-                          isSelected
-                            ? "bg-[#DB313E] text-white shadow-sm"
-                            : "bg-[#DB313E]/10 text-[#DB313E] hover:bg-[#DB313E]/20"
+                        key={o.variantId}
+                        onClick={() => {
+                          setActiveVariantId(o.variantId);
+                          setSelectedSlotId(null); // reset slot on variant change
+                        }}
+                        className={`px-4 py-2 rounded-full text-xs font-bold border transition-all cursor-pointer ${
+                          isActive
+                            ? "bg-[#DB313E] text-white border-[#DB313E] shadow-sm"
+                            : "bg-white text-gray-700 border-gray-300 hover:border-[#DB313E] hover:text-[#DB313E]"
                         }`}
                       >
-                        {formatTime(s.time)}
+                        <span className="font-semibold">{o.subjectName}</span>
+                        <span className="text-[10px] ml-1 opacity-80">
+                          {o.className} · {o.syllabusName}
+                        </span>
                       </button>
                     );
                   })}
@@ -267,25 +342,63 @@ const FacultyDetailsPage = () => {
               </div>
             )}
 
+            {/* ── Slot mode: Available Slots (only after variant is picked) ── */}
+            {!isChapterMode && (
+              <div>
+                <SectionHeading label="Available Slots" />
+                <div className="flex flex-wrap gap-2 pl-3">
+                  {!activeVariantId ? (
+                    <p className="text-gray-400 text-sm">Select a subject above to see available slots.</p>
+                  ) : availableSlots.length === 0 ? (
+                    <p className="text-gray-400 text-sm">No available slots for this subject at the moment.</p>
+                  ) : (
+                    availableSlots.map((s) => {
+                      const isSelected = selectedSlotId === s.id;
+                      return (
+                        <button
+                          key={s.id}
+                          onClick={() => setSelectedSlotId(s.id)}
+                          className={`px-4 py-2 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-[#DB313E] text-white shadow-sm"
+                              : "bg-[#DB313E]/10 text-[#DB313E] hover:bg-[#DB313E]/20"
+                          }`}
+                        >
+                          {formatTime(s.time)}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Chapter info — only in chapter mode */}
             {isChapterMode && activeSlot?.chapter && (
               <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-1 h-6 bg-[#DB313E] rounded-full" />
-                  <h2 className="text-base font-extrabold text-gray-900 uppercase tracking-wide">
-                    Chapter
-                  </h2>
-                </div>
-                <p className="text-gray-600 text-sm font-medium pl-3">
-                  {activeSlot.chapter.name}
-                </p>
+                <SectionHeading label="Chapter" />
+                <p className="text-gray-600 text-sm font-medium pl-3">{activeSlot.chapter.name}</p>
               </div>
             )}
           </div>
 
-          {/* RIGHT COLUMN — Pooling Card (2/5) */}
+          {/* RIGHT COLUMN — Booking Card (2/5) */}
           <div className="lg:col-span-2">
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm sticky top-8">
+
+              {/* Selected variant info */}
+              {!isChapterMode && selectedOffering && (
+                <div className="mb-4 pb-4 border-b border-gray-100">
+                  <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-1">Subject</p>
+                  <p className="text-sm font-bold text-gray-800">
+                    {selectedOffering.subjectName}
+                    <span className="ml-2 text-xs font-normal text-gray-400">
+                      {selectedOffering.className} · {selectedOffering.syllabusName}
+                    </span>
+                  </p>
+                </div>
+              )}
+
               {/* Pooling status */}
               <h3 className="text-lg font-bold text-gray-900 mb-4">
                 Pooling status:{" "}
@@ -299,11 +412,7 @@ const FacultyDetailsPage = () => {
                   const isActive = i < poolCount;
                   return (
                     <div key={i} className="flex-1">
-                      <div
-                        className={`h-2 rounded-full mb-1 ${
-                          isActive ? "bg-[#DB313E]" : "bg-gray-200"
-                        }`}
-                      />
+                      <div className={`h-2 rounded-full mb-1 ${isActive ? "bg-[#DB313E]" : "bg-gray-200"}`} />
                       <p className="text-[10px] font-bold text-gray-700 text-center">
                         {tier.label}
                         <span className="text-gray-400 font-normal">{tier.suffix}</span>
@@ -329,12 +438,19 @@ const FacultyDetailsPage = () => {
                 </div>
               )}
 
-              {/* Action buttons */}
-              {(!isChapterMode && !selectedSlotId) && (
+              {/* Prompt messages */}
+              {!isChapterMode && !activeVariantId && (
+                <p className="text-[#DB313E] text-xs font-bold text-center mb-3">
+                  Please select a subject to continue.
+                </p>
+              )}
+              {!isChapterMode && activeVariantId && !selectedSlotId && (
                 <p className="text-[#DB313E] text-xs font-bold text-center mb-3">
                   Please select a time slot to proceed.
                 </p>
               )}
+
+              {/* Action buttons */}
               <div className="space-y-3">
                 <button
                   onClick={() => { setBookingType("oneToOne"); setBookingModalOpen(true); }}
@@ -363,6 +479,7 @@ const FacultyDetailsPage = () => {
           </div>
         </div>
       </div>
+
       {/* Booking Modal */}
       <BookingModal
         isOpen={bookingModalOpen}
@@ -371,6 +488,7 @@ const FacultyDetailsPage = () => {
         mode={isChapterMode ? "chapter" : "slot"}
         facultyId={facultyId}
         slotId={isChapterMode ? undefined : selectedSlotId}
+        subjectVariantId={isChapterMode ? undefined : activeVariantId || undefined}
         chapterId={chapterId}
         defaultSyllabusId={syllabusId}
         defaultClassId={classId}
@@ -378,5 +496,13 @@ const FacultyDetailsPage = () => {
     </div>
   );
 };
+
+/** Reusable section heading with red left bar */
+const SectionHeading = ({ label }: { label: string }) => (
+  <div className="flex items-center gap-2 mb-3">
+    <div className="w-1 h-6 bg-[#DB313E] rounded-full" />
+    <h2 className="text-base font-extrabold text-gray-900 uppercase tracking-wide">{label}</h2>
+  </div>
+);
 
 export default FacultyDetailsPage;

@@ -16,4 +16,5 @@ export interface IFacultyController {
   unblockFaculty(req: Request, res: Response): Promise<void>
   getAvailableSlots(req: Request, res: Response): Promise<void>
   getUserSlotDetails(req: Request, res: Response): Promise<void>
+  getFacultyPublicProfile(req: Request, res: Response): Promise<void>
 }

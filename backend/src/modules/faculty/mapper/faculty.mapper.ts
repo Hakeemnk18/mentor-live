@@ -35,14 +35,6 @@ export class FacultyMapper {
         }),
       ),
 
-      slots: (facultyModelData.slots ?? []).map((slot: any) => ({
-        id: slot._id?.toString(),
-        time: slot.time,
-        isAvailable: slot.isAvailable,
-        pool: (slot.pool ?? []).map((u: any) => u.toString()),
-        poolLimit: slot.poolLimit,
-      })),
-
       chapterSlots: (facultyModelData.chapterSlots ?? []).map((slot: any) => ({
         id: slot._id?.toString(),
         chapterId: slot.chapter?.toString(),
@@ -68,12 +60,6 @@ export class FacultyMapper {
       subjectOffering: facultyEntity.subjectOffering.map((so) => ({
         variantId: so.variantId,
         price: so.price,
-      })),
-      slots: facultyEntity.slots.map((slot) => ({
-        time: slot.time,
-        isAvailable: slot.isAvailable,
-        pool: slot.pool,
-        poolLimit: slot.poolLimit,
       })),
       chapterSlots: facultyEntity.chapterSlots.map((slot) => ({
         chapter: slot.chapterId,
@@ -132,11 +118,11 @@ export class FacultyMapper {
       image: doc.image.url,
       price,
       slot: {
-        id: doc.slots._id.toString(),
-        isAvailable: doc.slots.isAvailable,
-        time: doc.slots.time,
-        pool: doc.slots.pool,
-        poolLimit: doc.slots.poolLimit,
+        id: doc.slot._id?.toString() ?? doc.slot.id,
+        isAvailable: doc.slot.isAvailable,
+        time: doc.slot.time,
+        pool: (doc.slot.pool ?? []).map((u: any) => ({ id: u.toString() })),
+        poolLimit: doc.slot.poolLimit,
       },
     };
   }

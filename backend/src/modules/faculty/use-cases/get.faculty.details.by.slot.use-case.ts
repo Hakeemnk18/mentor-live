@@ -7,18 +7,35 @@ import { HttpStatusCode } from "../../../core/constants/http.status.codes.js";
 import type { IGetFacultyDetailsBySlotUseCase } from "./interfaces/get.faculty.details.by.slot.use-case.interface.js";
 
 @injectable()
-export class GetFacultyDetailsBySlotUseCase implements IGetFacultyDetailsBySlotUseCase {
+export class GetFacultyDetailsBySlotUseCase
+  implements IGetFacultyDetailsBySlotUseCase
+{
   constructor(
     @inject("IFacultyRepository")
     private readonly _facultyRepository: IFacultyRepository,
-  ) { }
+  ) {}
+
   async execute(
     facultyId: string,
-    variantId?: string,
+    variantId: string,
+    slotId?: string,
   ): Promise<FacultyDetailsViewForUser> {
+    let faculty: FacultyDetailsViewForUser | null;
 
-    const faculty = await this._facultyRepository.findFacultyByIdWithFirstSlot(facultyId, variantId)
-
+    if (slotId) {
+      /* Specific slot requested */
+      faculty = await this._facultyRepository.findFacultyWithSlot(
+        facultyId,
+        slotId,
+        variantId,
+      );
+    } else {
+      /* Return first available slot for this variant */
+      faculty = await this._facultyRepository.findFacultyWithFirstAvailableSlot(
+        facultyId,
+        variantId,
+      );
+    }
 
     if (!faculty) {
       throw new CustomError(
@@ -28,6 +45,5 @@ export class GetFacultyDetailsBySlotUseCase implements IGetFacultyDetailsBySlotU
     }
 
     return faculty;
-
   }
 }

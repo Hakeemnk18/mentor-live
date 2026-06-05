@@ -28,6 +28,11 @@ export interface CreateBookingPayload {
     type: string;
     mode: "slot" | "chapter";
     slotId?: string[];
+    /**
+     * Required for slot-mode bookings.
+     * Identifies which subject variant the student is booking.
+     */
+    subjectVariantId?: string;
     chapterId?: string;
   };
 }

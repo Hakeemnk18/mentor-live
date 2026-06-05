@@ -1,5 +1,5 @@
-import type { AvailableSlots } from "../../types/faculty.type.js";
+import type { AvailableSlotView } from "../../../faculty-slot/types/faculty.slot.type.js";
 
 export interface IGetAvailableSlotsUseCase {
-  execute(facultyId: string): Promise<AvailableSlots[]>;
+  execute(facultyId: string, variantId: string): Promise<AvailableSlotView[]>;
 }

@@ -851,23 +851,25 @@ export class BookingRepository implements IBookingRepository {
 
   async expireOtherBookingsForSlots(
     params: ExpireOtherBookingsForSlotParams,
-    session: ClientSession,
+    session?: ClientSession,
   ): Promise<void> {
     const { facultyId, slotIds, excludeBookingIds } = params;
 
-    const result = await BookingModel.updateMany(
+    /* slotId is now an ObjectId[] in the schema — cast for the query */
+    const slotObjectIds = slotIds.map((id) => new ObjectId(id));
+    const excludeObjectIds = excludeBookingIds.map((id) => new ObjectId(id));
+
+    await BookingModel.updateMany(
       {
-        facultyId,
-        slotId: { $in: slotIds },
+        facultyId: new ObjectId(facultyId),
+        slotId: { $elemMatch: { $in: slotObjectIds } },
         mode: "slot",
         status: "interested",
         isDeleted: false,
-        _id: { $nin: excludeBookingIds },
+        _id: { $nin: excludeObjectIds },
       },
       {
-        $set: {
-          status: "expired",
-        },
+        $set: { status: "expired" },
       },
       session ? { session } : undefined,
     );

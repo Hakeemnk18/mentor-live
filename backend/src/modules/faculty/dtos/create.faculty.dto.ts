@@ -6,6 +6,13 @@ const SubjectOfferingSchema = z.object({
   price: z.number().min(0, { message: "Price must be 0 or greater" }),
 });
 
+const SubjectSlotSchema = z.object({
+  variantId: ObjectIdSchema,
+  times: z
+    .array(z.object({ time: z.coerce.date() }))
+    .min(1, "At least one time slot is required per subject"),
+});
+
 export const CreateFacultySchema = z
   .object({
     name: z.string().trim().min(2).max(100),
@@ -25,13 +32,13 @@ export const CreateFacultySchema = z
       .array(SubjectOfferingSchema)
       .min(1, "At least one subject is required"),
 
-    slots: z
-      .array(
-        z.object({
-          time: z.coerce.date(),
-        }),
-      )
-      .min(1, "At least one slot is required"),
+    /**
+     * Each subject variant gets its own list of time slots.
+     * variantId here must match one of the entries in `subjects`.
+     */
+    subjectSlots: z
+      .array(SubjectSlotSchema)
+      .min(1, "At least one subject slot group is required"),
 
     chapterSlots: z
       .array(
@@ -42,9 +49,8 @@ export const CreateFacultySchema = z
       .optional(),
   })
   .superRefine((data, ctx) => {
-    /* ---------- prevent duplicate variantIds ---------- */
+    /* ── No duplicate variantIds in subjects ── */
     const variantSet = new Set<string>();
-
     data.subjects.forEach((item, i) => {
       if (variantSet.has(item.variantId)) {
         ctx.addIssue({
@@ -56,26 +62,47 @@ export const CreateFacultySchema = z
       variantSet.add(item.variantId);
     });
 
-    /* ---------- prevent duplicate slot times ---------- */
-    const timeSet = new Set<number>();
-
-    data.slots.forEach((slot, i) => {
-      const timeValue = slot.time.getTime();
-
-      if (timeSet.has(timeValue)) {
+    /* ── subjectSlots variantIds must exist in subjects ── */
+    data.subjectSlots.forEach((group, i) => {
+      if (!variantSet.has(group.variantId)) {
         ctx.addIssue({
-          path: ["slots", i, "time"],
-          message: "Duplicate slot time is not allowed",
+          path: ["subjectSlots", i, "variantId"],
+          message: "variantId must match one of the declared subjects",
           code: z.ZodIssueCode.custom,
         });
       }
-      timeSet.add(timeValue);
     });
 
-    /* ---------- prevent duplicate chapter slots ---------- */
+    /* ── No duplicate (variantId, time) pairs across subjectSlots ── */
+    const slotKey = new Set<string>();
+    data.subjectSlots.forEach((group, gi) => {
+      const timeSet = new Set<number>();
+      group.times.forEach((slot, ti) => {
+        const ms = slot.time.getTime();
+        if (timeSet.has(ms)) {
+          ctx.addIssue({
+            path: ["subjectSlots", gi, "times", ti, "time"],
+            message: "Duplicate time within the same subject variant",
+            code: z.ZodIssueCode.custom,
+          });
+        }
+        timeSet.add(ms);
+
+        const key = `${group.variantId}::${ms}`;
+        if (slotKey.has(key)) {
+          ctx.addIssue({
+            path: ["subjectSlots", gi, "times", ti, "time"],
+            message: "Duplicate (variantId, time) pair",
+            code: z.ZodIssueCode.custom,
+          });
+        }
+        slotKey.add(key);
+      });
+    });
+
+    /* ── No duplicate chapter slots ── */
     if (data.chapterSlots) {
       const chapterSet = new Set<string>();
-
       data.chapterSlots.forEach((slot, i) => {
         if (chapterSet.has(slot.chapter)) {
           ctx.addIssue({

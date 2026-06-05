@@ -13,12 +13,6 @@ export interface IFaculty extends Document {
     variantId: Types.ObjectId;
     price: number;
   }[];
-  slots: {
-    time: Date;
-    isAvailable: boolean;
-    pool: Types.ObjectId[];
-    poolLimit: number;
-  }[];
   chapterSlots: {
     chapter: Types.ObjectId;
     isAvailable: boolean;
@@ -80,31 +74,6 @@ const facultySchema = new Schema<IFaculty>(
       },
     ],
 
-    /* ---------- Normal Slots (Embedded) ---------- */
-    slots: [
-      {
-        time: {
-          type: Date,
-          required: true,
-        },
-        isAvailable: {
-          type: Boolean,
-          default: true,
-        },
-        pool: [
-          {
-            type: Schema.Types.ObjectId,
-            ref: "Student",
-          },
-        ],
-        poolLimit: {
-          type: Number,
-          default: 5,
-          min: 1,
-        },
-      },
-    ],
-
     /* ---------- Chapter Slots (Embedded) ---------- */
     chapterSlots: [
       {
@@ -142,7 +111,6 @@ const facultySchema = new Schema<IFaculty>(
 );
 
 facultySchema.index({ isDeleted: 1 });
-facultySchema.index({ "slots.time": 1 });
 facultySchema.index({ "chapterSlots.chapter": 1 });
 facultySchema.index({ "subjectOffering.variantId": 1 });
 

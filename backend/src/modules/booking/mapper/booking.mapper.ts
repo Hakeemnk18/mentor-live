@@ -36,13 +36,18 @@ export class BookingMapper {
       isDeleted: bookingModelData.isDeleted,
     };
 
-    // exactOptionalPropertyTypes-safe assignments
     if (bookingModelData.slotId !== undefined) {
-      props.slotId = bookingModelData.slotId;
+      props.slotId = (bookingModelData.slotId as any[]).map((id: any) =>
+        id.toString(),
+      );
+    }
+
+    if (bookingModelData.subjectVariantId !== undefined) {
+      props.subjectVariantId = bookingModelData.subjectVariantId.toString();
     }
 
     if (bookingModelData.chapterId !== undefined) {
-      props.chapterId = bookingModelData.chapterId;
+      props.chapterId = bookingModelData.chapterId.toString();
     }
 
     return new Booking(props);
@@ -61,9 +66,12 @@ export class BookingMapper {
       syllabus: bookingEntity.syllabus,
     };
 
-    // exactOptionalPropertyTypes-safe assignments
     if (bookingEntity.slotId !== undefined) {
       persistenceData.slotId = bookingEntity.slotId;
+    }
+
+    if (bookingEntity.subjectVariantId !== undefined) {
+      persistenceData.subjectVariantId = bookingEntity.subjectVariantId;
     }
 
     if (bookingEntity.chapterId !== undefined) {

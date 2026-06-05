@@ -32,11 +32,13 @@ import z from "zod";
 import { ObjectIdSchema } from "../../../core/utils/object.id.validation.js";
 import type { IGetFacultyDetailsBySlotUseCase } from "../use-cases/interfaces/get.faculty.details.by.slot.use-case.interface.js";
 import type { ISetFacultySlotAvailabilityUseCase } from "../use-cases/interfaces/set.faculty.slot.availability.usecase.interface.js";
+// ISetFacultySlotAvailabilityUseCase now uses ISetFacultySlotAvailabilityDto internally
 import { availabilitySchema } from "../../../core/utils/validate.is-availble.js";
 import type { IBlockFacultyUseCase } from "../use-cases/interfaces/block.faculty.use-case.interface.js";
 import type { IUnblockFacultyUseCase } from "../use-cases/interfaces/unblock.faculty.interface.js";
 import type { IGetAvailableSlotsUseCase } from "../use-cases/interfaces/get.available.slots.use-case.interface.js";
 import type { IGetUserSlotDetailsUseCase } from "../use-cases/interfaces/get.user.slot.details.interface.js";
+import type { IGetFacultyPublicProfileUseCase } from "../use-cases/interfaces/get.faculty.public.profile.use-case.interface.js";
 import { log } from "console";
 
 @injectable()
@@ -87,6 +89,8 @@ export class FacultyController implements IFacultyController {
     @inject("IGetUserSlotDetailsUseCase")
     private readonly _getUserSlotDetailsUseCase: IGetUserSlotDetailsUseCase,
 
+    @inject("IGetFacultyPublicProfileUseCase")
+    private readonly _getFacultyPublicProfileUseCase: IGetFacultyPublicProfileUseCase,
 
   ) { }
 
@@ -252,11 +256,13 @@ export class FacultyController implements IFacultyController {
       validateObjectId(req.params.id);
 
       const facultyId = req.params.id;
-      const variantId = req.query.variantId as string | undefined;
+      const variantId = ObjectIdSchema.parse(req.query.variantId);
+      const slotId = req.query.slotId as string | undefined;
 
       const data = await this._getFacultyDetailsBySlotUseCase.execute(
         facultyId!,
         variantId,
+        slotId,
       );
       res.status(HttpStatusCode.OK).json({
         message: ResponseMessages.SUCCESS,
@@ -276,13 +282,10 @@ export class FacultyController implements IFacultyController {
       validateObjectId(slotId);
       const { isAvailable } = availabilitySchema.parse(req.body);
 
-      const validFacultyId = facultyId as string;
-      const validSlotId = slotId as string;
-
       await this._setFacultySlotAvailabilityUseCase.execute({
-        facultyId: validFacultyId,
         mode: "slot",
-        slotId: validSlotId,
+        facultyId: facultyId as string,
+        slotId: slotId as string,
         isAvailable,
       });
 
@@ -302,13 +305,10 @@ export class FacultyController implements IFacultyController {
       validateObjectId(chapterId);
       const { isAvailable } = availabilitySchema.parse(req.body);
 
-      const validFacultyId = facultyId as string;
-      const validChapterId = chapterId as string;
-
       await this._setFacultySlotAvailabilityUseCase.execute({
-        facultyId: validFacultyId,
         mode: "chapter",
-        chapterId: validChapterId,
+        facultyId: facultyId as string,
+        chapterId: chapterId as string,
         isAvailable,
       });
 
@@ -355,7 +355,12 @@ export class FacultyController implements IFacultyController {
     try {
       const facultyId = req.params.id;
       validateObjectId(facultyId);
-      const availableSlots = await this._getAvailableSlotsUseCase.execute(facultyId!);
+      const variantId = ObjectIdSchema.parse(req.query.variantId);
+
+      const availableSlots = await this._getAvailableSlotsUseCase.execute(
+        facultyId!,
+        variantId,
+      );
       res.status(HttpStatusCode.OK).json({
         message: ResponseMessages.SUCCESS,
         success: true,
@@ -382,6 +387,32 @@ export class FacultyController implements IFacultyController {
       });
     } catch (error) {
       console.log("Error in getting user slot details:", error);
+      handleError(res, error);
+    }
+  }
+
+  /** Public profile — returns faculty info + subject offerings for a class+syllabus */
+  async getFacultyPublicProfile(req: Request, res: Response): Promise<void> {
+    try {
+      const facultyId = req.params.id;
+      validateObjectId(facultyId);
+
+      const classId   = req.query.classId   as string | undefined;
+      const syllabusId = req.query.syllabusId as string | undefined;
+
+      const profile = await this._getFacultyPublicProfileUseCase.execute(
+        facultyId!,
+        classId,
+        syllabusId,
+      );
+
+      res.status(HttpStatusCode.OK).json({
+        message: ResponseMessages.SUCCESS,
+        success: true,
+        data: profile,
+      });
+    } catch (error) {
+      console.log("Error in getFacultyPublicProfile:", error);
       handleError(res, error);
     }
   }

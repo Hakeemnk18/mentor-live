@@ -49,6 +49,11 @@ router.get('/:id/slot',
   (req, res) => facultyController.getFacultyDetailsBySlot(req, res)
 )
 
+// public faculty profile (no auth) — returns basic info + offerings filtered by class+syllabus
+router.get('/:id/public-profile',
+  (req, res) => facultyController.getFacultyPublicProfile(req, res)
+)
+
 // get available slots for a faculty
 router.get('/:id/available-slots',
   (req, res) => facultyController.getAvailableSlots(req, res)

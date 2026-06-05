@@ -7,6 +7,15 @@ export type FacultySlotPayload = {
   time: string; // ISO string
 };
 
+/**
+ * Per-variant slot group — sent to the backend as `subjectSlots[]`.
+ * One entry per subject variant the faculty teaches.
+ */
+export type SubjectSlotGroup = {
+  variantId: string;
+  times: { time: string }[]; // ISO date strings
+};
+
 /** subjects is now an array of { variantId, price } — price lives per variant */
 export type CreateFacultyPayload = {
   name: string;
@@ -15,7 +24,9 @@ export type CreateFacultyPayload = {
   demoClass: string;
   image?: FacultyImagePayload;
   subjects: { variantId: string; price: number }[];
-  slots?: FacultySlotPayload[];
+  /** Time-based slots keyed per variant — replaces the old flat slots[] */
+  subjectSlots?: SubjectSlotGroup[];
+  chapterSlots?: { chapter: string }[];
 };
 
 export type UpdateFacultyPayload = {
@@ -74,6 +85,8 @@ export type SubjectOffering = {
 
 export type TimeSlot = {
   id: string;
+  /** variantId this slot belongs to (from FacultySlot collection) */
+  variantId: string;
   time: string;
   isAvailable: boolean;
   poolLimit: number;
@@ -97,6 +110,7 @@ export type FacultyData = {
   image: string | { url: string; publicId: string };
   isDeleted: boolean;
   subjectOffering: SubjectOffering[];
+  /** Slots now live in FacultySlot collection — each has a variantId */
   slots: TimeSlot[];
   chapterSlots: ChapterSlot[];
 };
@@ -114,6 +128,11 @@ export type SubjectGroup = {
   selectedVariants: SubjectVariant[];
   /** price per variantId */
   prices: Record<string, number>;
+  /**
+   * Time slots assigned to this subject group's variants.
+   * Key = variantId, value = HH:mm strings.
+   */
+  slotTimes: Record<string, string[]>;
 };
 
 export type FacultyModalData = {
@@ -125,6 +144,7 @@ export type FacultyModalData = {
   subjectOffering?: SubjectOffering[];
   slots?: {
     id?: string;
+    variantId?: string;
     time: string;
     isAvailable?: boolean;
     pool?: unknown[];

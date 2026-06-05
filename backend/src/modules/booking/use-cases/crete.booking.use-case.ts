@@ -2,17 +2,16 @@ import { inject, injectable } from "tsyringe";
 import { CustomError } from "../../../core/errors/custom.error.js";
 import { ResponseMessages } from "../../../core/constants/response.message.js";
 import { HttpStatusCode } from "../../../core/constants/http.status.codes.js";
-import { Types } from "mongoose";
 import { Booking, type BookingProps } from "../entities/booking.entity.js";
 import type { ICreateBookingUseCase } from "./interfaces/create.booking.use-case.interface.js";
 import type { IBookingRepository } from "../repositories/booking.repository.interface.js";
 import type { IChapterRepository } from "../../chapter/repositories/chapter.repository.interface.js";
 import type { IStudentRepository } from "../../student/repositories/student.repository.interface.js";
 import type { IFacultyRepository } from "../../faculty/repository/faculty.repository.interface.js";
+import type { IFacultySlotRepository } from "../../faculty-slot/repository/faculty.slot.repository.interface.js";
 import type { CreateBookingRequestDto } from "../dto/create.booking.dto.js";
 import { Student } from "../../student/entities/student.entity.js";
 import { validateBookingModeInvariant } from "../utils/booking.invariant.js";
-import { validateSlotForBooking } from "../utils/slot.pool.invariant.js";
 import { validateChapterSlotForBooking } from "../utils/chapter.slot.pool.invariant.js";
 import type { ISubjectVariantRepository } from "../../subject-variant/repositories/subject.variant.repository.interface.js";
 import type { ChapterSlotProps } from "../../faculty/types/faculty.type.js";
@@ -20,7 +19,6 @@ import type { IPhoneVerificationRepository } from "../../phone-verification/repo
 import type { INotificationService } from "../../../core/ports/notification.service.interface.js";
 import type { IClassRepository } from "../../class/repositories/class.repository.interface.js";
 import type { ISyllabusRepository } from "../../syllabus/repositories/syllabus.repository.interface.js";
-const { ObjectId } = Types;
 
 @injectable()
 export class CreateBookingUseCase implements ICreateBookingUseCase {
@@ -30,6 +28,9 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
 
     @inject("IFacultyRepository")
     private readonly _facultyRepository: IFacultyRepository,
+
+    @inject("IFacultySlotRepository")
+    private readonly _facultySlotRepository: IFacultySlotRepository,
 
     @inject("IChapterRepository")
     private readonly _chapterRepository: IChapterRepository,
@@ -55,45 +56,29 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
 
   async execute(dto: CreateBookingRequestDto): Promise<void> {
     const { user, booking } = dto;
-    
+
     let currentChapterSlot: ChapterSlotProps | null = null;
 
-    // class and syllabus validation
+    /* ── Class + syllabus validation ── */
     const classExists = await this._classRepository.findById(user.class);
     if (!classExists) {
-      throw new CustomError(
-        ResponseMessages.CLASS_NOT_FOUND,
-        HttpStatusCode.NOT_FOUND,
-      );
+      throw new CustomError(ResponseMessages.CLASS_NOT_FOUND, HttpStatusCode.NOT_FOUND);
     }
-
-    
 
     const syllabusExists = await this._syllabusRepository.findById(user.syllabus);
     if (!syllabusExists) {
-      throw new CustomError(
-        ResponseMessages.SYLLABUS_NOT_FOUND,
-        HttpStatusCode.NOT_FOUND,
-      );
+      throw new CustomError(ResponseMessages.SYLLABUS_NOT_FOUND, HttpStatusCode.NOT_FOUND);
     }
 
-    //phone number verification
-
+    /* ── Phone verification ── */
     const verification = await this._phoneVerificationRepo.findByPhoneNumber(
       user.phoneNumber,
     );
-
     if (!verification || !verification.isVerified) {
-      throw new CustomError(
-        ResponseMessages.PHONE_NOT_VERIFIED,
-        HttpStatusCode.BAD_REQUEST,
-      );
+      throw new CustomError(ResponseMessages.PHONE_NOT_VERIFIED, HttpStatusCode.BAD_REQUEST);
     }
 
-    /* ─────────────────────────────────────────────
-     *  USER → STUDENT CREATION (idempotent)
-     * ───────────────────────────────────────────── */
-
+    /* ── Student upsert ── */
     let student = await this._studentRepository.findByNamePhoneNumber(
       user.phoneNumber,
     );
@@ -110,14 +95,12 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
 
     if (!student) {
       student = await this._studentRepository.create(newStudent);
-    }else if(student){
-      let updatedStudent = student.changeClassAndName(user.class, user.syllabus)
-      student = await this._studentRepository.save(updatedStudent)
+    } else {
+      const updatedStudent = student.changeClassAndName(user.class, user.syllabus);
+      student = await this._studentRepository.save(updatedStudent);
     }
 
-    
-    
-
+    /* ── Duplicate booking guard ── */
     const alreadyBooked = await this._bookingRepository.findExistingBooking({
       studentId: student.id!,
       facultyId: booking.facultyId,
@@ -132,105 +115,93 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
     });
 
     if (alreadyBooked) {
-      throw new CustomError(
-        ResponseMessages.BOOKING_ALREADY_EXISTS,
-        HttpStatusCode.BAD_REQUEST,
-      );
+      throw new CustomError(ResponseMessages.BOOKING_ALREADY_EXISTS, HttpStatusCode.BAD_REQUEST);
     }
 
-    /* ─────────────────────────────────────────────
-     *  BUSINESS INVARIANTS (not DTO validation)
-     * ───────────────────────────────────────────── */
-
+    /* ── Booking mode invariant ── */
     validateBookingModeInvariant(booking);
 
-    /* ─────────────────────────────────────────────
-     *  READ-ONLY VALIDATION PHASE
-     *    (no mutations here)
-     * ───────────────────────────────────────────── */
-
-    // Faculty must exist
-
-    let faculty;
+    /* ═══════════════════════════════════════════════
+     *  SLOT MODE — uses FacultySlot collection
+     * ═══════════════════════════════════════════════ */
     if (booking.mode === "slot") {
-      const subjectVariantIds = await this._subjectVariantRepository.findAllIds(
-        {
-          class: student.class,
-          syllabus: student.syllabus,
-        },
-      );
-      
-      faculty = await this._facultyRepository.findFacultyByQuery({
-        subjectOffering: { $in: subjectVariantIds },
+      const reqSlotId = booking.slotId![0];
+      const reqVariantId = booking.subjectVariantId!;
+
+      /* Faculty must exist and teach this variant */
+      const faculty = await this._facultyRepository.findFacultyByQuery({
         _id: booking.facultyId,
         isDeleted: false,
+        "subjectOffering.variantId": reqVariantId,
       });
       if (!faculty || faculty.isDeleted) {
+        throw new CustomError(ResponseMessages.FACULTY_NOT_FOUND, HttpStatusCode.NOT_FOUND);
+      }
+
+      /* Slot must exist, belong to the right faculty + variant, and be available */
+      const slot = await this._facultySlotRepository.findById(reqSlotId);
+
+      if (!slot) {
+        throw new CustomError(ResponseMessages.SLOT_NOT_FOUND, HttpStatusCode.NOT_FOUND);
+      }
+      if (slot.facultyId !== booking.facultyId) {
+        throw new CustomError(ResponseMessages.SLOT_NOT_FOUND, HttpStatusCode.BAD_REQUEST);
+      }
+      if (slot.variantId !== reqVariantId) {
         throw new CustomError(
-          ResponseMessages.FACULTY_NOT_FOUND,
-          HttpStatusCode.NOT_FOUND,
+          "This slot does not belong to the selected subject variant",
+          HttpStatusCode.BAD_REQUEST,
+        );
+      }
+      if (!slot.isAvailable) {
+        throw new CustomError(
+          ResponseMessages.SLOT_TIME_NOT_AVAILABLE,
+          HttpStatusCode.BAD_REQUEST,
+        );
+      }
+      if (booking.type === "oneToOne" && slot.pool.length > 0) {
+        throw new CustomError(
+          ResponseMessages.SLOT_TIME_NOT_AVAILABLE,
+          HttpStatusCode.BAD_REQUEST,
+        );
+      }
+      if (booking.type === "pooling" && slot.isFull()) {
+        throw new CustomError(
+          ResponseMessages.SLOT_TIME_NOT_AVAILABLE,
+          HttpStatusCode.BAD_REQUEST,
         );
       }
     }
 
-    
-
+    /* ═══════════════════════════════════════════════
+     *  CHAPTER MODE — unchanged logic
+     * ═══════════════════════════════════════════════ */
     if (booking.mode === "chapter") {
-      faculty = await this._facultyRepository.findFacultyByQuery({
+      const faculty = await this._facultyRepository.findFacultyByQuery({
         "chapterSlots.chapter": booking.chapterId,
         _id: booking.facultyId,
         isDeleted: false,
       });
       if (!faculty || faculty.isDeleted) {
-        throw new CustomError(
-          ResponseMessages.FACULTY_NOT_FOUND,
-          HttpStatusCode.NOT_FOUND,
-        );
+        throw new CustomError(ResponseMessages.FACULTY_NOT_FOUND, HttpStatusCode.NOT_FOUND);
       }
-    }
 
-    // Slot validation (if slot mode)
-    if (booking.mode === "slot") {
-      const reqSlotId = booking?.slotId?.[0];
-      const currentSlot = await this._facultyRepository.getSlot(
-        booking.facultyId,
-        reqSlotId!,
-      );
-
-      validateSlotForBooking(currentSlot, booking.type, student.id!);
-    }
-
-    //chapter validation (if chapter mode)
-
-    if (booking.mode === "chapter") {
-      const chapter = await this._chapterRepository.findById(
-        booking.chapterId!,
-      );
-
+      const chapter = await this._chapterRepository.findById(booking.chapterId!);
       if (!chapter || chapter.isDeleted) {
-        throw new CustomError(
-          ResponseMessages.CHAPTER_NOT_FOUND,
-          HttpStatusCode.NOT_FOUND,
-        );
+        throw new CustomError(ResponseMessages.CHAPTER_NOT_FOUND, HttpStatusCode.NOT_FOUND);
       }
+
       currentChapterSlot = await this._facultyRepository.getChapterSlot(
         booking.facultyId,
         booking.chapterId!,
       );
 
-      validateChapterSlotForBooking(
-        currentChapterSlot,
-        booking.type,
-        student.id!,
-      );
+      validateChapterSlotForBooking(currentChapterSlot, booking.type, student.id!);
     }
 
-    /* ─────────────────────────────────────────────
-     *  MUTATION PHASE — CREATE BOOKING
-     * ───────────────────────────────────────────── */
-
-    
-
+    /* ═══════════════════════════════════════════════
+     *  MUTATION PHASE — create booking
+     * ═══════════════════════════════════════════════ */
     const bookingProps: BookingProps = {
       id: null,
       userId: student.id!,
@@ -246,6 +217,7 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
 
     if (booking.mode === "slot") {
       bookingProps.slotId = booking.slotId!;
+      bookingProps.subjectVariantId = booking.subjectVariantId!;
     }
 
     if (booking.mode === "chapter") {
@@ -253,7 +225,6 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
     }
 
     const bookingEntity = new Booking(bookingProps);
-
     const created = await this._bookingRepository.create(bookingEntity);
 
     if (!created) {
@@ -263,7 +234,7 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
       );
     }
 
-    // add to pooling if only booking is success
+    /* ── Add to pool (pooling type only) ── */
     try {
       if (booking.type === "pooling" && booking.mode === "chapter") {
         await this._facultyRepository.addToChapterSlotPool(
@@ -274,18 +245,16 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
       }
 
       if (booking.type === "pooling" && booking.mode === "slot") {
-        const reqSlotId = booking?.slotId?.[0];
-        await this._facultyRepository.addToSlotPool(
-          booking.facultyId,
-          reqSlotId!,
+        await this._facultySlotRepository.addToPool(
+          booking.slotId![0],
           student.id!,
         );
       }
     } catch (err) {
-      await this._bookingRepository.deleteById(created.id!); // soft delete
+      await this._bookingRepository.deleteById(created.id!);
       throw err;
     }
-    
+
     await this._notificationService.sendBookingConfirmation(
       student.phoneNumber,
       created.id!,

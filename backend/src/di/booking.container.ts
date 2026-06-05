@@ -25,6 +25,8 @@ import type { IGetChapterBookingDetailsUseCase } from "../modules/booking/use-ca
 import { GetChapterBookingDetailsUseCase } from "../modules/booking/use-cases/get.chapter.booking.details.use-case.js";
 import type { IGetAllBookingUseCase } from "../modules/booking/use-cases/interfaces/get.all.booking.use.case.interface.js";
 import { GetAllBookingUseCase } from "../modules/booking/use-cases/get.all.booking.use.case.js";
+import type { ICancelConfirmedBookingUseCase } from "../modules/booking/use-cases/interfaces/cancel.confirmed.booking.use-case.interface.js";
+import { CancelConfirmedBookingUseCase } from "../modules/booking/use-cases/cancel.confirmed.booking.use-case.js";
 
 export const registerBookingDependencies = () => {
   container.register<IBookingRepository>("IBookingRepository", {
@@ -89,4 +91,9 @@ export const registerBookingDependencies = () => {
   container.register<IGetAllBookingUseCase>("IGetAllBookingUseCase", {
     useClass: GetAllBookingUseCase,
   });
+
+  container.register<ICancelConfirmedBookingUseCase>(
+    "ICancelConfirmedBookingUseCase",
+    { useClass: CancelConfirmedBookingUseCase },
+  );
 };

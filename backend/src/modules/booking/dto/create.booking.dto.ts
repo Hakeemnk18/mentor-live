@@ -22,18 +22,33 @@ export const CreateBookingSchema = z
       type: BookingTypeEnum,
       mode: BookingModeEnum,
       slotId: z.array(ObjectIdSchema).optional(),
+      /**
+       * Required when mode = "slot".
+       * Tells the system which subject variant the student is booking for,
+       * so we can validate the slot belongs to that variant and separate
+       * the pool per subject.
+       */
+      subjectVariantId: ObjectIdSchema.optional(),
       chapterId: ObjectIdSchema.optional(),
     }),
   })
   .superRefine((data, ctx) => {
-    const { mode, slotId, chapterId } = data.booking;
+    const { mode, slotId, chapterId, subjectVariantId } = data.booking;
 
-    /* mode = slot → slotId required */
+    /* mode = slot → slotId AND subjectVariantId required */
     if (mode === "slot") {
       if (!slotId || slotId.length === 0) {
         ctx.addIssue({
           path: ["booking", "slotId"],
           message: "slotId is required when mode is slot",
+          code: z.ZodIssueCode.custom,
+        });
+      }
+
+      if (!subjectVariantId) {
+        ctx.addIssue({
+          path: ["booking", "subjectVariantId"],
+          message: "subjectVariantId is required when mode is slot",
           code: z.ZodIssueCode.custom,
         });
       }

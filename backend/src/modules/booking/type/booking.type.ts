@@ -23,6 +23,7 @@ export type ExistingBookingProps = {
 };
 export type ExpireOtherBookingsForSlotParams = {
   facultyId: string;
+  /** IDs of FacultySlot documents whose "interested" bookings should be expired */
   slotIds: string[];
   excludeBookingIds: string[];
 };

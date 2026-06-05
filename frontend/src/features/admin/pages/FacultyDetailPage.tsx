@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { formatTimeAMPM } from "../../../shared/utils/time.utils";
@@ -38,6 +38,8 @@ const getYoutubeId = (url: string): string | null => {
     /(?:youtu\.be\/)([\w-]{11})/,
     /(?:youtube\.com\/embed\/)([\w-]{11})/,
     /(?:youtube\.com\/v\/)([\w-]{11})/,
+    /(?:youtube\.com\/live\/)([\w-]{11})/,   // YouTube Live URLs
+    /(?:youtube\.com\/shorts\/)([\w-]{11})/, // YouTube Shorts
   ];
   for (const p of patterns) {
     const match = url.match(p);
@@ -65,6 +67,7 @@ export default function FacultyDetailPage() {
 
   // Time slot add
   const [newTime, setNewTime] = useState("");
+  const [newSlotVariantId, setNewSlotVariantId] = useState("");
   const [slotWorking, setSlotWorking] = useState(false);
 
   // Chapter slot add
@@ -78,7 +81,7 @@ export default function FacultyDetailPage() {
   const [selectedPoolBooking, setSelectedPoolBooking] = useState<PoolBooking | null>(null);
 
   /* ---------- Fetch faculty data ---------- */
-  const fetchFaculty = async () => {
+  const fetchFaculty = useCallback(async () => {
     if (!id) return;
     try {
       setLoading(true);
@@ -89,11 +92,11 @@ export default function FacultyDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchFaculty();
-  }, [id]);
+  }, [fetchFaculty]);
 
   /* Fetch syllabuses and classes for edit modal & chapter add */
   useEffect(() => {
@@ -125,18 +128,15 @@ export default function FacultyDetailPage() {
   /* ================================================================ */
 
   const handleAddTimeSlot = async () => {
-    if (!newTime || !id) return;
+    if (!newTime || !newSlotVariantId || !id) return;
     try {
       setSlotWorking(true);
-      console.log("new time",newTime);
-      
-      await addFacultySlotIST(id,  {time:newTime} );
+      await addFacultySlotIST(id, { time: newTime, variantId: newSlotVariantId });
       toast.success("Time slot added");
       setNewTime("");
+      setNewSlotVariantId("");
       await fetchFaculty();
     } catch (err) {
-      console.log("error in handle add time slot",err);
-      
       handleApiError(err);
     } finally {
       setSlotWorking(false);
@@ -451,29 +451,60 @@ export default function FacultyDetailPage() {
         </div>
 
         <div className="p-4 sm:p-6">
-          {/* Add slot row */}
-          <div className="flex flex-wrap items-center gap-3 mb-5">
-            <input
-              type="time"
-              value={newTime}
-              onChange={(e) => setNewTime(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30 w-full sm:w-40"
-            />
-            <button
-              onClick={handleAddTimeSlot}
-              disabled={!newTime || slotWorking}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#DB313E] rounded-lg hover:bg-[#c22935] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {slotWorking ? "Adding" : "+ Add Slot"}
-            </button>
-          </div>
+          {/* Add slot row — variant + time + button */}
+          {(() => {
+            const offerings = faculty.subjectOffering ?? [];
+            return (
+              <div className="flex flex-wrap items-end gap-3 mb-5">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-gray-500">Subject</label>
+                  <select
+                    value={newSlotVariantId}
+                    onChange={(e) => setNewSlotVariantId(e.target.value)}
+                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30 w-full sm:w-56"
+                  >
+                    <option value="">Select subject…</option>
+                    {offerings.map((so) => (
+                      <option key={so.id} value={so.id}>
+                        {so.subject.name} · {so.class.name} · {so.syllabus.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-gray-500">Time</label>
+                  <input
+                    type="time"
+                    value={newTime}
+                    onChange={(e) => setNewTime(e.target.value)}
+                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30 w-full sm:w-40"
+                  />
+                </div>
+                <button
+                  onClick={handleAddTimeSlot}
+                  disabled={!newTime || !newSlotVariantId || slotWorking}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#DB313E] rounded-lg hover:bg-[#c22935] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {slotWorking ? "Adding…" : "+ Add Slot"}
+                </button>
+              </div>
+            );
+          })()}
 
           {/* Slot list */}
           {faculty.slots.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-6">No time slots added yet</p>
           ) : (
             <div className="space-y-2">
-              {faculty.slots.map((slot) => (
+              {(() => {
+                /* Build variantId → label map from subjectOffering */
+                const variantLabel = new Map(
+                  (faculty.subjectOffering ?? []).map((so) => [
+                    so.id,
+                    `${so.subject.name} · ${so.class.name} · ${so.syllabus.name}`,
+                  ])
+                );
+                return faculty.slots.map((slot) => (
                 <div
                   key={slot.id}
                   className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4 py-3 rounded-lg border transition-colors ${
@@ -486,6 +517,12 @@ export default function FacultyDetailPage() {
                     <span className="text-sm font-mono font-semibold text-gray-800">
                       {formatTimeAMPM(slot.time)}
                     </span>
+                    {/* Variant badge */}
+                    {slot.variantId && (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#DB313E]/8 text-[#DB313E] border border-[#DB313E]/15">
+                        {variantLabel.get(slot.variantId) ?? slot.variantId}
+                      </span>
+                    )}
                     <span
                       className={`px-2 py-0.5 rounded text-xs font-medium ${
                         slot.isAvailable
@@ -528,7 +565,7 @@ export default function FacultyDetailPage() {
                     disabled={slotWorking || (slot.isAvailable && slot.pool.length > 0)}
                     title={
                       slot.isAvailable && slot.pool.length > 0
-                        ? "Cannot block has active bookings"
+                        ? "Cannot block — has active bookings"
                         : ""
                     }
                     className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
@@ -541,7 +578,8 @@ export default function FacultyDetailPage() {
                   </button>
                   </div>
                 </div>
-              ))}
+                ));  /* end faculty.slots.map */
+              })()} 
             </div>
           )}
         </div>

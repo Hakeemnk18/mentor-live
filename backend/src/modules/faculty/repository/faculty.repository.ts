@@ -5,10 +5,11 @@ import { CustomError } from "../../../core/errors/custom.error.js";
 import type { AcademicListFiltersBase } from "../../../core/shared/type/find.all.with.filters.js";
 import { Faculty } from "../entities/faculty.entity.js";
 import { FacultyModel } from "../infrastructure/faculty.schema.js";
+import { FacultySlotModel } from "../../faculty-slot/infrastructure/faculty.slot.schema.js";
+import { FacultySlotMapper } from "../../faculty-slot/mapper/faculty.slot.mapper.js";
 import { FacultyMapper } from "../mapper/faculty.mapper.js";
 import type { IFacultyRepository } from "./faculty.repository.interface.js";
 import type {
-  AvailableSlots,
   ChapterSlotProps,
   FacultyChapterSearchFilters,
   FacultyClassAndSyllabusSearchFilters,
@@ -17,8 +18,6 @@ import type {
   FacultyPopulatedLean,
   FacultyView,
   FacultyViewForUser,
-  SetSlotAvailabilityDto,
-  SlotProps,
 } from "../types/faculty.type.js";
 import type { AddChapterSlotRequestDto } from "../dtos/add.chapter.dto.js";
 import type { RemoveUserFromPoolDto } from "../../booking/dto/remove.student.from.pooling.dto.js";
@@ -26,6 +25,8 @@ import type { RemoveUserFromPoolDto } from "../../booking/dto/remove.student.fro
 const { ObjectId } = Types;
 
 export class FacultyRepository implements IFacultyRepository {
+  /* ─── CRUD ─────────────────────────────────────────────────────────── */
+
   async create(facultyEntity: Faculty): Promise<Faculty> {
     const persistenceData = FacultyMapper.toPersistence(facultyEntity);
 
@@ -93,45 +94,7 @@ export class FacultyRepository implements IFacultyRepository {
     return domainFaculty;
   }
 
-  async addSlots(facultyId: string, slots: { time: Date }[]): Promise<void> {
-    await FacultyModel.updateOne(
-      { _id: facultyId },
-      {
-        $push: {
-          slots: {
-            $each: slots.map((s) => ({
-              time: s.time,
-              isAvailable: true,
-              pool: [],
-              poolLimit: 5,
-            })),
-          },
-        },
-      },
-    );
-  }
-
-  async addChapterSlots(
-    facultyId: string,
-    slots: AddChapterSlotRequestDto,
-  ): Promise<void> {
-    const { chapterSlots } = slots;
-    await FacultyModel.updateOne(
-      { _id: facultyId },
-      {
-        $push: {
-          chapterSlots: {
-            $each: chapterSlots.map((s) => ({
-              chapter: s.chapter,
-              isAvailable: true,
-              pool: [],
-              poolLimit: 5,
-            })),
-          },
-        },
-      },
-    );
-  }
+  /* ─── Admin listing ────────────────────────────────────────────────── */
 
   async findAllFacultyForAdmin(
     allDoc: AcademicListFiltersBase,
@@ -216,6 +179,8 @@ export class FacultyRepository implements IFacultyRepository {
     return { data: faculties, total };
   }
 
+  /* ─── Admin full detail (with slots from FacultySlot collection) ──── */
+
   async findFacultyFullByIdForAdmin(
     id: string,
   ): Promise<FacultyFullAdminView | null> {
@@ -238,16 +203,20 @@ export class FacultyRepository implements IFacultyRepository {
         select: "name",
       })
       .populate({
-        path: "slots.pool",
-        select: "_id",
-      })
-      .populate({
         path: "chapterSlots.pool",
         select: "_id",
       })
       .lean<FacultyPopulatedLean>();
 
     if (!doc) return null;
+
+    /* Fetch time-based slots from the separate collection */
+    const slotDocs = await FacultySlotModel.find({
+      facultyId: new Types.ObjectId(id),
+    })
+      .populate({ path: "pool", select: "_id" })
+      .sort({ variantId: 1, time: 1 })
+      .lean();
 
     return {
       id: doc._id.toString(),
@@ -258,13 +227,8 @@ export class FacultyRepository implements IFacultyRepository {
       image: doc.image,
       isDeleted: doc.isDeleted,
 
-      slots: doc.slots.map((s) => ({
-        id: s._id.toString(),
-        time: s.time.toISOString().slice(11, 16),
-        isAvailable: s.isAvailable,
-        pool: s.pool.map((u: any) => ({ id: u._id.toString() })),
-        poolLimit: s.poolLimit,
-      })),
+      /* slots from FacultySlot collection */
+      slots: slotDocs.map(FacultySlotMapper.toAdminView),
 
       chapterSlots: doc.chapterSlots.map((c) => ({
         id: c._id.toString(),
@@ -295,6 +259,8 @@ export class FacultyRepository implements IFacultyRepository {
       })),
     };
   }
+
+  /* ─── User-facing faculty searches ─────────────────────────────────── */
 
   async findFacultyByChapter(
     dto: FacultyChapterSearchFilters,
@@ -361,7 +327,9 @@ export class FacultyRepository implements IFacultyRepository {
       { $unwind: "$sv" },
       {
         $match: {
-          ...(subjectId && { "sv.subject": new ObjectId(subjectId) }),
+          // subjectId here is the SubjectVariant _id sent by the listing page —
+          // match against sv._id directly, NOT sv.subject
+          ...(subjectId && { "sv._id": new ObjectId(subjectId) }),
         },
       },
       { $sort: sort },
@@ -381,6 +349,8 @@ export class FacultyRepository implements IFacultyRepository {
 
     return documents.map(FacultyMapper.toFacultyUserView);
   }
+
+  /* ─── Faculty detail + chapter slot (user-facing) ──────────────────── */
 
   async findFacultyFullByIdAndChapter(
     facultyId: string,
@@ -444,145 +414,167 @@ export class FacultyRepository implements IFacultyRepository {
     };
   }
 
-  async findFacultyFullByIdAndSlot(
+  /* ─── Faculty detail + time-based slot (user-facing) ───────────────── */
+
+  async findFacultyWithSlot(
     facultyId: string,
     slotId: string,
-    variantId?: string,
+    variantId: string,
   ): Promise<FacultyDetailsViewForUser | null> {
-    const priceExpr = variantId
-      ? {
-          $let: {
-            vars: {
-              matched: {
-                $filter: {
-                  input: "$subjectOffering",
-                  as: "so",
-                  cond: {
-                    $eq: ["$$so.variantId", new ObjectId(variantId)],
-                  },
-                },
-              },
-            },
-            in: {
-              $ifNull: [{ $arrayElemAt: ["$$matched.price", 0] }, 0],
-            },
-          },
-        }
-      : { $ifNull: [{ $arrayElemAt: ["$subjectOffering.price", 0] }, 0] };
-
-    const documents = await FacultyModel.aggregate([
-      {
-        $match: {
-          isDeleted: false,
-          _id: new ObjectId(facultyId),
-        },
-      },
-      { $unwind: "$slots" },
-      {
-        $match: {
-          "slots._id": new ObjectId(slotId),
-        },
-      },
-      {
-        $project: {
-          name: 1,
-          price: priceExpr,
-          image: 1,
-          qualifications: 1,
-          demoClass: 1,
-          description: 1,
-          createdAt: 1,
-          slots: 1,
-        },
-      },
+    /* Two separate queries — Faculty for profile, FacultySlot for slot data */
+    const [faculty, slot] = await Promise.all([
+      FacultyModel.findOne({
+        _id: new ObjectId(facultyId),
+        isDeleted: false,
+      }).lean(),
+      FacultySlotModel.findById(slotId)
+        .populate({ path: "pool", select: "_id" })
+        .lean() as any,
     ]);
 
-    const doc = documents?.[0];
-    if (!doc) return null;
+    if (!faculty || !slot) return null;
 
-    return FacultyMapper.toFacultyWithSlotToUserView(doc);
+    const offering = (faculty.subjectOffering as any[]).find(
+      (so: any) => so.variantId.toString() === variantId,
+    );
+    const price = offering?.price ?? 0;
+
+    return FacultyMapper.toFacultyWithSlotToUserView({
+      ...faculty,
+      price,
+      slot,
+    });
   }
 
-  async findFacultyByIdWithFirstSlot(
+  async findFacultyWithFirstAvailableSlot(
     facultyId: string,
-    variantId?: string,
+    variantId: string,
   ): Promise<FacultyDetailsViewForUser | null> {
-    const priceExpr = variantId
-      ? {
-          $let: {
-            vars: {
-              matched: {
-                $filter: {
-                  input: "$subjectOffering",
-                  as: "so",
-                  cond: {
-                    $eq: ["$$so.variantId", new ObjectId(variantId)],
-                  },
-                },
-              },
-            },
-            in: {
-              $ifNull: [{ $arrayElemAt: ["$$matched.price", 0] }, 0],
-            },
-          },
-        }
-      : { $ifNull: [{ $arrayElemAt: ["$subjectOffering.price", 0] }, 0] };
-
-    const documents = await FacultyModel.aggregate([
-      {
-        $match: {
-          isDeleted: false,
-          _id: new ObjectId(facultyId),
-        },
-      },
-      { $unwind: "$slots" },
-      {
-        $project: {
-          name: 1,
-          price: priceExpr,
-          image: 1,
-          qualifications: 1,
-          demoClass: 1,
-          description: 1,
-          createdAt: 1,
-          slots: 1,
-        },
-      },
-      { $limit: 1 },
+    const [faculty, slot] = await Promise.all([
+      FacultyModel.findOne({
+        _id: new ObjectId(facultyId),
+        isDeleted: false,
+      }).lean(),
+      FacultySlotModel.findOne({
+        facultyId: new ObjectId(facultyId),
+        variantId: new ObjectId(variantId),
+        isAvailable: true,
+      })
+        .sort({ time: 1 })
+        .populate({ path: "pool", select: "_id" })
+        .lean() as any,
     ]);
 
-    const doc = documents?.[0];
-    if (!doc) return null;
+    if (!faculty || !slot) return null;
 
-    return FacultyMapper.toFacultyWithSlotToUserView(doc);
+    const offering = (faculty.subjectOffering as any[]).find(
+      (so: any) => so.variantId.toString() === variantId,
+    );
+    const price = offering?.price ?? 0;
+
+    return FacultyMapper.toFacultyWithSlotToUserView({
+      ...faculty,
+      price,
+      slot,
+    });
   }
 
-  async getSlot(facultyId: string, slotId: string): Promise<SlotProps | null> {
-    const faculty = await FacultyModel.findOne(
-      { _id: facultyId, isDeleted: false },
-      { slots: { $elemMatch: { _id: new Types.ObjectId(slotId) } } },
-    ).lean();
+  /* ─── Public profile (user-facing, no slot context needed) ────────── */
 
-    if (!faculty || !faculty.slots || faculty.slots.length === 0) {
-      return null;
-    }
+  async findFacultyPublicProfile(
+    id: string,
+    classId?: string,
+    syllabusId?: string,
+  ): Promise<import("../types/faculty.type.js").FacultyPublicProfileView | null> {
+    if (!Types.ObjectId.isValid(id)) return null;
 
-    const slot = faculty.slots[0] as {
-      _id: any;
-      time: Date;
-      isAvailable: boolean;
-      pool: any[];
-      poolLimit: number;
-    };
+    const pipeline: any[] = [
+      { $match: { _id: new ObjectId(id), isDeleted: false } },
+      { $unwind: "$subjectOffering" },
+      {
+        $lookup: {
+          from: "subjectvariants",
+          localField: "subjectOffering.variantId",
+          foreignField: "_id",
+          as: "sv",
+        },
+      },
+      { $unwind: "$sv" },
+      // optional class+syllabus filter
+      ...(classId || syllabusId
+        ? [
+            {
+              $match: {
+                ...(classId && { "sv.class": new ObjectId(classId) }),
+                ...(syllabusId && { "sv.syllabus": new ObjectId(syllabusId) }),
+              },
+            },
+          ]
+        : []),
+      {
+        $lookup: {
+          from: "classes",
+          localField: "sv.class",
+          foreignField: "_id",
+          as: "classDoc",
+        },
+      },
+      { $unwind: "$classDoc" },
+      {
+        $lookup: {
+          from: "syllabuses",
+          localField: "sv.syllabus",
+          foreignField: "_id",
+          as: "syllabusDoc",
+        },
+      },
+      { $unwind: "$syllabusDoc" },
+      {
+        $lookup: {
+          from: "subjects",
+          localField: "sv.subject",
+          foreignField: "_id",
+          as: "subjectDoc",
+        },
+      },
+      { $unwind: "$subjectDoc" },
+      {
+        $group: {
+          _id: "$_id",
+          name: { $first: "$name" },
+          qualifications: { $first: "$qualifications" },
+          description: { $first: "$description" },
+          demoClass: { $first: "$demoClass" },
+          image: { $first: "$image" },
+          subjectOffering: {
+            $push: {
+              variantId: { $toString: "$sv._id" },
+              subjectName: "$subjectDoc.name",
+              className: "$classDoc.name",
+              syllabusName: "$syllabusDoc.name",
+              price: "$subjectOffering.price",
+            },
+          },
+        },
+      },
+    ];
+
+    const result = await FacultyModel.aggregate(pipeline);
+    const doc = result[0];
+    if (!doc) return null;
 
     return {
-      id: slot._id.toString(),
-      time: slot.time,
-      isAvailable: slot.isAvailable,
-      pool: slot.pool.map((u) => u.toString()),
-      poolLimit: slot.poolLimit,
+      id: doc._id.toString(),
+      name: doc.name,
+      qualifications: doc.qualifications ?? [],
+      description: doc.description ?? "",
+      demoClass: doc.demoClass ?? "",
+      image: (doc.image as any)?.url ?? "",
+      subjectOffering: doc.subjectOffering ?? [],
     };
   }
+
+  /* ─── Chapter slot helpers ──────────────────────────────────────────── */
 
   async getChapterSlot(
     facultyId: string,
@@ -623,71 +615,6 @@ export class FacultyRepository implements IFacultyRepository {
       pool: slot.pool.map((u) => u.toString()),
       poolLimit: slot.poolLimit,
     };
-  }
-
-  async addToSlotPool(
-    facultyId: string,
-    slotId: string,
-    studentId: string,
-  ): Promise<void> {
-    const result = await FacultyModel.updateOne(
-      {
-        _id: facultyId,
-        isDeleted: false,
-        "slots._id": new Types.ObjectId(slotId),
-        "slots.isAvailable": true,
-      },
-      [
-        {
-          $set: {
-            slots: {
-              $map: {
-                input: "$slots",
-                as: "slot",
-                in: {
-                  $cond: [
-                    {
-                      $and: [
-                        {
-                          $eq: ["$$slot._id", new Types.ObjectId(slotId)],
-                        },
-                        {
-                          $lt: [{ $size: "$$slot.pool" }, "$$slot.poolLimit"],
-                        },
-                      ],
-                    },
-                    {
-                      $mergeObjects: [
-                        "$$slot",
-                        {
-                          pool: {
-                            $setUnion: [
-                              "$$slot.pool",
-                              [new Types.ObjectId(studentId)],
-                            ],
-                          },
-                        },
-                      ],
-                    },
-                    "$$slot",
-                  ],
-                },
-              },
-            },
-          },
-        },
-      ],
-      {
-        updatePipeline: true,
-      },
-    );
-
-    if (result.matchedCount === 0) {
-      throw new CustomError(
-        ResponseMessages.SLOT_NOT_FOUND,
-        HttpStatusCode.BAD_REQUEST,
-      );
-    }
   }
 
   async addToChapterSlotPool(
@@ -743,9 +670,7 @@ export class FacultyRepository implements IFacultyRepository {
           },
         },
       ],
-      {
-        updatePipeline: true,
-      },
+      { updatePipeline: true },
     );
 
     if (result.matchedCount === 0) {
@@ -756,85 +681,26 @@ export class FacultyRepository implements IFacultyRepository {
     }
   }
 
-  async consumeSlot(
+  async addChapterSlots(
     facultyId: string,
-    slotId: string,
-    session?: ClientSession,
+    slots: AddChapterSlotRequestDto,
   ): Promise<void> {
-    const result = await FacultyModel.updateOne(
+    const { chapterSlots } = slots;
+    await FacultyModel.updateOne(
+      { _id: facultyId },
       {
-        _id: new ObjectId(facultyId),
-        slots: {
-          $elemMatch: {
-            _id: new ObjectId(slotId),
-            isAvailable: true,
+        $push: {
+          chapterSlots: {
+            $each: chapterSlots.map((s) => ({
+              chapter: s.chapter,
+              isAvailable: true,
+              pool: [],
+              poolLimit: 5,
+            })),
           },
         },
       },
-      {
-        $set: {
-          "slots.$.isAvailable": false,
-          "slots.$.pool": [],
-        },
-      },
-      session ? { session } : undefined,
     );
-
-    if (result.modifiedCount === 0) {
-      throw new Error("not matched document");
-    }
-  }
-
-  async consumeSlots(
-    facultyId: string,
-    slotIds: string[],
-    session?: ClientSession,
-  ): Promise<void> {
-    const result = await FacultyModel.updateOne(
-      {
-        _id: facultyId,
-        "slots._id": { $in: slotIds },
-        "slots.isAvailable": true,
-      },
-      {
-        $set: {
-          "slots.$[s].isAvailable": false,
-          "slots.$[s].pool": [],
-        },
-      },
-      {
-        arrayFilters: [
-          {
-            "s._id": { $in: slotIds },
-            "s.isAvailable": true,
-          },
-        ],
-        ...(session ? { session } : {}),
-      },
-    );
-
-    if (result.modifiedCount === 0) {
-      throw new Error("not matched document");
-    }
-  }
-
-  async getAllSlots(facultyId: string): Promise<SlotProps[]> {
-    const faculty = await FacultyModel.findOne(
-      { _id: facultyId, isDeleted: false },
-      { slots: 1 },
-    ).lean();
-
-    if (!faculty || !faculty.slots || faculty.slots.length === 0) {
-      return [];
-    }
-
-    return faculty.slots.map((slot: any) => ({
-      id: slot._id.toString(),
-      time: slot.time,
-      isAvailable: slot.isAvailable,
-      pool: slot.pool.map((u: any) => u.toString()),
-      poolLimit: slot.poolLimit,
-    }));
   }
 
   async consumeChapterSlot(
@@ -879,36 +745,24 @@ export class FacultyRepository implements IFacultyRepository {
     params: RemoveUserFromPoolDto,
     session: ClientSession,
   ): Promise<void> {
-    const { facultyId, userId, mode } = params;
-
-    let updateQuery: any;
-    let arrayFilters: any[] = [];
-
-    if (mode === "chapter") {
-      updateQuery = {
-        $pull: {
-          "chapterSlots.$[c].pool": userId,
-        },
-      };
-
-      arrayFilters = [{ "c.chapter": new Types.ObjectId(params.chapterId) }];
-    }
-
-    if (mode === "slot") {
-      updateQuery = {
-        $pull: {
-          "slots.$[s].pool": userId,
-        },
-      };
-
-      arrayFilters = [{ "s._id": new Types.ObjectId(params.slotId) }];
+    /* Only chapter-mode pool removal stays in Faculty repo.
+       Slot-mode pool removal is now handled by FacultySlotRepository. */
+    if (params.mode !== "chapter") {
+      throw new CustomError(
+        "removeUserFromPool on FacultyRepository only supports chapter mode",
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
+      );
     }
 
     const result = await FacultyModel.updateOne(
-      { _id: facultyId },
-      updateQuery,
+      { _id: params.facultyId },
       {
-        arrayFilters,
+        $pull: {
+          "chapterSlots.$[c].pool": params.userId,
+        },
+      },
+      {
+        arrayFilters: [{ "c.chapter": new Types.ObjectId(params.chapterId) }],
         session,
       },
     );
@@ -918,44 +772,21 @@ export class FacultyRepository implements IFacultyRepository {
     }
   }
 
-  async setSlotAvailability(params: SetSlotAvailabilityDto): Promise<void> {
-    const { facultyId, mode, isAvailable } = params;
-
-    let updateQuery: any;
-    let arrayFilters: any[] = [];
-
-    if (mode === "slot") {
-      if (!params.slotId) {
-        throw new Error("slotId is required for slot mode");
-      }
-
-      updateQuery = {
-        $set: {
-          "slots.$[s].isAvailable": isAvailable,
-        },
-      };
-
-      arrayFilters = [{ "s._id": new Types.ObjectId(params.slotId) }];
-    }
-
-    if (mode === "chapter") {
-      if (!params.chapterId) {
-        throw new Error("chapterId is required for chapter mode");
-      }
-
-      updateQuery = {
+  async setChapterSlotAvailability(
+    facultyId: string,
+    chapterId: string,
+    isAvailable: boolean,
+  ): Promise<void> {
+    const result = await FacultyModel.updateOne(
+      { _id: facultyId },
+      {
         $set: {
           "chapterSlots.$[c].isAvailable": isAvailable,
         },
-      };
-
-      arrayFilters = [{ "c.chapter": new Types.ObjectId(params.chapterId) }];
-    }
-
-    const result = await FacultyModel.updateOne(
-      { _id: facultyId },
-      updateQuery,
-      { arrayFilters },
+      },
+      {
+        arrayFilters: [{ "c.chapter": new Types.ObjectId(chapterId) }],
+      },
     );
 
     if (result.matchedCount === 0) {
@@ -963,21 +794,7 @@ export class FacultyRepository implements IFacultyRepository {
     }
   }
 
-  async getAllAvailableSlots(facultyId: string): Promise<AvailableSlots[]> {
-    const faculty = await FacultyModel.findOne(
-      { _id: facultyId, isDeleted: false },
-      { slots: 1 },
-    ).lean();
-
-    if (!faculty || !faculty.slots || faculty.slots.length === 0) {
-      return [];
-    }
-
-    return faculty.slots.map((slot: any) => ({
-      id: slot._id.toString(),
-      time: slot.time,
-    }));
-  }
+  /* ─── KPI / analytics ───────────────────────────────────────────────── */
 
   async getFacultyCountInRange(
     startDate: Date,

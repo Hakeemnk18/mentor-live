@@ -1,5 +1,5 @@
-import type { SlotProps } from "../../types/faculty.type.js";
+import type { FacultySlot } from "../../../faculty-slot/entities/faculty.slot.entity.js";
 
 export interface IGetUserSlotDetailsUseCase {
-    execute(facultyId: string, slotId: string): Promise<SlotProps | null>;
+  execute(facultyId: string, slotId: string): Promise<FacultySlot | null>;
 }

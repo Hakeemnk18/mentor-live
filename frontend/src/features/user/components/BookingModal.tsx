@@ -11,6 +11,11 @@ type BookingModalProps = {
   mode: "slot" | "chapter";
   facultyId: string;
   slotId?: string | null;
+  /**
+   * Required when mode = "slot".
+   * The SubjectVariant _id the student is booking for — keeps pools separated per subject.
+   */
+  subjectVariantId?: string;
   chapterId?: string;
   defaultSyllabusId?: string;
   defaultClassId?: string;
@@ -23,6 +28,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
   mode,
   facultyId,
   slotId,
+  subjectVariantId,
   chapterId,
   defaultSyllabusId,
   defaultClassId,
@@ -171,8 +177,12 @@ const BookingModal: React.FC<BookingModalProps> = ({
     setFieldErrors({});
 
     const bookingPayload: any = { facultyId, type: bookingType, mode };
-    if (mode === "slot") bookingPayload.slotId = [slotId || ""];
-    else if (mode === "chapter" && chapterId) bookingPayload.chapterId = chapterId;
+    if (mode === "slot") {
+      bookingPayload.slotId = [slotId || ""];
+      if (subjectVariantId) bookingPayload.subjectVariantId = subjectVariantId;
+    } else if (mode === "chapter" && chapterId) {
+      bookingPayload.chapterId = chapterId;
+    }
 
     bookingMutation.mutate({
       user: { name, class: classId, place, phoneNumber: phone, school, syllabus: syllabusId },

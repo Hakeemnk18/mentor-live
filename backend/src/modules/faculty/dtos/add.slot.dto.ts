@@ -1,8 +1,10 @@
 import { z } from "zod";
+import { ObjectIdSchema } from "../../../core/utils/object.id.validation.js";
 
 export const AddSlotSchema = z
   .object({
-   
+    variantId: ObjectIdSchema,
+
     slots: z
       .array(
         z.object({
@@ -10,13 +12,8 @@ export const AddSlotSchema = z
         }),
       )
       .min(1, "At least one slot is required"),
-
-    
   })
   .superRefine((data, ctx) => {
-    /* ---------- prevent duplicate subjects ---------- */
-   
-    /* ---------- prevent duplicate slot times ---------- */
     const timeSet = new Set<number>();
 
     data.slots.forEach((slot, i) => {
@@ -31,9 +28,6 @@ export const AddSlotSchema = z
       }
       timeSet.add(timeValue);
     });
-
-    /* ---------- prevent duplicate chapter slots ---------- */
-   
   });
 
 export type AddSlotRequestDto = z.infer<typeof AddSlotSchema>;

@@ -9,6 +9,8 @@ type FacultyCardProps = {
   chapterId?: string;
   syllabusId?: string;
   classId?: string;
+  /** SubjectVariant _id selected on the listing page — needed for slot queries */
+  variantId?: string;
 };
 
 const FacultyCard: React.FC<FacultyCardProps> = ({
@@ -20,6 +22,7 @@ const FacultyCard: React.FC<FacultyCardProps> = ({
   chapterId,
   syllabusId,
   classId,
+  variantId,
 }) => {
   const navigate = useNavigate();
   const imgUrl =
@@ -29,7 +32,13 @@ const FacultyCard: React.FC<FacultyCardProps> = ({
 
   const handleClick = () => {
     navigate("/faculty-details", {
-      state: { facultyId: id, ...(chapterId ? { chapterId } : {}), syllabusId, classId },
+      state: {
+        facultyId: id,
+        ...(chapterId ? { chapterId } : {}),
+        syllabusId,
+        classId,
+        variantId,   // ← pass the selected subject variant so details page can scope slots
+      },
     });
   };
 

@@ -7,14 +7,7 @@ import type { ImageValue } from "../../../core/shared/type/image.type.js";
 import type { SubjectVariantWithSubjectView } from "../../subject-variant/type/subject.variant.type.js";
 import type { IFaculty } from "../infrastructure/faculty.schema.js";
 import type { AllFiltersBase } from "../../../core/shared/type/find.all.with.filters.js";
-
-export interface SlotProps {
-  id?: string;
-  time: Date;
-  isAvailable: boolean;
-  pool: string[];
-  poolLimit: number;
-}
+import type { FacultySlotAdminView } from "../../faculty-slot/types/faculty.slot.type.js";
 
 export interface ChapterSlotProps {
   id?: string;
@@ -37,17 +30,9 @@ export interface FacultyProps {
   demoClass: string;
   image: ImageValue;
   subjectOffering: SubjectOfferingItem[];
-  slots: SlotProps[];
   chapterSlots: ChapterSlotProps[];
   isDeleted: boolean;
 }
-
-export type FacultySlotView = Omit<SlotProps, "time" | "pool"> & {
-  id: string;
-  time: string;
-  isAvailable: boolean;
-  pool: IdOnlyView[];
-};
 
 export type FacultyChapterSlotView = Omit<
   ChapterSlotProps,
@@ -78,14 +63,15 @@ export type FacultySubjectOfferingView = SubjectVariantWithSubjectView & {
 
 export interface FacultyFullAdminView extends Omit<FacultyView, "id"> {
   id: string;
-  slots: FacultySlotView[];
+  /** Time-based slots now come from the FacultySlot collection */
+  slots: FacultySlotAdminView[];
   chapterSlots: FacultyChapterSlotView[];
   subjectOffering: FacultySubjectOfferingView[];
 }
 
 export type FacultyPopulatedLean = Omit<
   IFaculty,
-  "subjectOffering" | "chapterSlots" | "slots"
+  "subjectOffering" | "chapterSlots"
 > & {
   _id: Types.ObjectId;
 
@@ -97,14 +83,6 @@ export type FacultyPopulatedLean = Omit<
       subject: { _id: Types.ObjectId; name: string };
     };
     price: number;
-  }[];
-
-  slots: {
-    _id: Types.ObjectId;
-    time: Date;
-    isAvailable: boolean;
-    pool: { _id: Types.ObjectId }[];
-    poolLimit: number;
   }[];
 
   chapterSlots: {
@@ -136,20 +114,38 @@ export type FacultyViewForUser = {
 
 export type FacultyDetailsViewForUser = FacultyViewForUser & {
   demoClass: string;
-  slot: FacultySlotView | FacultyChapterSlotView;
+  slot: FacultyChapterSlotView | FacultySlotForUser;
+};
+
+export type FacultySlotForUser = {
+  id: string;
+  time: Date;
+  isAvailable: boolean;
+  pool: IdOnlyView[];
+  poolLimit: number;
 };
 
 export type SlotMode = "slot" | "chapter";
 
+/** Public faculty profile returned without requiring a slot or chapter context */
+export type FacultyPublicProfileView = {
+  id: string;
+  name: string;
+  qualifications: string[];
+  description: string;
+  demoClass: string;
+  image: string;
+  /** Only offerings that match the optional classId+syllabusId filter */
+  subjectOffering: {
+    variantId: string;
+    subjectName: string;
+    className: string;
+    syllabusName: string;
+    price: number;
+  }[];
+};
+
 export interface SetSlotAvailabilityDto {
-  facultyId: string;
-  mode: SlotMode;
-  slotId?: string;
-  chapterId?: string;
+  slotId: string;
   isAvailable: boolean;
 }
-
-export type AvailableSlots = {
-  id: string;
-  time: Date;
-};
