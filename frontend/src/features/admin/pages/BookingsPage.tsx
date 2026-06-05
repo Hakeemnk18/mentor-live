@@ -185,6 +185,7 @@ export default function BookingsPage() {
         isContacted === "" ? undefined : isContacted === "true",
     };
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
 
     if (bookingType === "one-on-one") {
@@ -264,7 +265,7 @@ export default function BookingsPage() {
           <label className="text-xs font-medium text-gray-600">Mode</label>
           <select
             value={mode}
-            onChange={(e) => { setMode(e.target.value as any); resetPage(); }}
+            onChange={(e) => { setMode(e.target.value as "" | "chapter" | "slot"); resetPage(); }}
             className={`${sel} w-36`}
           >
             <option value="">All</option>
@@ -309,7 +310,7 @@ export default function BookingsPage() {
             <label className="text-xs font-medium text-gray-600">Contacted</label>
             <select
               value={isContacted}
-              onChange={(e) => { setIsContacted(e.target.value as any); resetPage(); }}
+              onChange={(e) => { setIsContacted(e.target.value as "" | "true" | "false"); resetPage(); }}
               className={`${sel} w-36`}
             >
               <option value="">All</option>

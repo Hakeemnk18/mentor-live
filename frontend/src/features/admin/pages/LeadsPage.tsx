@@ -122,13 +122,14 @@ export default function LeadsPage() {
       setLeads(res.data);
       setTotalPages(res.totalPages);
       setTotal(res.total);
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setLoading(false);
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchAll(); }, [page, limit, search, typeFilter, statusFilter, sortValue]);
 
   /* ── status update ── */
@@ -138,7 +139,7 @@ export default function LeadsPage() {
       await updateLeadStatus(lead.id, status);
       toast.success(`Marked as ${status}`);
       fetchAll();
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setUpdatingId(null);
@@ -171,7 +172,7 @@ export default function LeadsPage() {
           <label className="text-xs font-medium text-gray-600">Type</label>
           <select
             value={typeFilter}
-            onChange={(e) => { setPage(1); setTypeFilter(e.target.value as any); }}
+            onChange={(e) => { setPage(1); setTypeFilter(e.target.value as LeadType | ""); }}
             className={sel}
           >
             <option value="">All Types</option>
@@ -185,7 +186,7 @@ export default function LeadsPage() {
           <label className="text-xs font-medium text-gray-600">Status</label>
           <select
             value={statusFilter}
-            onChange={(e) => { setPage(1); setStatusFilter(e.target.value as any); }}
+            onChange={(e) => { setPage(1); setStatusFilter(e.target.value as LeadStatus | ""); }}
             className={sel}
           >
             <option value="">All</option>

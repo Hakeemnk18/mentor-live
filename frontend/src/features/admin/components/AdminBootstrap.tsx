@@ -10,7 +10,7 @@ const AdminBootstrap = ({ children }: { children: React.ReactNode }) => {
   const user = queryClient.getQueryData<AuthUser>(["auth-user"]);
   const { pathname } = useLocation();
 
-  if (!user || !ALLOWED_ROLES.includes(user.role as any)) {
+  if (!user || !ALLOWED_ROLES.includes(user.role as (typeof ALLOWED_ROLES)[number])) {
     return <Navigate to="/admin/login" replace />;
   }
 

@@ -34,7 +34,7 @@ type ChapterSlotState = {
   pool?: unknown[];
 };
 
-type FacultySubmitPayload = {
+export type FacultySubmitPayload = {
   name: string;
   qualifications: string[];
   description: string;

@@ -6,11 +6,10 @@ export const createBooking = async (payload: CreateBookingPayload) => {
   try {
     const res = await axiosInstance.post("/bookings", payload);
     return res.data;
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Re-throw with the server's error body so the modal can parse it
-    if (err.response?.data) {
-      throw err.response.data;
-    }
+    const e = err as { response?: { data?: unknown } };
+    if (e.response?.data) throw e.response.data;
     throw err;
   }
 };
@@ -19,7 +18,7 @@ export const createBooking = async (payload: CreateBookingPayload) => {
 export const getOneOnOneBookings = async (
   filters: BookingFilters = {}
 ): Promise<{ data: OneOnOneBooking[]; total: number }> => {
-  const params: Record<string, any> = {};
+  const params: Record<string, string | number | boolean> = {};
   if (filters.search) params.search = filters.search;
   if (filters.mode) params.mode = filters.mode;
   if (filters.chapterId) params.chapterId = filters.chapterId;
@@ -55,7 +54,7 @@ export const confirmSlotBooking = async (bookingId: string): Promise<void> => {
 export const getPoolBookings = async (
   filters: BookingFilters = {}
 ): Promise<{ data: PoolBooking[]; total: number }> => {
-  const params: Record<string, any> = {};
+  const params: Record<string, string | number | boolean> = {};
   if (filters.search) params.search = filters.search;
   if (filters.mode) params.mode = filters.mode;
   if (filters.chapterId) params.chapterId = filters.chapterId;

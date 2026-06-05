@@ -76,7 +76,7 @@ export default function TestimonialsPage() {
       setLoading(true);
       const data = await getTestimonials();
       setTestimonials(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setLoading(false);
@@ -123,7 +123,7 @@ export default function TestimonialsPage() {
       await deleteTestimonial(t.id);
       toast.success("Testimonial deleted");
       fetchAll();
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     }
   };
@@ -141,7 +141,7 @@ export default function TestimonialsPage() {
       setModalOpen(false);
       setEditing(undefined);
       fetchAll();
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setSubmitting(false);
@@ -174,7 +174,7 @@ export default function TestimonialsPage() {
           <label className="text-xs font-medium text-gray-600">Status</label>
           <select
             value={statusFilter}
-            onChange={(e) => { setPage(1); setStatusFilter(e.target.value as any); }}
+            onChange={(e) => { setPage(1); setStatusFilter(e.target.value as "" | "active" | "deleted"); }}
             className={sel}
           >
             <option value="">All</option>

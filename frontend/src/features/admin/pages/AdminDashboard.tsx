@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import DashboardMotivationCard from "../components/DashboardMotivationCard";
-import DashboardKpiCard from "../components/DashboardKpiCard";
+import DashboardKpiCard, { type BackendKpiData } from "../components/DashboardKpiCard";
 import DashboardRankingList from "../components/DashboardRankingList";
 import DashboardBookingChart from "../components/DashboardBookingChart";
 
@@ -141,7 +141,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Dynamic KPI Cards mapping directly from backend data array */}
-          {kpiCards?.map((kpiData: any) => (
+          {kpiCards?.map((kpiData: BackendKpiData) => (
             <div key={kpiData.key} className="lg:col-span-1">
               <DashboardKpiCard data={kpiData} />
             </div>
@@ -169,11 +169,11 @@ export default function AdminDashboardPage() {
             title="Zero Booking Chapters" 
             badgeText={`Range: ${analysisTables?.zeroBookingItems?.range || '1y'}`}
             type="chapter"
-            items={analysisTables?.zeroBookingItems?.chapters?.map((c: any) => ({
-              facultyId: c.chapterId, // Map to component props
+            items={analysisTables?.zeroBookingItems?.chapters?.map((c: { chapterId: string; name: string; iconUrl?: string }) => ({
+              facultyId: c.chapterId,
               name: c.name,
-              iconUrl: c.iconUrl
-            })) || []} 
+              iconUrl: c.iconUrl,
+            })) || []}
           />
         </div>
 

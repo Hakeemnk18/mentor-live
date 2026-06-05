@@ -1,6 +1,19 @@
 import axiosInstance from "./axios.instance";
 
 import type { GetChaptersParams, GetChaptersResult, GetChaptersListParams, ChapterListItem, CreateChapterPayload, SubjectVariantsForChapterApi, GetSubjectVariantsParams } from "../shared/types/chapter.types";
+
+type RawSubjectVariant = {
+  _id?: string; id?: string;
+  class: { _id?: string; id?: string; name: string };
+  syllabus: { _id?: string; id?: string; name: string };
+  subject: { name: string };
+};
+type RawChapter = {
+  id: string; name: string; price: number; icon: string; isDeleted: boolean;
+  subjectVariant: RawSubjectVariant;
+};
+type RawChapterListItem = { id: string; name: string; price: number; icon: string };
+
 export const getChapters = async (
   params: GetChaptersParams
 ): Promise<GetChaptersResult> => {
@@ -9,7 +22,7 @@ console.log("fetching chapters resonse ",res)
   const apiData = res.data;
 
   return {
-    rows: apiData.data.map((c: any) => ({
+    rows: (apiData.data as RawChapter[]).map((c) => ({
       _id: c.id,
       name: c.name,
       price: c.price,
@@ -18,9 +31,9 @@ console.log("fetching chapters resonse ",res)
       className: c.subjectVariant.class.name,
       syllabusName: c.subjectVariant.syllabus.name,
       subjectName: c.subjectVariant.subject.name,
-      classId: c.subjectVariant.class._id || c.subjectVariant.class.id,
-      syllabusId: c.subjectVariant.syllabus._id || c.subjectVariant.syllabus.id,
-      subjectVariantId: c.subjectVariant._id || c.subjectVariant.id,
+      classId: c.subjectVariant.class._id ?? c.subjectVariant.class.id ?? "",
+      syllabusId: c.subjectVariant.syllabus._id ?? c.subjectVariant.syllabus.id ?? "",
+      subjectVariantId: c.subjectVariant._id ?? c.subjectVariant.id ?? "",
     })),
     currentPage: apiData.currentPage,
     totalPages: apiData.totalPages,
@@ -67,7 +80,7 @@ export const getChaptersList = async (
 
   const apiData = res.data;
 
-  return apiData.data.map((c: any) => ({
+  return (apiData.data as RawChapterListItem[]).map((c) => ({
     _id: c.id,
     name: c.name,
     price: c.price,

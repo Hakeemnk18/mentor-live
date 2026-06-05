@@ -16,7 +16,7 @@ import { getSyllabus } from "../../../api/syllabus.api";
 import { getSubjects } from "../../../api/subject.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 import ChapterFormModal from "../components/ChapterFormModal";
-import type { ChapterRow } from "../../../shared/types/chapter.types";
+import type { ChapterRow, ChapterInitialData, CreateChapterPayload } from "../../../shared/types/chapter.types";
 export default function ChapterPage() {
   const [chapters, setChapters] = useState<ChapterRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -35,7 +35,7 @@ export default function ChapterPage() {
   const [saving, setSaving] = useState(false);
 
   const [editingChapter, setEditingChapter] =
-    useState<any | undefined>();
+    useState<ChapterInitialData | undefined>();
 
   const [totalPages, setTotalPages] = useState(1);
   const [classesList, setClassesList] = useState<
@@ -96,9 +96,8 @@ export default function ChapterPage() {
     }
   };
 
-  useEffect(() => {
-    fetchChapters();
-  }, [page, limit, search, isDeleted, classId, syllabusId, subjectId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchChapters(); }, [page, limit, search, isDeleted, classId, syllabusId, subjectId]);
 
   useEffect(() => {
     Promise.all([
@@ -124,16 +123,24 @@ export default function ChapterPage() {
 
   const openEdit = (row: ChapterRow) => {
     setFormMode("edit");
-    setEditingChapter(row);
+    setEditingChapter({
+      _id: row._id,
+      name: row.name,
+      price: row.price,
+      icon: row.icon ? { url: row.icon, publicId: "" } : undefined,
+      syllabusId: row.syllabusId,
+      classId: row.classId,
+      subjectVariantId: row.subjectVariantId,
+    });
     setFormOpen(true);
   };
 
-  const handleCreate = async (data: any) => {
+  const handleCreate = async (data: CreateChapterPayload) => {
     try {
       setSaving(true);
       await createChapter(data);
       fetchChapters();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.log("error creating chapter ", err);
       handleApiError(err);
     } finally {
@@ -154,7 +161,7 @@ export default function ChapterPage() {
       setSaving(true);
       await updateChapter(id, data);
       fetchChapters();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.log("error updating chapter ", err);
       handleApiError(err);
     } finally {

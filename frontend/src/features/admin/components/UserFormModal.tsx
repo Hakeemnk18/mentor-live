@@ -83,6 +83,7 @@ export default function UserFormModal({
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({
         name: initialData?.name ?? "",
         email: initialData?.email ?? "",

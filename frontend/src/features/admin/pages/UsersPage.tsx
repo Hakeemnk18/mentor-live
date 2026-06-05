@@ -129,13 +129,14 @@ export default function UsersPage() {
       setUsers(res.data);
       setTotalPages(res.totalPages);
       setTotal(res.total);
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setLoading(false);
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchUsers();
   }, [page, search, roleFilter, statusFilter, sort]);
@@ -166,7 +167,7 @@ export default function UsersPage() {
       setModalOpen(false);
       setEditing(undefined);
       fetchUsers();
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setSubmitting(false);
@@ -199,7 +200,7 @@ export default function UsersPage() {
       setConfirmOpen(false);
       setConfirmTarget(null);
       fetchUsers();
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setConfirmLoading(false);

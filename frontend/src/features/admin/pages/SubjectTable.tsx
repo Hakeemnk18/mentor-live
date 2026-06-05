@@ -80,7 +80,7 @@ export default function SubjectPage() {
 
       setSubjects(res.rows);
       setTotalPages(res.totalPages);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.log("error fetching subjects ", err);
       handleApiError(err);
     } finally {
@@ -88,6 +88,7 @@ export default function SubjectPage() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchSubjects();
   }, [page, limit, search, isDeleted]);
@@ -152,7 +153,7 @@ export default function SubjectPage() {
     setMode("create");
 
     await fetchSubjects();
-  } catch (err: any) {
+  } catch (err: unknown) {
     handleApiError(err);
   } finally {
     setSubmitting(false);
@@ -172,7 +173,7 @@ export default function SubjectPage() {
       toast.success("Subject name updated");
 
       await fetchSubjects();
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setSubmitting(false);
@@ -194,7 +195,7 @@ export default function SubjectPage() {
       setMode("create");
 
       await fetchSubjects();
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setSubmitting(false);

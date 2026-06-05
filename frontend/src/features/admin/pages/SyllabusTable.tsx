@@ -67,6 +67,7 @@ export default function SyllabusPage() {
       setLoading(false);
     }
   };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchSyllabus();
   }, [page, search, isDeleted, limit]);
@@ -104,7 +105,7 @@ export default function SyllabusPage() {
       setModalOpen(false);
       setMode("create");
       setEditing(undefined);
-    } catch (error: any) {
+    } catch (error: unknown) {
       handleApiError(error);
     } finally {
       setSubmitting(false);

@@ -13,9 +13,9 @@ export type CreateFacultyPayload = {
   qualifications: string[];
   description: string;
   demoClass: string;
-  image: FacultyImagePayload;
+  image?: FacultyImagePayload;
   subjects: { variantId: string; price: number }[];
-  slots: FacultySlotPayload[];
+  slots?: FacultySlotPayload[];
 };
 
 export type UpdateFacultyPayload = {
@@ -77,7 +77,7 @@ export type TimeSlot = {
   time: string;
   isAvailable: boolean;
   poolLimit: number;
-  pool: any[];
+  pool: unknown[];
 };
 
 export type ChapterSlot = {
@@ -85,7 +85,7 @@ export type ChapterSlot = {
   chapter: string | { id: string; name: string };
   isAvailable: boolean;
   poolLimit: number;
-  pool: any[];
+  pool: unknown[];
 };
 
 export type FacultyData = {
@@ -127,12 +127,12 @@ export type FacultyModalData = {
     id?: string;
     time: string;
     isAvailable?: boolean;
-    pool?: any[];
+    pool?: unknown[];
   }[];
   chapterSlots?: {
     id?: string;
     chapter: string | { id: string; name: string };
-    pool?: any[];
+    pool?: unknown[];
     isAvailable?: boolean;
   }[];
 };

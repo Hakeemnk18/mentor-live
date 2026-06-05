@@ -23,7 +23,7 @@ export const getSyllabus = async (
 /** Lightweight dropdown list — only name + id, no pagination */
 export const getSyllabusList = async (): Promise<{ _id: string; name: string }[]> => {
   const res = await axiosInstance.get("/syllabuses/list");
-  return (res.data.data ?? []).map((s: any) => ({ _id: s.id ?? s._id, name: s.name }));
+  return (res.data.data ?? []).map((s: { id?: string; _id?: string; name: string }) => ({ _id: s.id ?? s._id, name: s.name }));
 };
 
 export const createSyllabus = async (payload: { name: string }) => {

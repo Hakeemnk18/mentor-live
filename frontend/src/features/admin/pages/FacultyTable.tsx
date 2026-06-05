@@ -22,6 +22,7 @@ import { AddTimeSlotModal } from "../components/AddTimeSlotModal";
 import { AddChapterSlotModal } from "../components/AddChapterSlotModal";
 
 import type { FacultyRow } from "../../../shared/types/faculty.types";
+import type { FacultySubmitPayload } from "../components/FacultyModal";
 /* ---------------- TYPES ---------------- */
 
 /* ---------------- COMPONENT ---------------- */
@@ -150,7 +151,7 @@ export default function FacultyPage() {
 
   useEffect(() => {
     fetchFaculties();
-  }, [page, limit, search, isDeleted, classId, syllabusId, subjectId]);
+  }, [page, limit, search, isDeleted, classId, syllabusId, subjectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     Promise.all([
@@ -172,14 +173,14 @@ export default function FacultyPage() {
     setModalOpen(true);
   };
 
-  const handleSubmit = async (payload: any) => {
+  const handleSubmit = async (payload: FacultySubmitPayload) => {
     try {
       setSaving(true);
       await createFaculty(payload);
       toast.success("Faculty created");
       setModalOpen(false);
       fetchFaculties();
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
       throw err;
     } finally {

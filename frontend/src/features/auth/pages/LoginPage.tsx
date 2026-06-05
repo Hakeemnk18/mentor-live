@@ -61,7 +61,7 @@ const LoginPage = ({ role }: LoginPageProps) => {
       } else {
         navigate(from, { replace: true });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       const fieldErrors = handleApiError(err);
       if (fieldErrors) setErrors(fieldErrors);
     } finally {

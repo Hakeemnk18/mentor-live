@@ -1,4 +1,5 @@
 import Cropper from "react-easy-crop";
+import type { Area } from "react-easy-crop";
 import { useCallback, useState } from "react";
 import { getCroppedImage } from "./cropImage";
 
@@ -20,9 +21,10 @@ export default function ImageCropModal({
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] =
-    useState<any>(null);
+    useState<Area | null>(null);
 
   const onCropDone = useCallback(async () => {
+    if (!croppedAreaPixels) return;
     const file = await getCroppedImage(image, croppedAreaPixels);
     onCropComplete(file);
     onClose();

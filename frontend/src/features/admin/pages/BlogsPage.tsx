@@ -130,13 +130,14 @@ export default function BlogsPage() {
       setBlogs(res.data);
       setTotalPages(res.totalPages);
       setTotal(res.total);
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setLoading(false);
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchAll(); }, [page, limit, search, statusFilter, featuredFilter, sortValue]);
 
   /* ── handlers ── */
@@ -152,7 +153,7 @@ export default function BlogsPage() {
       setMode("edit");
       setEditing(full as Blog);
       setModalOpen(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     }
   };
@@ -167,7 +168,7 @@ export default function BlogsPage() {
         toast.success("Blog blocked");
       }
       fetchAll();
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     }
   };
@@ -185,7 +186,7 @@ export default function BlogsPage() {
       setModalOpen(false);
       setEditing(undefined);
       fetchAll();
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setSubmitting(false);
@@ -221,7 +222,7 @@ export default function BlogsPage() {
           <label className="text-xs font-medium text-gray-600">Status</label>
           <select
             value={statusFilter}
-            onChange={(e) => { setPage(1); setStatusFilter(e.target.value as any); }}
+            onChange={(e) => { setPage(1); setStatusFilter(e.target.value as "" | "active" | "blocked"); }}
             className={sel}
           >
             <option value="">All</option>
@@ -235,7 +236,7 @@ export default function BlogsPage() {
           <label className="text-xs font-medium text-gray-600">Featured</label>
           <select
             value={featuredFilter}
-            onChange={(e) => { setPage(1); setFeaturedFilter(e.target.value as any); }}
+            onChange={(e) => { setPage(1); setFeaturedFilter(e.target.value as "" | "true" | "false"); }}
             className={sel}
           >
             <option value="">All</option>
