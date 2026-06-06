@@ -28,6 +28,9 @@ export interface IFacultySlotRepository {
     variantId: string,
   ): Promise<AvailableSlotView[]>;
 
+  /** All available slots for a faculty across every variant (admin chapter-mode slot picker) */
+  getAllAvailableByFaculty(facultyId: string): Promise<AvailableSlotView[]>;
+
   /** Set isAvailable on a single slot */
   setAvailability(slotId: string, isAvailable: boolean): Promise<void>;
 

@@ -72,7 +72,7 @@ export class FacultySlotRepository implements IFacultySlotRepository {
       variantId: new Types.ObjectId(variantId),
       isAvailable: true,
     })
-      .select("_id time variantId")
+      .select("_id time variantId pool poolLimit")
       .sort({ time: 1 })
       .lean();
 
@@ -80,6 +80,26 @@ export class FacultySlotRepository implements IFacultySlotRepository {
       id: d._id.toString(),
       time: d.time,
       variantId: d.variantId.toString(),
+      poolCount: Array.isArray(d.pool) ? d.pool.length : 0,
+      poolLimit: d.poolLimit ?? 5,
+    }));
+  }
+
+  async getAllAvailableByFaculty(facultyId: string): Promise<AvailableSlotView[]> {
+    const docs = await FacultySlotModel.find({
+      facultyId: new Types.ObjectId(facultyId),
+      isAvailable: true,
+    })
+      .select("_id time variantId pool poolLimit")
+      .sort({ time: 1 })
+      .lean();
+
+    return docs.map((d: any) => ({
+      id: d._id.toString(),
+      time: d.time,
+      variantId: d.variantId.toString(),
+      poolCount: Array.isArray(d.pool) ? d.pool.length : 0,
+      poolLimit: d.poolLimit ?? 5,
     }));
   }
 

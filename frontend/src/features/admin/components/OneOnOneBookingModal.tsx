@@ -43,12 +43,14 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
-  /* fetch faculty slots when chapter booking opens */
+  /* fetch all available faculty slots when a chapter booking opens
+     (chapter bookings don't scope to a variant, so we show all slots) */
   useEffect(() => {
     if (!booking || booking.mode !== "chapter") return;
     setSelectedSlotId(null);
     setLoadingSlots(true);
-    getFacultyAvailableSlots(booking.faculty._id)
+    // no variantId → returns all available slots across all variants
+    getFacultyAvailableSlots(booking.faculty.id)
       .then((raw) => {
         setAvailableSlots(
           raw.map((s) => {
@@ -57,7 +59,7 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
               id: s.id,
               time: !isNaN(d.getTime())
                 ? d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })
-                : s.time,
+                : String(s.time),
             };
           })
         );
@@ -83,9 +85,9 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
     try {
       setConfirming(true);
       if (booking.mode === "chapter") {
-        await confirmChapterBooking(booking._id, [selectedSlotId!]);
+        await confirmChapterBooking(booking.id, [selectedSlotId!]);
       } else {
-        await confirmSlotBooking(booking._id);
+        await confirmSlotBooking(booking.id);
       }
       toast.success("Booking confirmed");
       onConfirmed();
@@ -99,11 +101,11 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
 
   /* contact via phone */
   const handleContact = () => {
-    window.open(`tel:${booking.user.phoneNumber}`, "_self");
+    window.open(`tel:${booking.student.phone}`, "_self");
   };
 
   const copyPhone = () => {
-    navigator.clipboard.writeText(booking.user.phoneNumber).then(() =>
+    navigator.clipboard.writeText(booking.student.phone).then(() =>
       toast.success("Phone number copied")
     );
   };
@@ -151,33 +153,35 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
                 className={`px-3 py-1 rounded-full text-xs font-semibold ${
                   booking.status === "confirmed"
                     ? "bg-green-100 text-green-700"
-                    : booking.status === "pending"
+                    : booking.status === "interested"
                     ? "bg-blue-100 text-blue-700"
                     : "bg-gray-100 text-gray-500"
                 }`}
               >
-                {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                {booking.status === "interested"
+                  ? "Pending"
+                  : booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
               </span>
               <span
                 className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  booking.contactStatus !== "pending_contact"
+                  booking.isContacted
                     ? "bg-green-100 text-green-700"
                     : "bg-yellow-100 text-yellow-700"
                 }`}
               >
-                {booking.contactStatus !== "pending_contact" ? "Contacted" : "Not Contacted"}
+                {booking.isContacted ? "Contacted" : "Not Contacted"}
               </span>
-        </div>
+            </div>
 
-        {/* Student section */}
+            {/* Student section */}
             <div className="rounded-lg border border-gray-200 p-4 space-y-3">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 Student
               </p>
               <div className="flex items-center justify-between gap-4">
                 <div className="space-y-1">
-                  <Detail label="Name" value={booking.user.name} />
-                  <Detail label="Phone" value={booking.user.phoneNumber} />
+                  <Detail label="Name" value={booking.student.name} />
+                  <Detail label="Phone" value={booking.student.phone} />
                 </div>
                 {/* Contact buttons */}
                 <div className="flex flex-col gap-2 shrink-0">
@@ -200,8 +204,8 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
             {/* Booking info */}
             <div className="grid grid-cols-2 gap-4">
               <Detail label="Faculty" value={booking.faculty.name} />
-              <Detail label="Class" value={booking.user.class.name} />
-              <Detail label="Syllabus" value={booking.user.syllabus.name} />
+              <Detail label="Class" value={booking.class.name} />
+              <Detail label="Syllabus" value={booking.syllabus.name} />
               <Detail label="Mode" value={booking.mode} />
               {booking.chapter && (
                 <Detail label="Chapter" value={booking.chapter.name} />

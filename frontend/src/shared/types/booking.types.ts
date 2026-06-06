@@ -51,28 +51,24 @@ export interface BookingFilters {
   isContacted?: boolean;
 }
 
+/** Shape exactly matching what the backend AdminBookingView mapper returns */
 export interface OneOnOneBooking {
-  _id: string;
-  bookingType: "one-on-one";
-  user: {
-    _id: string;
+  id: string;
+  student: {
+    id: string;
     name: string;
-    phoneNumber: string;
-    class: { name: string };
-    syllabus: { name: string };
+    phone: string;
   };
-  faculty: {
-    _id: string;
-    name: string;
-  };
-  status: "pending" | "confirmed" | "cancelled" | "completed";
-  paymentStatus: "pending" | "paid" | "failed";
-  createdAt: string;
-  price: number;
-  contactStatus: "pending_contact" | "contacted" | "enrolled" | "not_interested";
+  faculty: { id: string; name: string };
+  class: { id: string; name: string };
+  syllabus: { id: string; name: string };
+  isContacted: boolean;
   mode: "slot" | "chapter";
-  slot?: { time: string };
-  chapter?: { name: string };
+  /** Backend statuses: "interested" | "confirmed" | "cancelled" | "expired" */
+  status: string;
+  createdAt: string;
+  slot?: { id: string; time: string };
+  chapter?: { id: string; name: string };
 }
 
 export interface PoolBooking {
@@ -91,13 +87,12 @@ export interface PoolBooking {
   hasPendingContact: boolean;
 }
 
+/** Matches AdminPoolingStudentRaw.students[] returned by the backend */
 export interface PoolStudent {
-  bookingId: string;
-  studentId: string;
+  id: string;
   name: string;
-  phoneNumber: string;
-  contactStatus: "pending_contact" | "contacted" | "enrolled" | "not_interested";
-  poolStatus: "waiting" | "pooled" | "discarded";
+  phone: string;
+  isContacted: boolean;
 }
 
 export interface PoolStudentsResponse {

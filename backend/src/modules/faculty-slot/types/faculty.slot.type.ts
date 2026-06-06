@@ -27,9 +27,11 @@ export interface FacultySlotAdminView {
   poolLimit: number;
 }
 
-/** Minimal shape for student-facing slot picker */
+/** Student-facing slot picker — includes live pool info */
 export interface AvailableSlotView {
   id: string;
   time: Date;
   variantId: string;
+  poolCount: number;
+  poolLimit: number;
 }

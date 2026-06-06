@@ -118,7 +118,7 @@ export type AdminPoolingStudentRaw = {
   syllabus: IdNameView;
   slot?: slotIdView | undefined;
   chapter?: IdNameView | undefined;
-  student: {
+  students: {
     id: string;
     name: string;
     phone: string;

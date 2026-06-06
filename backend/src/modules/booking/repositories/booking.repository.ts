@@ -277,6 +277,25 @@ export class BookingRepository implements IBookingRepository {
     );
 
     /**
+     * 4b️⃣ LOOKUP SLOT from FacultySlot collection (slots no longer embedded in Faculty)
+     */
+    pipeline.push(
+      {
+        $lookup: {
+          from: "facultyslots",
+          let: { slotIds: "$slotId" },
+          pipeline: [
+            { $match: { $expr: { $in: ["$_id", "$$slotIds"] } } },
+            { $limit: 1 },
+            { $project: { _id: 1, time: 1 } },
+          ],
+          as: "slotDoc",
+        },
+      },
+      { $addFields: { slotDoc: { $arrayElemAt: ["$slotDoc", 0] } } },
+    );
+
+    /**
      * 6️⃣ SEARCH (student name OR faculty name)
      */
     if (search.trim()) {
@@ -290,9 +309,6 @@ export class BookingRepository implements IBookingRepository {
       });
     }
 
-    // /**
-    //  * 7️⃣ PROJECT (normalize for admin table)
-    //  */
     pipeline.push({
       $project: {
         id: "$_id",
@@ -318,42 +334,11 @@ export class BookingRepository implements IBookingRepository {
           name: "$syllabus.name",
         },
 
+        // slot comes from FacultySlot collection lookup above
         slot: {
           $cond: [
             { $eq: ["$mode", "slot"] },
-            {
-              $let: {
-                vars: {
-                  matchedSlot: {
-                    $arrayElemAt: [
-                      {
-                        $filter: {
-                          input: "$faculty.slots",
-                          as: "slot",
-                          cond: {
-                            $in: [
-                              "$$slot._id",
-                              {
-                                $map: {
-                                  input: "$slotId",
-                                  as: "id",
-                                  in: { $toObjectId: "$$id" },
-                                },
-                              },
-                            ],
-                          },
-                        },
-                      },
-                      0,
-                    ],
-                  },
-                },
-                in: {
-                  id: "$$matchedSlot._id",
-                  time: "$$matchedSlot.time",
-                },
-              },
-            },
+            { id: "$slotDoc._id", time: "$slotDoc.time" },
             "$$REMOVE",
           ],
         },
@@ -505,6 +490,30 @@ export class BookingRepository implements IBookingRepository {
     );
 
     /**
+     * 5b️⃣ LOOKUP SLOT from FacultySlot collection (slots no longer embedded in Faculty)
+     * booking.slotId is ObjectId[] — look up the first one.
+     */
+    pipeline.push(
+      {
+        $lookup: {
+          from: "facultyslots",
+          let: { slotIds: "$slotId" },
+          pipeline: [
+            { $match: { $expr: { $in: ["$_id", "$$slotIds"] } } },
+            { $limit: 1 },
+            { $project: { _id: 1, time: 1 } },
+          ],
+          as: "slotDoc",
+        },
+      },
+      {
+        $addFields: {
+          slotDoc: { $arrayElemAt: ["$slotDoc", 0] },
+        },
+      },
+    );
+
+    /**
      * 6️⃣ SEARCH
      */
     if (search.trim()) {
@@ -514,7 +523,7 @@ export class BookingRepository implements IBookingRepository {
     }
 
     /**
-     * 7️⃣ GROUP → THIS IS THE CORE CHANGE
+     * 7️⃣ GROUP
      */
     pipeline.push({
       $group: {
@@ -527,42 +536,14 @@ export class BookingRepository implements IBookingRepository {
 
         faculty: { $first: "$faculty" },
         chapter: { $first: "$chapter" },
+        // slotDoc is the FacultySlot document looked up above
         slot: {
           $first: {
             $cond: [
               { $eq: ["$mode", "slot"] },
               {
-                $let: {
-                  vars: {
-                    matchedSlot: {
-                      $arrayElemAt: [
-                        {
-                          $filter: {
-                            input: "$faculty.slots",
-                            as: "slot",
-                            cond: {
-                              $in: [
-                                "$$slot._id",
-                                {
-                                  $map: {
-                                    input: "$slotId",
-                                    as: "id",
-                                    in: { $toObjectId: "$$id" },
-                                  },
-                                },
-                              ],
-                            },
-                          },
-                        },
-                        0,
-                      ],
-                    },
-                  },
-                  in: {
-                    id: "$$matchedSlot._id",
-                    time: "$$matchedSlot.time",
-                  },
-                },
+                id: "$slotDoc._id",
+                time: "$slotDoc.time",
               },
               null,
             ],
@@ -666,7 +647,8 @@ export class BookingRepository implements IBookingRepository {
     if (mode === "slot") {
       pipeline.push({
         $match: {
-          slotId: { $in: [slotId] },
+          // slotId is ObjectId[] in the booking document
+          slotId: { $in: [new Types.ObjectId(slotId)] },
         },
       });
     }
@@ -737,41 +719,37 @@ export class BookingRepository implements IBookingRepository {
       },
     );
 
-    /* 4️⃣ Slot resolution (only for slot mode) */
-    pipeline.push({
-      $addFields: {
-        slot: {
-          $cond: [
-            { $eq: ["$mode", "slot"] },
-            {
-              $let: {
-                vars: {
-                  matchedSlot: {
-                    $arrayElemAt: [
-                      {
-                        $filter: {
-                          input: "$faculty.slots",
-                          as: "slot",
-                          cond: {
-                            $eq: ["$$slot._id", { $toObjectId: slotId }],
-                          },
-                        },
-                      },
-                      0,
-                    ],
-                  },
-                },
-                in: {
-                  id: "$$matchedSlot._id",
-                  time: "$$matchedSlot.time",
-                },
-              },
-            },
-            null,
+    /* 4️⃣ Slot resolution — lookup from FacultySlot collection (slots no longer embedded) */
+    pipeline.push(
+      {
+        $lookup: {
+          from: "facultyslots",
+          let: { slotIds: "$slotId" },
+          pipeline: [
+            { $match: { $expr: { $in: ["$_id", "$$slotIds"] } } },
+            { $limit: 1 },
+            { $project: { _id: 1, time: 1 } },
           ],
+          as: "slotDoc",
         },
       },
-    });
+      {
+        $addFields: {
+          slot: {
+            $cond: [
+              { $eq: ["$mode", "slot"] },
+              {
+                $let: {
+                  vars: { s: { $arrayElemAt: ["$slotDoc", 0] } },
+                  in: { id: "$$s._id", time: "$$s.time" },
+                },
+              },
+              null,
+            ],
+          },
+        },
+      },
+    );
 
     //group faculty
     pipeline.push({
@@ -792,18 +770,18 @@ export class BookingRepository implements IBookingRepository {
         slot: { $first: "$slot" },
         chapter: { $first: "$chapter" },
 
-        student: {
+        students: {
           $push: {
             id: "$student._id",
             name: "$student.name",
-            phone: "$student.phone",
+            phone: "$student.phoneNumber",   // Student schema uses phoneNumber
             isContacted: "$isContacted",
           },
         },
       },
     });
 
-    /* 5️⃣ Final projection (EXACTLY your type) */
+    /* 5️⃣ Final projection */
     pipeline.push({
       $project: {
         _id: 0,
@@ -840,7 +818,7 @@ export class BookingRepository implements IBookingRepository {
           ],
         },
 
-        student: 1,
+        students: 1,   // renamed from student
       },
     });
 

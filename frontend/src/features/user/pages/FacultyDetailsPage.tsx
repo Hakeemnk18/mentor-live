@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getFacultyPublicProfile,
   getFacultyAvailableSlots,
-  getFacultySlotDetails,
   getFacultyByChapter,
 } from "../../../api/faculty.api";
 import BookingModal from "../components/BookingModal";
@@ -125,22 +124,21 @@ const FacultyDetailsPage = () => {
     refetchOnWindowFocus: false,
   });
 
-  /* ─── Slot mode: details of the currently selected slot ─── */
-  const { data: selectedSlotData } = useQuery({
-    queryKey: ["slot-details", facultyId, selectedSlotId],
-    queryFn: () => getFacultySlotDetails(facultyId, selectedSlotId!),
-    enabled: !isChapterMode && !!facultyId && !!selectedSlotId,
-    refetchOnWindowFocus: false,
-  });
-
   /* ─── Derived values ─── */
   const isLoading = isChapterMode ? chapterLoading : profileLoading;
   const isError   = isChapterMode ? chapterError   : profileError;
 
   const availableSlots = slots ?? [];
-  const activeSlot = selectedSlotData ?? chapterFaculty?.slot;
-  const poolCount  = activeSlot?.pool?.length ?? 0;
-  const poolLimit  = activeSlot?.poolLimit ?? 5;
+
+  // For slot mode: read pool info directly from the slots list (no separate admin call needed)
+  const selectedSlotInfo = availableSlots.find((s) => s.id === selectedSlotId);
+  const activeSlot = chapterFaculty?.slot;
+  const poolCount  = isChapterMode
+    ? (activeSlot?.pool?.length ?? 0)
+    : (selectedSlotInfo?.poolCount ?? 0);
+  const poolLimit  = isChapterMode
+    ? (activeSlot?.poolLimit ?? 5)
+    : (selectedSlotInfo?.poolLimit ?? 5);
 
   // Price: from the selected variant's offering, or chapter faculty price
   const selectedOffering: OfferingItem | undefined = (profile?.subjectOffering ?? []).find(

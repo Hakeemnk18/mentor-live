@@ -117,8 +117,8 @@ export const getFacultyByChapter = async (
  */
 export const getFacultyAvailableSlots = async (
   facultyId: string,
-  variantId: string
-): Promise<{ id: string; time: string; variantId: string }[]> => {
+  variantId?: string
+): Promise<{ id: string; time: string; variantId: string; poolCount: number; poolLimit: number }[]> => {
   const res = await axiosInstance.get(
     `/faculties/${facultyId}/available-slots`,
     { params: { variantId } }

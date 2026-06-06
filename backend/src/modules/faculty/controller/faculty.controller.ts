@@ -355,7 +355,11 @@ export class FacultyController implements IFacultyController {
     try {
       const facultyId = req.params.id;
       validateObjectId(facultyId);
-      const variantId = ObjectIdSchema.parse(req.query.variantId);
+      // variantId is optional — if omitted, returns all available slots (admin use)
+      const variantIdRaw = req.query.variantId as string | undefined;
+      const variantId = variantIdRaw
+        ? ObjectIdSchema.parse(variantIdRaw)
+        : undefined;
 
       const availableSlots = await this._getAvailableSlotsUseCase.execute(
         facultyId!,

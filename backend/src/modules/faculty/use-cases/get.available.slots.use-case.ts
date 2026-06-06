@@ -10,10 +10,11 @@ export class GetAvailableSlotsUseCase implements IGetAvailableSlotsUseCase {
     private readonly _facultySlotRepository: IFacultySlotRepository,
   ) {}
 
-  async execute(facultyId: string, variantId: string): Promise<AvailableSlotView[]> {
-    return this._facultySlotRepository.getAvailableByFacultyAndVariant(
-      facultyId,
-      variantId,
-    );
+  async execute(facultyId: string, variantId?: string): Promise<AvailableSlotView[]> {
+    if (variantId) {
+      return this._facultySlotRepository.getAvailableByFacultyAndVariant(facultyId, variantId);
+    }
+    // No variantId — return all available slots for this faculty (used by admin modals)
+    return this._facultySlotRepository.getAllAvailableByFaculty(facultyId);
   }
 }

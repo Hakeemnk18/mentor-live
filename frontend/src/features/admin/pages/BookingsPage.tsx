@@ -38,8 +38,8 @@ const oneOnOneColumns: Column<OneOnOneBooking>[] = [
     label: "Student",
     render: (b) => (
       <div>
-        <p className="font-medium text-gray-900">{b.user.name}</p>
-        <p className="text-xs text-gray-400">{b.user.phoneNumber}</p>
+        <p className="font-medium text-gray-900">{b.student.name}</p>
+        <p className="text-xs text-gray-400">{b.student.phone}</p>
       </div>
     ),
   },
@@ -52,8 +52,8 @@ const oneOnOneColumns: Column<OneOnOneBooking>[] = [
         ? b.chapter?.name ?? "—"
         : formatTimeAMPM(b.slot?.time) ?? "—",
   },
-  { key: "class", label: "Class", render: (b) => b.user.class.name },
-  { key: "syllabus", label: "Syllabus", render: (b) => b.user.syllabus.name },
+  { key: "class", label: "Class", render: (b) => b.class.name },
+  { key: "syllabus", label: "Syllabus", render: (b) => b.syllabus.name },
   {
     key: "status",
     label: "Status",
@@ -62,27 +62,27 @@ const oneOnOneColumns: Column<OneOnOneBooking>[] = [
         className={`px-2 py-1 rounded text-xs font-medium ${
           b.status === "confirmed"
             ? "bg-green-100 text-green-700"
-            : b.status === "pending"
+            : b.status === "interested"
             ? "bg-blue-100 text-blue-700"
             : "bg-gray-100 text-gray-600"
         }`}
       >
-        {b.status}
+        {b.status === "interested" ? "Pending" : b.status}
       </span>
     ),
   },
   {
-    key: "contactStatus",
+    key: "isContacted",
     label: "Contacted",
     render: (b) => (
       <span
         className={`px-2 py-1 rounded text-xs font-medium ${
-          b.contactStatus !== "pending_contact"
+          b.isContacted
             ? "bg-green-100 text-green-700"
             : "bg-yellow-100 text-yellow-700"
         }`}
       >
-        {b.contactStatus !== "pending_contact" ? "Yes" : "Pending"}
+        {b.isContacted ? "Yes" : "Pending"}
       </span>
     ),
   },
@@ -344,7 +344,7 @@ export default function BookingsPage() {
           data={oneOnOneData}
           columns={oneOnOneColumns}
           actions={[{ label: "View", onClick: (row) => setSelectedBooking(row) }]}
-          getRowId={(row) => row._id}
+          getRowId={(row) => row.id}
         />
       ) : (
         <AdminTable
