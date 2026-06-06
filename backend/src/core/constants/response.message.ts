@@ -142,6 +142,9 @@ export const ResponseMessages = {
   SLOT_POOL_NOT_EMPTY:
     "Cannot block slot as there are students in the pooling list",
 
+  VARIANT_HAS_ACTIVE_BOOKINGS:
+    "Cannot remove this subject variant — one or more slots still have active student bookings. Please resolve all bookings first.",
+
   SLOT_TIME_NOT_VALID: "Slot times are not valid",
   SLOT_ADDED_SUCCESS: "Slot added successfully",
   CHAPTER_SLOT_ADDED_SUCCESS: "Chapter slot added successfully",

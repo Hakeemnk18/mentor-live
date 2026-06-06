@@ -1,14 +1,12 @@
 import { inject, injectable } from "tsyringe";
-import type { CreateChapterRequestDto } from "../../chapter/dtos/create.chapter.dto.js";
 import type { IFacultyRepository } from "../repository/faculty.repository.interface.js";
 import type { IEditFacultyUseCase } from "./interfaces/edit.faculty.use-case.interface.js";
 import { ResponseMessages } from "../../../core/constants/response.message.js";
 import { CustomError } from "../../../core/errors/custom.error.js";
 import { HttpStatusCode } from "../../../core/constants/http.status.codes.js";
-import type { CreateFacultyRequestDto } from "../dtos/create.faculty.dto.js";
 import type { IChapterRepository } from "../../chapter/repositories/chapter.repository.interface.js";
 import type { ISubjectVariantRepository } from "../../subject-variant/repositories/subject.variant.repository.interface.js";
-import { validateOnCreate } from "../../../core/utils/validate.time.slot.js";
+import type { IFacultySlotRepository } from "../../faculty-slot/repository/faculty.slot.repository.interface.js";
 import type { EditFacultyRequestDto } from "../dtos/edit.faculty.dto.js";
 
 @injectable()
@@ -22,7 +20,11 @@ export class EditFacultyUseCase implements IEditFacultyUseCase {
 
     @inject("IChapterRepository")
     private readonly _chapterRepository: IChapterRepository,
+
+    @inject("IFacultySlotRepository")
+    private readonly _facultySlotRepository: IFacultySlotRepository,
   ) {}
+
   async execute(id: string, dto: EditFacultyRequestDto): Promise<void> {
     /* ---------- fetch faculty ---------- */
     const faculty = await this._facultyRepository.findById(id);
@@ -61,7 +63,28 @@ export class EditFacultyUseCase implements IEditFacultyUseCase {
       }
     }
 
-    /* ---------- apply edits (no slots touched) ---------- */
+    /* ---------- sync slots for removed variants ---------- */
+    const oldVariantIds = new Set(faculty.subjectOffering.map((s) => s.variantId));
+    const newVariantIds = new Set(dto.subjects.map((s) => s.variantId));
+    const removedVariantIds = [...oldVariantIds].filter((id) => !newVariantIds.has(id));
+
+    if (removedVariantIds.length > 0) {
+      const hasBookings = await this._facultySlotRepository.hasActivePooledSlots(
+        id,
+        removedVariantIds,
+      );
+
+      if (hasBookings) {
+        throw new CustomError(
+          ResponseMessages.VARIANT_HAS_ACTIVE_BOOKINGS,
+          HttpStatusCode.CONFLICT,
+        );
+      }
+
+      await this._facultySlotRepository.deleteByFacultyAndVariants(id, removedVariantIds);
+    }
+
+    /* ---------- apply edits ---------- */
     const updateFaculty = faculty.updateProfile({
       name: normalizedName,
       qualifications: dto.qualifications,

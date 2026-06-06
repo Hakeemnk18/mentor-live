@@ -91,6 +91,7 @@ export type AdminPoolingRaw = {
   mode: BookingMode;
   class: IdNameView;
   syllabus: IdNameView;
+  subject?: IdNameView | undefined;
   chapter?: IdNameView | undefined;
   slot?: slotIdView | undefined;
   totalStudents: number;
@@ -104,6 +105,7 @@ export interface AdminPoolingView {
   mode: BookingMode;
   class: IdNameView;
   syllabus: IdNameView;
+  subject?: IdNameView | undefined;
   chapter?: IdNameView | undefined;
   slot?: slotIdView | undefined;
   totalStudents: number;
@@ -116,6 +118,7 @@ export type AdminPoolingStudentRaw = {
   mode: BookingMode;
   class: IdNameView;
   syllabus: IdNameView;
+  subject?: IdNameView | undefined;
   slot?: slotIdView | undefined;
   chapter?: IdNameView | undefined;
   students: {

@@ -121,6 +121,9 @@ export class BookingMapper {
       mode: raw.mode,
       class: raw.class,
       syllabus: raw.syllabus,
+      subject: raw.subject
+        ? { id: String(raw.subject.id), name: raw.subject.name }
+        : undefined,
       slot: raw.mode === "slot" ? raw.slot : undefined,
       chapter:
         raw.mode === "chapter" && raw.chapter
@@ -143,6 +146,9 @@ export class BookingMapper {
       mode: raw.mode,
       class: raw.class,
       syllabus: raw.syllabus,
+      subject: raw.subject
+        ? { id: String(raw.subject.id), name: raw.subject.name }
+        : undefined,
       slot: raw.mode === "slot" ? raw.slot : undefined,
       chapter:
         raw.mode === "chapter" && raw.chapter
@@ -151,7 +157,7 @@ export class BookingMapper {
               name: raw.chapter.name,
             }
           : undefined,
-      student: raw.student,
+      students: raw.students,
     };
   }
 

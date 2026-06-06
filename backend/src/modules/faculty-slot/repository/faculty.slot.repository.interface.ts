@@ -76,4 +76,23 @@ export interface IFacultySlotRepository {
    * Used when a confirmed booking is later cancelled/expired.
    */
   reOpenSlot(slotId: string, session?: ClientSession): Promise<{ time: Date; facultyId: string }>;
+
+  /**
+   * Returns true if any slot for the given faculty+variants currently has
+   * students in its pool (i.e. there are active unconfirmed bookings).
+   * Used as a guard before removing a variant from a faculty's offerings.
+   */
+  hasActivePooledSlots(facultyId: string, variantIds: string[]): Promise<boolean>;
+
+  /**
+   * Hard-delete all slots for a faculty whose variantId is in the given list.
+   * Called when subject variants are removed from a faculty's offerings.
+   */
+  deleteByFacultyAndVariants(facultyId: string, variantIds: string[]): Promise<void>;
+
+  /**
+   * Return every distinct slot time that exists for the given faculty,
+   * across all variants. Used to seed slots for a newly added variant.
+   */
+  findDistinctTimesByFaculty(facultyId: string): Promise<Date[]>;
 }

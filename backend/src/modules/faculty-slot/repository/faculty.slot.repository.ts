@@ -249,4 +249,37 @@ export class FacultySlotRepository implements IFacultySlotRepository {
       facultyId: doc.facultyId.toString(),
     };
   }
+
+  /* ─── Variant sync helpers ──────────────────────────────────────────── */
+
+  async hasActivePooledSlots(
+    facultyId: string,
+    variantIds: string[],
+  ): Promise<boolean> {
+    if (variantIds.length === 0) return false;
+    const count = await FacultySlotModel.countDocuments({
+      facultyId: new Types.ObjectId(facultyId),
+      variantId: { $in: variantIds.map((id) => new Types.ObjectId(id)) },
+      "pool.0": { $exists: true }, // pool array is non-empty
+    });
+    return count > 0;
+  }
+
+  async deleteByFacultyAndVariants(
+    facultyId: string,
+    variantIds: string[],
+  ): Promise<void> {
+    if (variantIds.length === 0) return;
+    await FacultySlotModel.deleteMany({
+      facultyId: new Types.ObjectId(facultyId),
+      variantId: { $in: variantIds.map((id) => new Types.ObjectId(id)) },
+    });
+  }
+
+  async findDistinctTimesByFaculty(facultyId: string): Promise<Date[]> {
+    const times = await FacultySlotModel.distinct("time", {
+      facultyId: new Types.ObjectId(facultyId),
+    });
+    return times as Date[];
+  }
 }
