@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import heroImage from "/hero-image.png";
 import { getFeaturedFaculty } from "../../../api/faculty.api";
 import { getFeaturedBlogs } from "../../../api/blog.api";
-import { getTestimonials, getTestimonialsForUser } from "../../../api/testimonial.api";
+import { getTestimonialsForUser } from "../../../api/testimonial.api";
 import FacultyCard from "../components/FacultyCard";
 import BlogCard from "../components/BlogCard";
 import TestimonialCard from "../components/TestimonialCard";
