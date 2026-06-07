@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { getChaptersList, getSubjectVariants } from "../../../api/chapter.api";
+import { getChaptersList } from "../../../api/chapter.api";
 import ChapterCard from "../components/ChapterCard";
 import SubjectPills from "../components/SubjectPills";
 import SearchInput from "../components/SearchInput";
 import LeadFormModal from "../components/LeadFormModal";
+import { getSubjectsForUser } from "../../../api/subject.api";
 
 const ChapterListingPage: React.FC = () => {
   const location = useLocation();
@@ -21,14 +22,19 @@ const ChapterListingPage: React.FC = () => {
   const [requestOpen, setRequestOpen] = useState(false);
   const [subjectId, setSubjectId] = useState<string | undefined>();
 
-  /* ── Fetch subject variants for filter pills ── */
+  /* ── Fetch subjects for filter pills, scoped to this syllabus + class ── */
   const { data: subjectData } = useQuery({
-    queryKey: ["subject-variants", syllabusId, classId],
-    queryFn: () => getSubjectVariants({ syllabusId, classId }),
+    queryKey: ["subjects-for-user", syllabusId, classId],
+    queryFn: () => getSubjectsForUser({ syllabusId, classId }),
     enabled: !!syllabusId && !!classId,
   });
 
-  const subjects = (subjectData ?? []) as unknown as { _id: string; subjectName: string }[];
+  // SubjectPills expects { _id, subjectName } — `_id` here is the real Subject id,
+  // which is what the chapter list `subjectId` filter expects.
+  const subjects = (subjectData ?? []).map((s) => ({
+    _id: s.id,
+    subjectName: s.name,
+  }));
 
   /* ── Fetch chapters list ── */
   const { data, isLoading, isError } = useQuery({

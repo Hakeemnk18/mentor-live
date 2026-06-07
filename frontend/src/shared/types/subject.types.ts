@@ -92,3 +92,14 @@ export type SubjectVariantForm = {
   syllabusId: string;
   classId: string;
 };
+
+/** Subject for the user-facing filter pills — id is the real Subject._id */
+export type SubjectForUser = {
+  id: string;
+  name: string;
+};
+
+export type GetSubjectsForUserParams = {
+  syllabusId?: string;
+  classId?: string;
+};
