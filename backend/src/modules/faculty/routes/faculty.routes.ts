@@ -32,6 +32,11 @@ router.get('/list',
   (req, res) => facultyController.findAllFacultyForUser(req, res)
 )
 
+// get featured faculty for landing page (no auth, max 8)
+router.get('/featured',
+  (req, res) => facultyController.getFeaturedFaculty(req, res)
+)
+
 // get faculty details for admin
 router.get('/:id',
   authenticate.authenticate,

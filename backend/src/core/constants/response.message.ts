@@ -120,6 +120,9 @@ export const ResponseMessages = {
   FACULTY_ALREADY_DELETED: "Faculty is already deleted",
   FACULTY_NOT_DELETED: "Faculty is not deleted",
 
+  FACULTY_FEATURED_LIMIT_REACHED:
+    "Only 8 faculty can be marked as featured at the same time. Please unfeature another faculty first.",
+
   FACULTY_NAME_INVALID: "Faculty name must be between 2 and 100 characters",
   FACULTY_PRICE_INVALID: "Faculty price must be a non-negative number",
   FACULTY_DESCRIPTION_INVALID: "Faculty description is invalid",

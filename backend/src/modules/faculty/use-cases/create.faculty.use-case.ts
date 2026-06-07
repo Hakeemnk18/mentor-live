@@ -78,6 +78,17 @@ export class CreateFacultyUseCase implements ICreateFacultyUseCase {
       }
     }
 
+    /* ── Featured faculty cap (max 8 at a time) ── */
+    if (dto.isFeatured) {
+      const featuredCount = await this._facultyRepository.countFeatured();
+      if (featuredCount >= 8) {
+        throw new CustomError(
+          ResponseMessages.FACULTY_FEATURED_LIMIT_REACHED,
+          HttpStatusCode.BAD_REQUEST,
+        );
+      }
+    }
+
     /* ── Create Faculty document (no embedded slots) ── */
     const facultyEntity = new Faculty({
       id: null,
@@ -97,6 +108,7 @@ export class CreateFacultyUseCase implements ICreateFacultyUseCase {
         poolLimit: 5,
       })),
       isDeleted: false,
+      isFeatured: dto.isFeatured ?? false,
     });
 
     const faculty = await this._facultyRepository.create(facultyEntity);

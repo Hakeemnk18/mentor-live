@@ -39,6 +39,7 @@ import type { IUnblockFacultyUseCase } from "../use-cases/interfaces/unblock.fac
 import type { IGetAvailableSlotsUseCase } from "../use-cases/interfaces/get.available.slots.use-case.interface.js";
 import type { IGetUserSlotDetailsUseCase } from "../use-cases/interfaces/get.user.slot.details.interface.js";
 import type { IGetFacultyPublicProfileUseCase } from "../use-cases/interfaces/get.faculty.public.profile.use-case.interface.js";
+import type { IGetFeaturedFacultyUseCase } from "../use-cases/interfaces/get.featured.faculty.use-case.interface.js";
 import { log } from "console";
 
 @injectable()
@@ -91,6 +92,9 @@ export class FacultyController implements IFacultyController {
 
     @inject("IGetFacultyPublicProfileUseCase")
     private readonly _getFacultyPublicProfileUseCase: IGetFacultyPublicProfileUseCase,
+
+    @inject("IGetFeaturedFacultyUseCase")
+    private readonly _getFeaturedFacultyUseCase: IGetFeaturedFacultyUseCase,
 
   ) { }
 
@@ -417,6 +421,22 @@ export class FacultyController implements IFacultyController {
       });
     } catch (error) {
       console.log("Error in getFacultyPublicProfile:", error);
+      handleError(res, error);
+    }
+  }
+
+  /** Landing page — dedicated endpoint for fetching featured faculty (max 8) */
+  async getFeaturedFaculty(_req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this._getFeaturedFacultyUseCase.execute();
+
+      res.status(HttpStatusCode.OK).json({
+        message: ResponseMessages.SUCCESS,
+        success: true,
+        data,
+      });
+    } catch (error) {
+      console.log("Error in getFeaturedFaculty:", error);
       handleError(res, error);
     }
   }

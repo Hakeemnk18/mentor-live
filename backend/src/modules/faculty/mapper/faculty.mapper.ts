@@ -2,6 +2,7 @@ import { Faculty } from "../entities/faculty.entity.js";
 import type {
   FacultyDetailsViewForUser,
   FacultyView,
+  FeaturedFacultyView,
 } from "../types/faculty.type.js";
 
 export class FacultyMapper {
@@ -44,6 +45,7 @@ export class FacultyMapper {
       })),
 
       isDeleted: facultyModelData.isDeleted,
+      isFeatured: facultyModelData.isFeatured ?? false,
     });
   }
 
@@ -68,6 +70,7 @@ export class FacultyMapper {
         poolLimit: slot.poolLimit,
       })),
       isDeleted: facultyEntity.isDeleted,
+      isFeatured: facultyEntity.isFeatured,
     };
   }
 
@@ -80,6 +83,20 @@ export class FacultyMapper {
       demoClass: raw.demoClass,
       image: raw.image,
       isDeleted: raw.isDeleted ?? false,
+      isFeatured: raw.isFeatured ?? false,
+    };
+  }
+
+  static toFeaturedView(raw: any): FeaturedFacultyView {
+    return {
+      id: raw._id?.toString() ?? raw.id,
+      name: raw.name,
+      qualifications: raw.qualifications ?? [],
+      description: raw.description,
+      image: {
+        url: raw.image?.url ?? "",
+        publicId: raw.image?.publicId ?? "",
+      },
     };
   }
 

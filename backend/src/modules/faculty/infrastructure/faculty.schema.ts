@@ -20,6 +20,7 @@ export interface IFaculty extends Document {
     poolLimit: number;
   }[];
   isDeleted: boolean;
+  isFeatured: boolean;
 }
 
 const facultySchema = new Schema<IFaculty>(
@@ -103,6 +104,12 @@ const facultySchema = new Schema<IFaculty>(
     isDeleted: {
       type: Boolean,
       default: false,
+    },
+
+    isFeatured: {
+      type: Boolean,
+      default: false,
+      index: true,
     },
   },
   {

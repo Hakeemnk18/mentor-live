@@ -18,6 +18,7 @@ import type {
   FacultyPopulatedLean,
   FacultyView,
   FacultyViewForUser,
+  FeaturedFacultyView,
 } from "../types/faculty.type.js";
 import type { AddChapterSlotRequestDto } from "../dtos/add.chapter.dto.js";
 import type { RemoveUserFromPoolDto } from "../../booking/dto/remove.student.from.pooling.dto.js";
@@ -226,6 +227,7 @@ export class FacultyRepository implements IFacultyRepository {
       demoClass: doc.demoClass,
       image: doc.image,
       isDeleted: doc.isDeleted,
+      isFeatured: doc.isFeatured ?? false,
 
       /* slots from FacultySlot collection */
       slots: slotDocs.map(FacultySlotMapper.toAdminView),
@@ -792,6 +794,34 @@ export class FacultyRepository implements IFacultyRepository {
     if (result.matchedCount === 0) {
       throw new Error("Faculty not found");
     }
+  }
+
+  /* ─── Featured faculty ──────────────────────────────────────────────── */
+
+  async countFeatured(excludeId?: string): Promise<number> {
+    const filter: Record<string, any> = {
+      isFeatured: true,
+      isDeleted: false,
+    };
+
+    if (excludeId) {
+      filter._id = { $ne: new Types.ObjectId(excludeId) };
+    }
+
+    return FacultyModel.countDocuments(filter);
+  }
+
+  async findFeatured(limit: number): Promise<FeaturedFacultyView[]> {
+    const documents = await FacultyModel.find({
+      isFeatured: true,
+      isDeleted: false,
+    })
+      .select("_id name qualifications description image")
+      .sort({ updatedAt: -1 })
+      .limit(limit)
+      .lean();
+
+    return documents.map(FacultyMapper.toFeaturedView);
   }
 
   /* ─── KPI / analytics ───────────────────────────────────────────────── */

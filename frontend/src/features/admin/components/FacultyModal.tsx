@@ -52,6 +52,7 @@ export type FacultySubmitPayload = {
   qualifications: string[];
   description: string;
   demoClass: string;
+  isFeatured?: boolean;
   subjects: { variantId: string; price: number }[];
   image?: ImagePayload;
   /** Per-variant slot groups — replaces the old flat slots[] */
@@ -110,6 +111,7 @@ export default function FacultyModal({
   const [qualifications, setQualifications] = useState("");
   const [description, setDescription] = useState("");
   const [demoClass, setDemoClass] = useState("");
+  const [isFeatured, setIsFeatured] = useState(false);
 
   /* ---------- Image ---------- */
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -182,6 +184,7 @@ export default function FacultyModal({
       setQualifications((initialData.qualifications ?? []).join(", "));
       setDescription(initialData.description ?? "");
       setDemoClass(initialData.demoClass ?? "");
+      setIsFeatured(initialData.isFeatured ?? false);
 
       const initImageUrl = typeof initialData.image === "object" && initialData.image !== null 
         ? initialData.image.url 
@@ -729,6 +732,7 @@ export default function FacultyModal({
           .filter(Boolean),
         description: description.trim(),
         demoClass: demoClass.trim(),
+        isFeatured,
         subjects: subjectGroups.flatMap((g) =>
           g.selected.map((variantId) => ({
             variantId,
@@ -840,6 +844,22 @@ export default function FacultyModal({
                   placeholder="https://youtu.be/..."
                   className={inp(!!errors.demoClass)}
                 />
+              </Field>
+              <Field
+                label="Featured Faculty"
+                hint="Shown in the landing page's featured section — max 8 faculty can be featured at a time"
+              >
+                <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={isFeatured}
+                    onChange={(e) => setIsFeatured(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-[#DB313E] focus:ring-[#DB313E]/30"
+                  />
+                  <span className="text-sm text-gray-700">
+                    Mark this faculty as featured
+                  </span>
+                </label>
               </Field>
             </Section>
 

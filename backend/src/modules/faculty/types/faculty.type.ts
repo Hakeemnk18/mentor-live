@@ -32,6 +32,7 @@ export interface FacultyProps {
   subjectOffering: SubjectOfferingItem[];
   chapterSlots: ChapterSlotProps[];
   isDeleted: boolean;
+  isFeatured: boolean;
 }
 
 export type FacultyChapterSlotView = Omit<
@@ -55,6 +56,7 @@ export type FacultyView = {
     publicId: string;
   };
   isDeleted: boolean;
+  isFeatured: boolean;
 };
 
 export type FacultySubjectOfferingView = SubjectVariantWithSubjectView & {
@@ -143,6 +145,18 @@ export type FacultyPublicProfileView = {
     syllabusName: string;
     price: number;
   }[];
+};
+
+/** Lightweight card view for the landing page's featured-faculty section */
+export type FeaturedFacultyView = {
+  id: string;
+  name: string;
+  qualifications: string[];
+  description: string;
+  image: {
+    url: string;
+    publicId: string;
+  };
 };
 
 export interface SetSlotAvailabilityDto {

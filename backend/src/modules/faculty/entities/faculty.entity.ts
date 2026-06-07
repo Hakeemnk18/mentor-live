@@ -18,6 +18,7 @@ export class Faculty {
   public readonly subjectOffering: SubjectOfferingItem[];
   public readonly chapterSlots: ChapterSlotProps[];
   public readonly isDeleted: boolean;
+  public readonly isFeatured: boolean;
 
   constructor(props: FacultyProps) {
     this.id = props.id;
@@ -29,6 +30,7 @@ export class Faculty {
     this.subjectOffering = props.subjectOffering;
     this.chapterSlots = props.chapterSlots;
     this.isDeleted = props.isDeleted;
+    this.isFeatured = props.isFeatured;
   }
 
   /* ---------- Status ---------- */
@@ -60,6 +62,7 @@ export class Faculty {
     demoClass: string;
     image: ImageValue;
     subjectOffering: SubjectOfferingItem[];
+    isFeatured: boolean;
   }): Faculty {
     return {
       ...this,
@@ -69,6 +72,7 @@ export class Faculty {
       demoClass: props.demoClass,
       image: props.image,
       subjectOffering: props.subjectOffering,
+      isFeatured: props.isFeatured,
     };
   }
 

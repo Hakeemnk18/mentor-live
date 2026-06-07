@@ -78,6 +78,7 @@ export interface PoolBooking {
   facultyId?: string;
   facultyName?: string;
   mode: "slot" | "chapter";
+  subject?: { id: string; name: string };
   slot?: { id: string; time: string };
   chapter?: { id: string; name: string };
   class: { id: string; name: string };

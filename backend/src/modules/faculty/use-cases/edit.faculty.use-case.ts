@@ -63,6 +63,17 @@ export class EditFacultyUseCase implements IEditFacultyUseCase {
       }
     }
 
+    /* ---------- featured faculty cap (max 8 at a time) ---------- */
+    if (dto.isFeatured && !faculty.isFeatured) {
+      const featuredCount = await this._facultyRepository.countFeatured(id);
+      if (featuredCount >= 8) {
+        throw new CustomError(
+          ResponseMessages.FACULTY_FEATURED_LIMIT_REACHED,
+          HttpStatusCode.BAD_REQUEST,
+        );
+      }
+    }
+
     /* ---------- sync slots for removed variants ---------- */
     const oldVariantIds = new Set(faculty.subjectOffering.map((s) => s.variantId));
     const newVariantIds = new Set(dto.subjects.map((s) => s.variantId));
@@ -95,6 +106,7 @@ export class EditFacultyUseCase implements IEditFacultyUseCase {
         variantId: s.variantId,
         price: s.price,
       })),
+      isFeatured: dto.isFeatured ?? false,
     });
 
     /* ---------- persist ---------- */

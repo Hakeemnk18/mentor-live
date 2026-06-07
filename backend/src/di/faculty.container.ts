@@ -33,6 +33,8 @@ import type { IGetUserSlotDetailsUseCase } from "../modules/faculty/use-cases/in
 import { GetUserSlotDetailsUseCase } from "../modules/faculty/use-cases/get.user.slot.details.js";
 import type { IGetFacultyPublicProfileUseCase } from "../modules/faculty/use-cases/interfaces/get.faculty.public.profile.use-case.interface.js";
 import { GetFacultyPublicProfileUseCase } from "../modules/faculty/use-cases/get.faculty.public.profile.use-case.js";
+import type { IGetFeaturedFacultyUseCase } from "../modules/faculty/use-cases/interfaces/get.featured.faculty.use-case.interface.js";
+import { GetFeaturedFacultyUseCase } from "../modules/faculty/use-cases/get.featured.faculty.use-case.js";
 
 export const registerFacultyDependencies = () => {
   container.register<IFacultyRepository>("IFacultyRepository", {
@@ -101,5 +103,9 @@ export const registerFacultyDependencies = () => {
 
   container.register<IGetFacultyPublicProfileUseCase>("IGetFacultyPublicProfileUseCase", {
     useClass: GetFacultyPublicProfileUseCase,
+  });
+
+  container.register<IGetFeaturedFacultyUseCase>("IGetFeaturedFacultyUseCase", {
+    useClass: GetFeaturedFacultyUseCase,
   });
 };

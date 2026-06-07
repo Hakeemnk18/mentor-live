@@ -11,6 +11,7 @@ import type {
   FacultyPublicProfileView,
   FacultyView,
   FacultyViewForUser,
+  FeaturedFacultyView,
 } from "../types/faculty.type.js";
 import type { RemoveUserFromPoolDto } from "../../booking/dto/remove.student.from.pooling.dto.js";
 
@@ -96,6 +97,15 @@ export interface IFacultyRepository {
     classId?: string,
     syllabusId?: string,
   ): Promise<FacultyPublicProfileView | null>;
+
+  /**
+   * Count faculty currently marked as featured (excluding the given id, if any).
+   * Used to enforce the max-8 featured faculty limit on create/edit.
+   */
+  countFeatured(excludeId?: string): Promise<number>;
+
+  /** Active, non-deleted faculty marked as featured — for the landing page. */
+  findFeatured(limit: number): Promise<FeaturedFacultyView[]>;
 
   getFacultyCountInRange(startDate: Date, endDate: Date): Promise<number>;
   getDailyFacultyKpiStats(

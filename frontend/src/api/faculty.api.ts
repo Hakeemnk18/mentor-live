@@ -7,6 +7,7 @@ import type {
   FacultyListParams,
   FacultyListItem,
   FacultyByChapterParams,
+  FeaturedFaculty,
 } from "../shared/types/faculty.types";
 
 export const getFaculties = async (params: {
@@ -29,6 +30,15 @@ export const getFacultiesList = async (
     params: { type: "class", ...params },
   });
   return res.data;
+};
+
+/**
+ * Fetch the dedicated featured-faculty list for the landing page.
+ * Returns at most 8 active faculty marked as `isFeatured`.
+ */
+export const getFeaturedFaculty = async (): Promise<FeaturedFaculty[]> => {
+  const res = await axiosInstance.get("/faculties/featured");
+  return res.data.data ?? [];
 };
 
 export const getFacultiesByChapter = async (

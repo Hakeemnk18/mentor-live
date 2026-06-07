@@ -93,11 +93,19 @@ const poolColumns: Column<PoolBooking>[] = [
   { key: "faculty", label: "Faculty", render: (b) => b.faculty.name },
   {
     key: "subject",
-    label: "Subject / Chapter",
+    label: "Subject",
+    render: (b) => b.subject?.name ?? "N/A",
+  },
+  {
+    key: "chapter",
+    label: "Chapter",
+    render: (b) => b.chapter?.name ?? "N/A",
+  },
+  {
+    key: "time",
+    label: "Time",
     render: (b) =>
-      b.mode === "chapter"
-        ? b.chapter?.name ?? "—"
-        : formatTimeAMPM(b.slot?.time) ?? "—",
+      b.slot?.time ? formatTimeAMPM(b.slot.time) ?? "N/A" : "N/A",
   },
   { key: "class", label: "Class", render: (b) => b.class.name },
   { key: "syllabus", label: "Syllabus", render: (b) => b.syllabus.name },

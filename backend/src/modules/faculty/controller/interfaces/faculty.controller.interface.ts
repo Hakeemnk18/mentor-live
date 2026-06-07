@@ -17,4 +17,5 @@ export interface IFacultyController {
   getAvailableSlots(req: Request, res: Response): Promise<void>
   getUserSlotDetails(req: Request, res: Response): Promise<void>
   getFacultyPublicProfile(req: Request, res: Response): Promise<void>
+  getFeaturedFaculty(req: Request, res: Response): Promise<void>
 }

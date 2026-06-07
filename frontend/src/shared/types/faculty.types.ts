@@ -23,6 +23,7 @@ export type CreateFacultyPayload = {
   description: string;
   demoClass: string;
   image?: FacultyImagePayload;
+  isFeatured?: boolean;
   subjects: { variantId: string; price: number }[];
   /** Time-based slots keyed per variant — replaces the old flat slots[] */
   subjectSlots?: SubjectSlotGroup[];
@@ -35,7 +36,17 @@ export type UpdateFacultyPayload = {
   description?: string;
   demoClass?: string;
   image?: { url: string; publicId: string };
+  isFeatured?: boolean;
   subjects?: { variantId: string; price: number }[];
+};
+
+/** Lightweight card shape returned by the dedicated featured-faculty endpoint */
+export type FeaturedFaculty = {
+  id: string;
+  name: string;
+  qualifications: string[];
+  description: string;
+  image: { url: string; publicId: string };
 };
 
 export type FacultyListParams = {
@@ -72,6 +83,7 @@ export type FacultyRow = {
   demoClass: string;
   image: string | { url: string; publicId: string };
   isDeleted: boolean;
+  isFeatured: boolean;
 };
 
 /** price is now per subject offering, not top-level */
@@ -109,6 +121,7 @@ export type FacultyData = {
   demoClass: string;
   image: string | { url: string; publicId: string };
   isDeleted: boolean;
+  isFeatured: boolean;
   subjectOffering: SubjectOffering[];
   /** Slots now live in FacultySlot collection — each has a variantId */
   slots: TimeSlot[];
@@ -140,6 +153,7 @@ export type FacultyModalData = {
   qualifications?: string[];
   description?: string;
   demoClass?: string;
+  isFeatured?: boolean;
   image?: string | { url: string; publicId: string };
   subjectOffering?: SubjectOffering[];
   slots?: {
