@@ -56,7 +56,7 @@ export interface IFacultySlotRepository {
   ): Promise<void>;
 
   /** Atomically push a student into the pool if slot is available and not full */
-  addToPool(slotId: string, studentId: string): Promise<void>;
+  addToPool(slotId: string, studentId: string, session?: ClientSession): Promise<void>;
 
   /** Pull a student from the pool */
   removeFromPool(

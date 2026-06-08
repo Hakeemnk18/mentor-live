@@ -2,7 +2,7 @@ import { container } from "tsyringe";
 import type { IBookingRepository } from "../modules/booking/repositories/booking.repository.interface.js";
 import { BookingRepository } from "../modules/booking/repositories/booking.repository.js";
 import type { ICreateBookingUseCase } from "../modules/booking/use-cases/interfaces/create.booking.use-case.interface.js";
-import { CreateBookingUseCase } from "../modules/booking/use-cases/crete.booking.use-case.js";
+import { CreateBookingUseCase } from "../modules/booking/use-cases/create.booking.use-case.js";
 import type { IGetOneToOneBookingUseCase } from "../modules/booking/use-cases/interfaces/get.one.to.one.booking.use-case.interface.js";
 import { GetOneToOneBookingUseCase } from "../modules/booking/use-cases/get.one.to.one.booking.use-case.js";
 import type { IGetPoolingBookingUseCase } from "../modules/booking/use-cases/interfaces/get.pooling.booking.use-case.interfaces.js";

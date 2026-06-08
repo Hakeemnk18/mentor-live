@@ -25,13 +25,13 @@ import type {
 } from "../../analysis/type/analysis.type.js";
 
 export interface IBookingRepository {
-  create(bookingEntity: Booking): Promise<Booking>;
+  create(bookingEntity: Booking, session?: ClientSession): Promise<Booking>;
   findById(id: string): Promise<Booking | null>;
   save(bookingEntity: Booking, session?: ClientSession): Promise<Booking>;
   findAllForUser(): Promise<{ id: string; status: string }[]>;
   countDocument(query: Record<string, any>): Promise<number>;
   findExistingBooking(props: ExistingBookingProps): Promise<boolean>;
-  deleteById(id: string): Promise<void>;
+  deleteById(id: string, session?: ClientSession): Promise<void>;
   findAllOneToOneBooking(
     dto: GetAllOneToOneBookingDto,
   ): Promise<{ data: AdminBookingView[]; total: number }>;

@@ -623,13 +623,41 @@ export class FacultyRepository implements IFacultyRepository {
     facultyId: string,
     chapterSlotId: string,
     studentId: string,
+    session?: ClientSession,
   ): Promise<void> {
     const result = await FacultyModel.updateOne(
       {
         _id: facultyId,
         isDeleted: false,
-        "chapterSlots._id": chapterSlotId,
-        "chapterSlots.isAvailable": true,
+        /*
+         * Atomic capacity check: only match if the target chapter slot exists,
+         * is available, AND still has room in its pool. Doing this inside the
+         * match filter (instead of only inside the $map below) guarantees
+         * `matchedCount === 0` reliably signals "couldn't add" — including the
+         * "pool is already full" case — closing a race condition where two
+         * concurrent requests could both pass validation and create a booking,
+         * but only the document update would silently no-op for the loser.
+         */
+        $expr: {
+          $gt: [
+            {
+              $size: {
+                $filter: {
+                  input: "$chapterSlots",
+                  as: "slot",
+                  cond: {
+                    $and: [
+                      { $eq: ["$$slot._id", new Types.ObjectId(chapterSlotId)] },
+                      { $eq: ["$$slot.isAvailable", true] },
+                      { $lt: [{ $size: "$$slot.pool" }, "$$slot.poolLimit"] },
+                    ],
+                  },
+                },
+              },
+            },
+            0,
+          ],
+        },
       },
       [
         {
@@ -672,12 +700,12 @@ export class FacultyRepository implements IFacultyRepository {
           },
         },
       ],
-      { updatePipeline: true },
+      { updatePipeline: true, ...(session ? { session } : {}) },
     );
 
     if (result.matchedCount === 0) {
       throw new CustomError(
-        ResponseMessages.SLOT_NOT_FOUND,
+        ResponseMessages.POOL_ALREADY_FULL,
         HttpStatusCode.BAD_REQUEST,
       );
     }

@@ -62,6 +62,7 @@ export interface IFacultyRepository {
     facultyId: string,
     chapterSlotId: string,
     studentId: string,
+    session?: ClientSession,
   ): Promise<void>;
 
   findFacultyByQuery(query: Record<string, any>): Promise<Faculty | null>;

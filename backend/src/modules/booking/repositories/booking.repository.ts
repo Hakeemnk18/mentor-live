@@ -37,9 +37,9 @@ import type {
 const { ObjectId } = Types;
 
 export class BookingRepository implements IBookingRepository {
-  async create(bookingEntity: Booking): Promise<Booking> {
+  async create(bookingEntity: Booking, session?: ClientSession): Promise<Booking> {
     const persistenceData = BookingMapper.toPersistence(bookingEntity);
-    const created = await BookingModel.create(persistenceData);
+    const [created] = await BookingModel.create([persistenceData], { ...(session ? { session } : {}) });
 
     const domainBooking = BookingMapper.toDomain(created);
     if (!domainBooking) {
@@ -73,7 +73,7 @@ export class BookingRepository implements IBookingRepository {
     const updatedDocument = await BookingModel.findByIdAndUpdate(
       bookingEntity.id,
       { $set: persistenceData },
-      { new: true, session: session ?? null },
+      { new: true, ...(session ? { session } : {}) },
     ).lean();
 
     if (!updatedDocument) {
@@ -152,8 +152,12 @@ export class BookingRepository implements IBookingRepository {
     return Boolean(existing);
   }
 
-  async deleteById(id: string): Promise<void> {
-    await BookingModel.updateOne({ _id: id }, { $set: { isDeleted: true } });
+  async deleteById(id: string, session?: ClientSession): Promise<void> {
+    await BookingModel.updateOne(
+      { _id: id },
+      { $set: { isDeleted: true } },
+      { ...(session ? { session } : {}) },
+    );
   }
 
   async findAllOneToOneBooking(

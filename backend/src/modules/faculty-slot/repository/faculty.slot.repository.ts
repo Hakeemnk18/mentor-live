@@ -163,7 +163,7 @@ export class FacultySlotRepository implements IFacultySlotRepository {
 
   /* ─── Pool management ───────────────────────────────────────────────── */
 
-  async addToPool(slotId: string, studentId: string): Promise<void> {
+  async addToPool(slotId: string, studentId: string, session?: ClientSession): Promise<void> {
     /*
      * Atomic: only push if slot is available AND pool has room.
      * $expr compares sizes within the same document.
@@ -177,6 +177,7 @@ export class FacultySlotRepository implements IFacultySlotRepository {
       {
         $addToSet: { pool: new Types.ObjectId(studentId) },
       },
+      { ...(session ? { session } : {}) },
     );
 
     if (result.matchedCount === 0) {
