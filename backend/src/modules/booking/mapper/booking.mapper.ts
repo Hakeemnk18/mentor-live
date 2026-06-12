@@ -50,6 +50,10 @@ export class BookingMapper {
       props.chapterId = bookingModelData.chapterId.toString();
     }
 
+    if (bookingModelData.poolCycle !== undefined) {
+      props.poolCycle = bookingModelData.poolCycle;
+    }
+
     return new Booking(props);
   }
 
@@ -76,6 +80,10 @@ export class BookingMapper {
 
     if (bookingEntity.chapterId !== undefined) {
       persistenceData.chapterId = bookingEntity.chapterId;
+    }
+
+    if (bookingEntity.poolCycle !== undefined) {
+      persistenceData.poolCycle = bookingEntity.poolCycle;
     }
 
     return persistenceData;

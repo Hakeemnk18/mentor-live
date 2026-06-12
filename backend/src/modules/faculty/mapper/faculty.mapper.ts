@@ -42,6 +42,7 @@ export class FacultyMapper {
         isAvailable: slot.isAvailable,
         pool: (slot.pool ?? []).map((u: any) => u.toString()),
         poolLimit: slot.poolLimit,
+        poolCycle: slot.poolCycle ?? 1,
       })),
 
       isDeleted: facultyModelData.isDeleted,
@@ -68,6 +69,7 @@ export class FacultyMapper {
         isAvailable: slot.isAvailable,
         pool: slot.pool,
         poolLimit: slot.poolLimit,
+        poolCycle: slot.poolCycle,
       })),
       isDeleted: facultyEntity.isDeleted,
       isFeatured: facultyEntity.isFeatured,

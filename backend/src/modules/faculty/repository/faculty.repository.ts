@@ -241,6 +241,7 @@ export class FacultyRepository implements IFacultyRepository {
         },
         pool: c.pool.map((u: any) => ({ id: u._id.toString() })),
         poolLimit: c.poolLimit,
+        poolCycle: c.poolCycle ?? 1,
       })),
 
       subjectOffering: doc.subjectOffering.map((so: any) => ({
@@ -412,6 +413,7 @@ export class FacultyRepository implements IFacultyRepository {
         chapter: { id: doc.chapterSlots.chapter, name: doc.chapter.name },
         pool: doc.chapterSlots.pool,
         poolLimit: doc.chapterSlots.poolLimit,
+        poolCycle: doc.chapterSlots.poolCycle ?? 1,
       },
     };
   }
@@ -608,6 +610,7 @@ export class FacultyRepository implements IFacultyRepository {
       isAvailable: boolean;
       pool: any[];
       poolLimit: number;
+      poolCycle?: number;
     };
 
     return {
@@ -616,6 +619,7 @@ export class FacultyRepository implements IFacultyRepository {
       isAvailable: slot.isAvailable,
       pool: slot.pool.map((u) => u.toString()),
       poolLimit: slot.poolLimit,
+      poolCycle: slot.poolCycle ?? 1,
     };
   }
 
@@ -750,6 +754,15 @@ export class FacultyRepository implements IFacultyRepository {
       {
         $set: {
           "chapterSlots.$[s].pool": [],
+        },
+        /*
+         * The pool is cleared and immediately reusable for a new pooling
+         * round (chapter slots stay isAvailable=true after consume), so
+         * bump poolCycle here too — same reasoning as reOpenSlot for
+         * time-based slots.
+         */
+        $inc: {
+          "chapterSlots.$[s].poolCycle": 1,
         },
       },
       {

@@ -7,6 +7,7 @@ export interface IFacultySlot extends Document {
   isAvailable: boolean;
   pool: Types.ObjectId[];
   poolLimit: number;
+  poolCycle: number;
 }
 
 const FacultySlotSchema = new Schema<IFacultySlot>(
@@ -43,6 +44,18 @@ const FacultySlotSchema = new Schema<IFacultySlot>(
     poolLimit: {
       type: Number,
       default: 5,
+      min: 1,
+    },
+
+    /**
+     * Incremented every time this slot is re-opened for a new pooling
+     * round (see reOpenSlot). Lets bookings be permanently tied to the
+     * round they were created in, even after the slot's `pool` array
+     * is cleared and reused.
+     */
+    poolCycle: {
+      type: Number,
+      default: 1,
       min: 1,
     },
   },

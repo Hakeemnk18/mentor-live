@@ -16,6 +16,7 @@ import { validateBookingModeInvariant } from "../utils/booking.invariant.js";
 import { validateChapterSlotForBooking } from "../utils/chapter.slot.pool.invariant.js";
 import type { ISubjectVariantRepository } from "../../subject-variant/repositories/subject.variant.repository.interface.js";
 import type { ChapterSlotProps } from "../../faculty/types/faculty.type.js";
+import type { FacultySlot } from "../../faculty-slot/entities/faculty.slot.entity.js";
 import type { IPhoneVerificationRepository } from "../../phone-verification/repository/phone.verification.repository.interface.js";
 import type { INotificationService } from "../../../core/ports/notification.service.interface.js";
 import type { IClassRepository } from "../../class/repositories/class.repository.interface.js";
@@ -59,6 +60,7 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
     const { user, booking } = dto;
 
     let currentChapterSlot: ChapterSlotProps | null = null;
+    let currentSlot: FacultySlot | null = null;
 
     /* ── Class + syllabus validation ── */
     const classExists = await this._classRepository.findById(user.class);
@@ -148,6 +150,7 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
 
         /* Slot must exist, belong to the right faculty + variant, and be available */
         const slot = await this._facultySlotRepository.findById(reqSlotId);
+        currentSlot = slot;
 
         if (!slot) {
           throw new CustomError(ResponseMessages.SLOT_NOT_FOUND, HttpStatusCode.NOT_FOUND);
@@ -230,6 +233,20 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
 
       if (booking.mode === "chapter") {
         bookingProps.chapterId = booking.chapterId!;
+      }
+
+      /*
+       * Stamp the slot's/chapter slot's CURRENT poolCycle onto pooling
+       * bookings, so this booking stays tied to the round it was created
+       * in even after the slot is consumed and reused for a later round.
+       */
+      if (booking.type === "pooling") {
+        if (booking.mode === "slot") {
+          bookingProps.poolCycle = currentSlot?.poolCycle ?? 1;
+        }
+        if (booking.mode === "chapter") {
+          bookingProps.poolCycle = currentChapterSlot?.poolCycle ?? 1;
+        }
       }
 
       const bookingEntity = new Booking(bookingProps);

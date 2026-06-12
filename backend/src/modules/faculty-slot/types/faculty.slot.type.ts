@@ -8,6 +8,7 @@ export interface FacultySlotProps {
   isAvailable: boolean;
   pool: string[];
   poolLimit: number;
+  poolCycle: number;
 }
 
 export interface FacultySlotCreationProps {

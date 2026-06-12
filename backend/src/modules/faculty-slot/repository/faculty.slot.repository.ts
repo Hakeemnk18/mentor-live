@@ -106,9 +106,19 @@ export class FacultySlotRepository implements IFacultySlotRepository {
   /* ─── Availability management ───────────────────────────────────────── */
 
   async setAvailability(slotId: string, isAvailable: boolean): Promise<void> {
+    /*
+     * Re-enabling a slot starts a fresh pooling round: bump poolCycle so
+     * new bookings are tied to this round and don't get grouped together
+     * with bookings from the previous (already consumed) round.
+     */
+    const update: any = { $set: { isAvailable } };
+    if (isAvailable) {
+      update.$inc = { poolCycle: 1 };
+    }
+
     const result = await FacultySlotModel.updateOne(
       { _id: new Types.ObjectId(slotId) },
-      { $set: { isAvailable } },
+      update,
     );
 
     if (result.matchedCount === 0) {
@@ -232,9 +242,14 @@ export class FacultySlotRepository implements IFacultySlotRepository {
     slotId: string,
     session?: ClientSession,
   ): Promise<{ time: Date; facultyId: string }> {
+    /*
+     * Re-opening a previously-consumed slot starts a fresh pooling round:
+     * bump poolCycle so new bookings are tied to this round and don't get
+     * grouped together with bookings from the previous (confirmed) round.
+     */
     const doc = await FacultySlotModel.findOneAndUpdate(
       { _id: new Types.ObjectId(slotId) },
-      { $set: { isAvailable: true } },
+      { $set: { isAvailable: true }, $inc: { poolCycle: 1 } },
       { new: false, ...(session ? { session } : {}) },
     ).lean() as any;
 

@@ -5,6 +5,7 @@ import type { IGetAllDocDB } from "../../../core/shared/interfaces/get.all.doc.i
 import type { GetAllOneToOneBookingDto } from "../dto/get.all.one.to.one.dto.js";
 import { Booking } from "../entities/booking.entity.js";
 import { BookingModel } from "../infrastructure/booking.schema.js";
+import { FacultySlotModel } from "../../faculty-slot/infrastructure/faculty.slot.schema.js";
 import { BookingMapper } from "../mapper/booking.mapper.js";
 import { Types } from "mongoose";
 import type {
@@ -415,7 +416,16 @@ export class BookingRepository implements IBookingRepository {
     };
 
     if (mode) baseMatch.mode = mode;
-    if (status) baseMatch.status = status;
+    if (status) {
+      baseMatch.status = status;
+    } else {
+      /*
+       * Without an explicit status filter, drop cancelled/expired bookings
+       * (e.g. a student removed from the pool) so they don't inflate the
+       * student count for this slot/chapter.
+       */
+      baseMatch.status = { $nin: ["cancelled", "expired"] };
+    }
     if (typeof isContacted === "boolean") {
       baseMatch.isContacted = isContacted;
     }
@@ -505,7 +515,7 @@ export class BookingRepository implements IBookingRepository {
           pipeline: [
             { $match: { $expr: { $in: ["$_id", "$$slotIds"] } } },
             { $limit: 1 },
-            { $project: { _id: 1, time: 1 } },
+            { $project: { _id: 1, time: 1, poolCycle: 1 } },
           ],
           as: "slotDoc",
         },
@@ -513,6 +523,60 @@ export class BookingRepository implements IBookingRepository {
       {
         $addFields: {
           slotDoc: { $arrayElemAt: ["$slotDoc", 0] },
+        },
+      },
+    );
+
+    /**
+     * 5b-2️⃣ POOL CYCLE FILTER
+     *
+     * Only count/list bookings that belong to the slot's/chapter slot's
+     * CURRENT pooling round. Once a round is confirmed and the slot is
+     * re-opened, poolCycle increments — bookings from the previous
+     * (already confirmed) round should drop out of this list and its
+     * student count.
+     *
+     * Bookings without a `poolCycle` field (created before this existed)
+     * are treated as cycle 1 via $ifNull, matching slots that are still
+     * on cycle 1.
+     */
+    pipeline.push(
+      {
+        $addFields: {
+          currentPoolCycle: {
+            $cond: [
+              { $eq: ["$mode", "slot"] },
+              { $ifNull: ["$slotDoc.poolCycle", 1] },
+              {
+                $ifNull: [
+                  {
+                    $let: {
+                      vars: {
+                        matched: {
+                          $first: {
+                            $filter: {
+                              input: { $ifNull: ["$faculty.chapterSlots", []] },
+                              as: "cs",
+                              cond: { $eq: ["$$cs.chapter", "$chapterId"] },
+                            },
+                          },
+                        },
+                      },
+                      in: "$$matched.poolCycle",
+                    },
+                  },
+                  1,
+                ],
+              },
+            ],
+          },
+        },
+      },
+      {
+        $match: {
+          $expr: {
+            $eq: [{ $ifNull: ["$poolCycle", 1] }, "$currentPoolCycle"],
+          },
         },
       },
     );
@@ -714,20 +778,57 @@ export class BookingRepository implements IBookingRepository {
       },
     });
 
-    /* 2️⃣ Mode-specific match */
+    /* 2️⃣ Mode-specific match
+     *
+     * For pooling, also restrict to the slot's/chapter slot's CURRENT
+     * poolCycle. The same physical slot can be confirmed, re-opened, and
+     * re-booked many times — without this, bookings from an old (already
+     * confirmed) round would be grouped together with a brand-new round
+     * just because they share the same slotId/chapterId.
+     *
+     * Bookings created before poolCycle existed have no `poolCycle` field;
+     * `$ifNull` treats those as cycle 1, so they keep showing up as long as
+     * the slot itself is still on cycle 1 (and correctly drop out of view
+     * once the slot moves on to a later cycle).
+     */
     if (mode === "slot") {
+      const slotDoc = await FacultySlotModel.findById(slotId)
+        .select("poolCycle")
+        .lean();
+      const currentPoolCycle = (slotDoc as any)?.poolCycle ?? 1;
+
       pipeline.push({
         $match: {
           // slotId is ObjectId[] in the booking document
           slotId: { $in: [new Types.ObjectId(slotId)] },
+          $expr: {
+            $eq: [{ $ifNull: ["$poolCycle", 1] }, currentPoolCycle],
+          },
         },
       });
     }
 
     if (mode === "chapter") {
+      const facultyDoc = await FacultyModel.findOne(
+        {
+          _id: new Types.ObjectId(facultyId),
+          "chapterSlots.chapter": new Types.ObjectId(chapterId),
+        },
+        {
+          chapterSlots: {
+            $elemMatch: { chapter: new Types.ObjectId(chapterId) },
+          },
+        },
+      ).lean();
+      const currentPoolCycle =
+        (facultyDoc as any)?.chapterSlots?.[0]?.poolCycle ?? 1;
+
       pipeline.push({
         $match: {
           chapterId: new Types.ObjectId(chapterId),
+          $expr: {
+            $eq: [{ $ifNull: ["$poolCycle", 1] }, currentPoolCycle],
+          },
         },
       });
     }

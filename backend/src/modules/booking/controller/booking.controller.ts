@@ -223,6 +223,7 @@ export class BookingController implements IBookingController {
       });
     } catch (error) {
       handleError(res, error);
+      console.log("error in confirm chapter pooling booking ", error);
     }
   }
 

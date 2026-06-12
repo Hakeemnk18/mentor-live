@@ -15,6 +15,13 @@ export interface IBooking extends Document {
   /** For slot-mode: which subject variant the student is booking for */
   subjectVariantId?: Types.ObjectId;
   chapterId?: Types.ObjectId;
+  /**
+   * For pooling bookings (slot or chapter mode): the pool round this
+   * booking belongs to. Stamped from the slot's/chapter slot's current
+   * `poolCycle` at creation time, so it stays tied to that round even
+   * after the slot is consumed and reused for a later round.
+   */
+  poolCycle?: number;
   isContacted: boolean;
   status: BookingStatus;
   isDeleted: boolean;
@@ -61,6 +68,10 @@ const bookingSchema = new Schema<IBooking>(
     chapterId: {
       type: Schema.Types.ObjectId,
       ref: "Chapter",
+    },
+
+    poolCycle: {
+      type: Number,
     },
 
     class: {

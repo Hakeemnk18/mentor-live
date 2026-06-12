@@ -15,6 +15,7 @@ export interface ChapterSlotProps {
   isAvailable: boolean;
   pool: string[];
   poolLimit: number;
+  poolCycle: number;
 }
 
 export interface SubjectOfferingItem {
@@ -93,6 +94,7 @@ export type FacultyPopulatedLean = Omit<
     chapter: { _id: Types.ObjectId; name: string };
     pool: { _id: Types.ObjectId }[];
     poolLimit: number;
+    poolCycle?: number;
   }[];
 };
 

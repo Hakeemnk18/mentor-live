@@ -8,6 +8,7 @@ import {
 } from "../../../api/booking.api";
 import { getFacultyAvailableSlots } from "../../../api/faculty.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
+import ConfirmModal from "./ConfirmModal";
 
 import type { PoolBooking, PoolStudent, PoolStudentsResponse, AvailableSlot } from "../../../shared/types/booking.types";
 /* ───── helpers ─────────────────────────────────────────── */
@@ -49,6 +50,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
 
   const [confirming, setConfirming] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<PoolStudent | null>(null);
 
   /* ── fetch students + faculty slots on open ── */
   useEffect(() => {
@@ -148,6 +150,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
       handleApiError(err);
     } finally {
       setRemovingId(null);
+      setRemoveTarget(null);
     }
   };
 
@@ -234,7 +237,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
                       </div>
                       {!isConfirmed && !readOnly && (
                         <button
-                          onClick={() => handleRemove(s)}
+                          onClick={() => setRemoveTarget(s)}
                           disabled={removingId === s.id}
                           className="text-xs px-2.5 py-1 text-red-600 border border-red-200 rounded-md hover:bg-red-50 disabled:opacity-50 transition-colors"
                         >
@@ -305,6 +308,17 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        open={!!removeTarget}
+        title="Remove Student"
+        message={`Are you sure you want to remove ${removeTarget?.name} from this pool?`}
+        confirmLabel="Remove"
+        confirmVariant="danger"
+        loading={removingId === removeTarget?.id}
+        onConfirm={() => removeTarget && handleRemove(removeTarget)}
+        onClose={() => setRemoveTarget(null)}
+      />
     </>
   );
 }

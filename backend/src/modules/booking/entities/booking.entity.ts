@@ -13,6 +13,7 @@ export interface BookingProps {
   slotId?: string[];
   subjectVariantId?: string;
   chapterId?: string;
+  poolCycle?: number;
   class: string;
   syllabus: string;
   isContacted?: boolean;
@@ -29,6 +30,7 @@ export class Booking {
   public readonly slotId?: string[];
   public readonly subjectVariantId?: string;
   public readonly chapterId?: string;
+  public readonly poolCycle?: number;
   public readonly class: string;
   public readonly syllabus: string;
   public readonly isContacted: boolean;
@@ -47,6 +49,7 @@ export class Booking {
     if (props.slotId !== undefined) this.slotId = props.slotId;
     if (props.subjectVariantId !== undefined) this.subjectVariantId = props.subjectVariantId;
     if (props.chapterId !== undefined) this.chapterId = props.chapterId;
+    if (props.poolCycle !== undefined) this.poolCycle = props.poolCycle;
 
     this.isContacted = props.isContacted ?? false;
     this.status = props.status ?? "interested";

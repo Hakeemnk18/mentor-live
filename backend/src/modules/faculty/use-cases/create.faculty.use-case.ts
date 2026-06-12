@@ -106,6 +106,7 @@ export class CreateFacultyUseCase implements ICreateFacultyUseCase {
         isAvailable: true,
         pool: [],
         poolLimit: 5,
+        poolCycle: 1,
       })),
       isDeleted: false,
       isFeatured: dto.isFeatured ?? false,

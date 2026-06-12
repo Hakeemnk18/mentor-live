@@ -13,6 +13,7 @@ export class FacultySlotMapper {
       isAvailable: doc.isAvailable,
       pool: (doc.pool ?? []).map((u: any) => u.toString()),
       poolLimit: doc.poolLimit,
+      poolCycle: doc.poolCycle ?? 1,
     });
   }
 
@@ -24,6 +25,7 @@ export class FacultySlotMapper {
       isAvailable: entity.isAvailable,
       pool: entity.pool,
       poolLimit: entity.poolLimit,
+      poolCycle: entity.poolCycle,
     };
   }
 

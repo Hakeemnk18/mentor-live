@@ -8,6 +8,7 @@ export class FacultySlot {
   public readonly isAvailable: boolean;
   public readonly pool: string[];
   public readonly poolLimit: number;
+  public readonly poolCycle: number;
 
   constructor(props: FacultySlotProps) {
     this.id = props.id;
@@ -17,6 +18,7 @@ export class FacultySlot {
     this.isAvailable = props.isAvailable;
     this.pool = props.pool;
     this.poolLimit = props.poolLimit;
+    this.poolCycle = props.poolCycle;
   }
 
   isFull(): boolean {

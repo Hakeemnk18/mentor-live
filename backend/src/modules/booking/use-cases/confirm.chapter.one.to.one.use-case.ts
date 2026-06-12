@@ -6,6 +6,8 @@ import type { IBookingRepository } from "../repositories/booking.repository.inte
 import type { IConfirmChapterOneToOneBookingUseCase } from "./interfaces/confirm.chapter.one.to.one.booking.use-case.interface.js";
 import type { ConfirmChapterOneToOneBookingDto } from "../dto/confirm.chapter.one.to.one.dto.js";
 import type { IFacultyRepository } from "../../faculty/repository/faculty.repository.interface.js";
+import type { IFacultySlotRepository } from "../../faculty-slot/repository/faculty.slot.repository.interface.js";
+import mongoose from "mongoose";
 
 @injectable()
 export class ConfirmChapterOneToOneBookingUseCase
@@ -17,6 +19,9 @@ export class ConfirmChapterOneToOneBookingUseCase
 
     @inject("IFacultyRepository")
     private readonly _facultyRepo: IFacultyRepository,
+
+    @inject("IFacultySlotRepository")
+    private readonly _facultySlotRepo: IFacultySlotRepository,
   ) {}
 
   async execute(dto: ConfirmChapterOneToOneBookingDto): Promise<void> {
@@ -64,22 +69,11 @@ export class ConfirmChapterOneToOneBookingUseCase
       );
     }
 
-    const facultySlots = await this._facultyRepo.getAllSlots(booking.facultyId)
-
-    if(facultySlots.length === 0){
-        throw new CustomError(
-        ResponseMessages.SLOT_TIME_NOT_AVAILABLE,
-        HttpStatusCode.BAD_REQUEST
-      );
-    }
-
-    // validate all selected slots
+    // validate all selected slots belong to this faculty and are available
     for (const slotId of dto.slotId) {
-      const slot = facultySlots.find(
-        (s) => String(s.id) === String(slotId)
-      );
+      const slot = await this._facultySlotRepo.findById(slotId);
 
-      if (!slot || !slot.isAvailable) {
+      if (!slot || slot.facultyId !== booking.facultyId || !slot.isAvailable) {
         throw new CustomError(
           ResponseMessages.SLOT_TIME_NOT_AVAILABLE,
           HttpStatusCode.CONFLICT
@@ -87,20 +81,34 @@ export class ConfirmChapterOneToOneBookingUseCase
       }
     }
 
-    // mutation: booking
-    const updatedBooking = booking.confirmWithSlots(dto.slotId);
-    await this._bookingRepo.save(updatedBooking);
+    const session = await mongoose.startSession();
+    try {
+      session.startTransaction();
 
-    // mutation: consume slots (atomic, repo-level)
-    await this._facultyRepo.consumeSlots(
-      booking.facultyId,
-      dto.slotId
-    );
+      // mutation: booking
+      const updatedBooking = booking.confirmWithSlots(dto.slotId);
+      await this._bookingRepo.save(updatedBooking, session);
 
-    await this._bookingRepo.expireOtherBookingsForSlots({
-      facultyId: booking.facultyId,
-      slotIds:dto.slotId,
-      excludeBookingIds: [booking.id!]
-    })
+      // mutation: consume slots
+      for (const slotId of dto.slotId) {
+        await this._facultySlotRepo.consumeSlot(slotId, session);
+      }
+
+      await this._bookingRepo.expireOtherBookingsForSlots(
+        {
+          facultyId: booking.facultyId,
+          slotIds: dto.slotId,
+          excludeBookingIds: [booking.id!],
+        },
+        session,
+      );
+
+      await session.commitTransaction();
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
   }
 }
