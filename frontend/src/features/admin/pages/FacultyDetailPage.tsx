@@ -1,7 +1,7 @@
 ﻿import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
-import { formatTimeAMPM } from "../../../shared/utils/time.utils";
+import { formatTimeAMPM, toMinutesSinceMidnight } from "../../../shared/utils/time.utils";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import {
   getFacultyById,
@@ -67,8 +67,11 @@ export default function FacultyDetailPage() {
 
   // Time slot add
   const [newTime, setNewTime] = useState("");
-  const [newSlotVariantId, setNewSlotVariantId] = useState("");
   const [slotWorking, setSlotWorking] = useState(false);
+  const [slotError, setSlotError] = useState("");
+
+  // Currently selected subject variant for the Time Slots section
+  const [selectedSlotVariantId, setSelectedSlotVariantId] = useState("");
 
   // Chapter slot add
   const [chapterSyllabusId, setChapterSyllabusId] = useState("");
@@ -97,6 +100,16 @@ export default function FacultyDetailPage() {
   useEffect(() => {
     fetchFaculty();
   }, [fetchFaculty]);
+
+  /* Default the Time Slots variant filter to the first subject offering */
+  useEffect(() => {
+    if (!faculty) return;
+    setSelectedSlotVariantId((prev) =>
+      faculty.subjectOffering.some((so) => so.id === prev)
+        ? prev
+        : faculty.subjectOffering[0]?.id ?? ""
+    );
+  }, [faculty]);
 
   /* Fetch syllabuses and classes for edit modal & chapter add */
   useEffect(() => {
@@ -128,13 +141,28 @@ export default function FacultyDetailPage() {
   /* ================================================================ */
 
   const handleAddTimeSlot = async () => {
-    if (!newTime || !newSlotVariantId || !id) return;
+    if (!newTime || !selectedSlotVariantId || !id || !faculty) return;
+
+    // 1-hr gap check against this variant's active slots
+    const newMins = toMinutesSinceMidnight(newTime);
+    const overlap = faculty.slots.find(
+      (s) =>
+        s.variantId === selectedSlotVariantId &&
+        s.isAvailable &&
+        newMins !== null &&
+        Math.abs((toMinutesSinceMidnight(s.time) ?? Infinity) - newMins) < 60
+    );
+    if (overlap) {
+      setSlotError(`Overlaps with ${formatTimeAMPM(overlap.time)} — slots must be at least 1 hr apart`);
+      return;
+    }
+    setSlotError("");
+
     try {
       setSlotWorking(true);
-      await addFacultySlotIST(id, { time: newTime, variantId: newSlotVariantId });
+      await addFacultySlotIST(id, { time: newTime, variantId: selectedSlotVariantId });
       toast.success("Time slot added");
       setNewTime("");
-      setNewSlotVariantId("");
       await fetchFaculty();
     } catch (err) {
       handleApiError(err);
@@ -144,7 +172,25 @@ export default function FacultyDetailPage() {
   };
 
   const handleToggleSlot = async (slot: TimeSlot) => {
-    if (!id) return;
+    if (!id || !faculty) return;
+
+    // Unblocking: ensure a 1-hr gap from every other active slot for this variant
+    if (!slot.isAvailable) {
+      const mins = toMinutesSinceMidnight(slot.time);
+      const conflict = faculty.slots.find(
+        (s) =>
+          s.id !== slot.id &&
+          s.variantId === slot.variantId &&
+          s.isAvailable &&
+          mins !== null &&
+          Math.abs((toMinutesSinceMidnight(s.time) ?? Infinity) - mins) < 60
+      );
+      if (conflict) {
+        toast.error(`Cannot unblock — overlaps with active slot ${formatTimeAMPM(conflict.time)}`);
+        return;
+      }
+    }
+
     try {
       setSlotWorking(true);
       await setFacultySlotAvailability(id, slot.id, !slot.isAvailable);
@@ -451,136 +497,159 @@ export default function FacultyDetailPage() {
         </div>
 
         <div className="p-4 sm:p-6">
-          {/* Add slot row — variant + time + button */}
-          {(() => {
-            const offerings = faculty.subjectOffering ?? [];
-            return (
-              <div className="flex flex-wrap items-end gap-3 mb-5">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-gray-500">Subject</label>
-                  <select
-                    value={newSlotVariantId}
-                    onChange={(e) => setNewSlotVariantId(e.target.value)}
-                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30 w-full sm:w-56"
-                  >
-                    <option value="">Select subject…</option>
-                    {offerings.map((so) => (
-                      <option key={so.id} value={so.id}>
-                        {so.subject.name} · {so.class.name} · {so.syllabus.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-gray-500">Time</label>
-                  <input
-                    type="time"
-                    value={newTime}
-                    onChange={(e) => setNewTime(e.target.value)}
-                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30 w-full sm:w-40"
-                  />
-                </div>
-                <button
-                  onClick={handleAddTimeSlot}
-                  disabled={!newTime || !newSlotVariantId || slotWorking}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#DB313E] rounded-lg hover:bg-[#c22935] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {slotWorking ? "Adding…" : "+ Add Slot"}
-                </button>
-              </div>
-            );
-          })()}
-
-          {/* Slot list */}
-          {faculty.slots.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-6">No time slots added yet</p>
+          {faculty.subjectOffering.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-6">
+              No subject offerings added yet
+            </p>
           ) : (
-            <div className="space-y-2">
-              {(() => {
-                /* Build variantId → label map from subjectOffering */
-                const variantLabel = new Map(
-                  (faculty.subjectOffering ?? []).map((so) => [
-                    so.id,
-                    `${so.subject.name} · ${so.class.name} · ${so.syllabus.name}`,
-                  ])
-                );
-                return faculty.slots.map((slot) => (
-                <div
-                  key={slot.id}
-                  className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4 py-3 rounded-lg border transition-colors ${
-                    slot.isAvailable
-                      ? "bg-white border-gray-200 hover:border-gray-300"
-                      : "bg-gray-50 border-gray-200 opacity-70"
-                  }`}
-                >
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-                    <span className="text-sm font-mono font-semibold text-gray-800">
-                      {formatTimeAMPM(slot.time)}
-                    </span>
-                    {/* Variant badge */}
-                    {slot.variantId && (
-                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#DB313E]/8 text-[#DB313E] border border-[#DB313E]/15">
-                        {variantLabel.get(slot.variantId) ?? slot.variantId}
-                      </span>
-                    )}
-                    <span
-                      className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        slot.isAvailable
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-600"
+            <>
+              {/* Variant selector — pick which subject's slots to view */}
+              <div className="flex flex-wrap gap-2 mb-5">
+                {faculty.subjectOffering.map((so) => {
+                  const count = faculty.slots.filter((s) => s.variantId === so.id).length;
+                  const isSelected = selectedSlotVariantId === so.id;
+                  return (
+                    <button
+                      key={so.id}
+                      onClick={() => {
+                        setSelectedSlotVariantId(so.id);
+                        setSlotError("");
+                      }}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                        isSelected
+                          ? "bg-[#DB313E] text-white border-[#DB313E]"
+                          : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
                       }`}
                     >
-                      {slot.isAvailable ? "Available" : "Blocked"}
-                    </span>
-                    {slot.pool.length > 0 && (
-                      <span className="text-xs text-gray-400">
-                        {slot.pool.length}/{slot.poolLimit} booked
+                      {so.subject.name} · {so.class.name} · {so.syllabus.name}
+                      <span className={isSelected ? "ml-1.5 text-white/80" : "ml-1.5 text-gray-400"}>
+                        ({count})
                       </span>
-                    )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Add slot row — adds to the selected variant */}
+              <div className="mb-5">
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-gray-500">Time</label>
+                    <input
+                      type="time"
+                      value={newTime}
+                      onChange={(e) => {
+                        setNewTime(e.target.value);
+                        setSlotError("");
+                      }}
+                      className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30 w-full sm:w-40"
+                    />
                   </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    {slot.pool.length > 0 && (
-                      <button
-                        onClick={() =>
-                          setSelectedPoolBooking({
-                            faculty: { id: faculty.id, name: faculty.name },
-                            mode: "slot",
-                            class: faculty.subjectOffering[0]?.class ?? { id: "", name: "" },
-                            syllabus: faculty.subjectOffering[0]?.syllabus ?? { id: "", name: "" },
-                            slot: { id: slot.id, time: slot.time },
-                            totalStudents: slot.pool.length,
-                            hasPendingContact: false,
-                            createdAt: "",
-                          })
-                        }
-                        className="px-3 py-1.5 text-xs font-medium rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors"
-                      >
-                        View Pool
-                      </button>
-                    )}
-
                   <button
-                    onClick={() => handleToggleSlot(slot)}
-                    disabled={slotWorking || (slot.isAvailable && slot.pool.length > 0)}
-                    title={
-                      slot.isAvailable && slot.pool.length > 0
-                        ? "Cannot block — has active bookings"
-                        : ""
-                    }
-                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                      slot.isAvailable
-                        ? "text-red-600 bg-red-50 hover:bg-red-100 border border-red-200"
-                        : "text-green-600 bg-green-50 hover:bg-green-100 border border-green-200"
-                    }`}
+                    onClick={handleAddTimeSlot}
+                    disabled={!newTime || !selectedSlotVariantId || slotWorking}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#DB313E] rounded-lg hover:bg-[#c22935] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {slot.isAvailable ? "Block" : "Unblock"}
+                    {slotWorking ? "Adding…" : "+ Add Slot"}
                   </button>
-                  </div>
                 </div>
-                ));  /* end faculty.slots.map */
-              })()} 
-            </div>
+                {slotError && (
+                  <p className="text-xs text-red-500 mt-1.5">{slotError}</p>
+                )}
+              </div>
+
+              {/* Slot list — filtered to the selected variant */}
+              {(() => {
+                const filteredSlots = faculty.slots.filter(
+                  (s) => s.variantId === selectedSlotVariantId
+                );
+                const selectedOffering = faculty.subjectOffering.find(
+                  (so) => so.id === selectedSlotVariantId
+                );
+
+                if (filteredSlots.length === 0) {
+                  return (
+                    <p className="text-sm text-gray-400 text-center py-6">
+                      No time slots added yet for this subject
+                    </p>
+                  );
+                }
+
+                return (
+                  <div className="space-y-2">
+                    {filteredSlots.map((slot) => (
+                      <div
+                        key={slot.id}
+                        className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4 py-3 rounded-lg border transition-colors ${
+                          slot.isAvailable
+                            ? "bg-white border-gray-200 hover:border-gray-300"
+                            : "bg-gray-50 border-gray-200 opacity-70"
+                        }`}
+                      >
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+                          <span className="text-sm font-mono font-semibold text-gray-800">
+                            {formatTimeAMPM(slot.time)}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-xs font-medium ${
+                              slot.isAvailable
+                                ? "bg-green-100 text-green-700"
+                                : "bg-red-100 text-red-600"
+                            }`}
+                          >
+                            {slot.isAvailable ? "Available" : "Blocked"}
+                          </span>
+                          {slot.pool.length > 0 && (
+                            <span className="text-xs text-gray-400">
+                              {slot.pool.length}/{slot.poolLimit} booked
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          {slot.pool.length > 0 && (
+                            <button
+                              onClick={() =>
+                                setSelectedPoolBooking({
+                                  faculty: { id: faculty.id, name: faculty.name },
+                                  mode: "slot",
+                                  class: selectedOffering?.class ?? { id: "", name: "" },
+                                  syllabus: selectedOffering?.syllabus ?? { id: "", name: "" },
+                                  slot: { id: slot.id, time: slot.time },
+                                  totalStudents: slot.pool.length,
+                                  hasPendingContact: false,
+                                  createdAt: "",
+                                })
+                              }
+                              className="px-3 py-1.5 text-xs font-medium rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors"
+                            >
+                              View Pool
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => handleToggleSlot(slot)}
+                            disabled={slotWorking || (slot.isAvailable && slot.pool.length > 0)}
+                            title={
+                              slot.isAvailable && slot.pool.length > 0
+                                ? "Cannot block — has active bookings"
+                                : ""
+                            }
+                            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                              slot.isAvailable
+                                ? "text-red-600 bg-red-50 hover:bg-red-100 border border-red-200"
+                                : "text-green-600 bg-green-50 hover:bg-green-100 border border-green-200"
+                            }`}
+                          >
+                            {slot.isAvailable ? "Block" : "Unblock"}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </>
           )}
         </div>
       </section>

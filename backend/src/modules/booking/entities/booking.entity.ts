@@ -76,4 +76,11 @@ export class Booking {
     }
     return new Booking({ ...this, slotId, status: "confirmed", isContacted: true });
   }
+
+  markAsContacted(): Booking {
+    if (this.isContacted) {
+      throw new Error("Booking is already marked as contacted");
+    }
+    return new Booking({ ...this, isContacted: true });
+  }
 }

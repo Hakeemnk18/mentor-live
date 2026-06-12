@@ -9,6 +9,7 @@ import type { IFacultySlotRepository } from "../../faculty-slot/repository/facul
 import { CustomError } from "../../../core/errors/custom.error.js";
 import { ResponseMessages } from "../../../core/constants/response.message.js";
 import { HttpStatusCode } from "../../../core/constants/http.status.codes.js";
+import { validateAgainstExisting } from "../../../core/utils/validate.time.slot.js";
 
 @injectable()
 export class SetFacultySlotAvailabilityUseCase
@@ -110,6 +111,23 @@ export class SetFacultySlotAvailabilityUseCase
         ResponseMessages.SLOT_POOL_NOT_EMPTY,
         HttpStatusCode.CONFLICT,
       );
+    }
+
+    /* ── Unblocking: ensure a 1-hr gap from every other active slot ── */
+    if (isAvailable) {
+      const siblingSlots = await this._facultySlotRepository.findByFacultyAndVariant(
+        slot.facultyId,
+        slot.variantId,
+      );
+      const otherActiveTimes = siblingSlots
+        .filter((s) => s.isAvailable && s.id !== slot.id)
+        .map((s) => s.time);
+      if (!validateAgainstExisting([{ time: slot.time }], otherActiveTimes)) {
+        throw new CustomError(
+          ResponseMessages.SLOT_UNBLOCK_TIME_CONFLICT,
+          HttpStatusCode.BAD_REQUEST,
+        );
+      }
     }
 
     /* Update the target slot */

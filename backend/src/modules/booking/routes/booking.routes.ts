@@ -52,11 +52,19 @@ router.patch("/one-to-one/slot/:bookingId/confirm",
 );
 
 // confirm chapter one to one booking
-router.patch("/one-to-one/chapter/:bookingId/confirm", 
+router.patch("/one-to-one/chapter/:bookingId/confirm",
   authenticate.authenticate,
   authorizeRoles("admin"),
   (req, res) =>
   bookingController.confirmChapterOneToOneBooking(req, res),
+);
+
+// mark a booking as contacted
+router.patch("/one-to-one/:bookingId/contact",
+  authenticate.authenticate,
+  authorizeRoles("admin", "salesPerson"),
+  (req, res) =>
+  bookingController.markBookingContacted(req, res),
 );
 
 // confirm pooling booking

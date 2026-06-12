@@ -157,6 +157,7 @@ export class BookingMapper {
               name: raw.chapter.name,
             }
           : undefined,
+      status: raw.status,
       students: raw.students,
     };
   }

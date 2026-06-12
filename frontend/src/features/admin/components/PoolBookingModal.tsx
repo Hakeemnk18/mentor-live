@@ -14,7 +14,7 @@ import type { PoolBooking, PoolStudent, PoolStudentsResponse, AvailableSlot } fr
 const fmtTime = (iso: string) => {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;
-  return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+  return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "UTC" });
 };
 
 const fmtDate = (iso: string) =>
@@ -90,6 +90,8 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
 
   if (!booking) return null;
 
+  const isConfirmed = detail?.status === "confirmed";
+
   const toggleSlot = (id: string) =>
     setSelectedSlotId((prev) => (prev === id ? null : id));
 
@@ -164,9 +166,16 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b px-6 py-4">
-            <div>
-              <h2 className="text-base font-semibold text-gray-900">Pool Booking</h2>
-              <p className="text-xs text-gray-400 mt-0.5 capitalize">{booking.mode} mode</p>
+            <div className="flex items-center gap-2">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900">Pool Booking</h2>
+                <p className="text-xs text-gray-400 mt-0.5 capitalize">{booking.mode} mode</p>
+              </div>
+              {isConfirmed && (
+                <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                  Confirmed
+                </span>
+              )}
             </div>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
           </div>
@@ -223,13 +232,15 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
                           </span>
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleRemove(s)}
-                        disabled={removingId === s.id}
-                        className="text-xs px-2.5 py-1 text-red-600 border border-red-200 rounded-md hover:bg-red-50 disabled:opacity-50 transition-colors"
-                      >
-                        {removingId === s.id ? "Removing…" : "Remove"}
-                      </button>
+                      {!isConfirmed && !readOnly && (
+                        <button
+                          onClick={() => handleRemove(s)}
+                          disabled={removingId === s.id}
+                          className="text-xs px-2.5 py-1 text-red-600 border border-red-200 rounded-md hover:bg-red-50 disabled:opacity-50 transition-colors"
+                        >
+                          {removingId === s.id ? "Removing…" : "Remove"}
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -237,7 +248,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
             </div>
 
             {/* Slot picker — chapter mode confirm, hidden for read-only roles */}
-            {booking.mode === "chapter" && !readOnly && (
+            {booking.mode === "chapter" && !readOnly && !isConfirmed && (
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                   Assign Time Slot(s) to Confirm
@@ -279,7 +290,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
             >
               Close
             </button>
-            {!readOnly && (
+            {!readOnly && !isConfirmed && (
               <button
                 onClick={handleConfirm}
                 disabled={

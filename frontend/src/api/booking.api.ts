@@ -50,6 +50,11 @@ export const confirmSlotBooking = async (bookingId: string): Promise<void> => {
   await axiosInstance.patch(`/bookings/one-to-one/slot/${bookingId}/confirm`);
 };
 
+/** Mark a one-on-one booking as contacted */
+export const markBookingContacted = async (bookingId: string): Promise<void> => {
+  await axiosInstance.patch(`/bookings/one-to-one/${bookingId}/contact`);
+};
+
 
 export const getPoolBookings = async (
   filters: BookingFilters = {}

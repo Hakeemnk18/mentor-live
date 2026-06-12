@@ -97,6 +97,8 @@ export interface PoolStudent {
 }
 
 export interface PoolStudentsResponse {
+  /** Backend statuses: "interested" | "confirmed" | "cancelled" | "expired" */
+  status: string;
   students: PoolStudent[];
 }
 

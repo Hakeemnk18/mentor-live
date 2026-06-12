@@ -9,6 +9,7 @@ import { HttpStatusCode } from "../../../core/constants/http.status.codes.js";
 import {
   toMinutes,
   validateOnCreate,
+  validateAgainstExisting,
 } from "../../../core/utils/validate.time.slot.js";
 
 @injectable()
@@ -42,6 +43,21 @@ export class FacultyAddSlotUseCase implements IFacultyAddSlotUseCase {
 
     /* ── Validate 1-hr gap + end-before-midnight ── */
     if (!validateOnCreate(dto.slots)) {
+      throw new CustomError(
+        ResponseMessages.SLOT_TIME_NOT_VALID,
+        HttpStatusCode.BAD_REQUEST,
+      );
+    }
+
+    /* ── Validate 1-hr gap against this variant's active slots ── */
+    const existingSlots = await this._facultySlotRepository.findByFacultyAndVariant(
+      facultyId,
+      dto.variantId,
+    );
+    const activeSlotTimes = existingSlots
+      .filter((s) => s.isAvailable)
+      .map((s) => s.time);
+    if (!validateAgainstExisting(dto.slots, activeSlotTimes)) {
       throw new CustomError(
         ResponseMessages.SLOT_TIME_NOT_VALID,
         HttpStatusCode.BAD_REQUEST,

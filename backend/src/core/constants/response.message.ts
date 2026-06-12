@@ -149,6 +149,8 @@ export const ResponseMessages = {
     "Cannot remove this subject variant — one or more slots still have active student bookings. Please resolve all bookings first.",
 
   SLOT_TIME_NOT_VALID: "Slot times are not valid",
+  SLOT_UNBLOCK_TIME_CONFLICT:
+    "Cannot unblock — this slot must be at least 1 hr apart from other active slots for this subject",
   SLOT_ADDED_SUCCESS: "Slot added successfully",
   CHAPTER_SLOT_ADDED_SUCCESS: "Chapter slot added successfully",
   CHAPTER_SLOT_ALREADY_EXIST: "Chapter slot already exist",
@@ -200,6 +202,7 @@ export const ResponseMessages = {
 
   BOOKING_STATUS_CHANGED: "Booking status updated successfully",
   BOOKING_CONTACT_STATUS_UPDATED: "Booking contact status updated successfully",
+  BOOKING_ALREADY_CONTACTED: "Booking is already marked as contacted",
   INVALID_BOOKING_TYPE: "Invalid booking type for this action",
   INVALID_BOOKING_STATE: "Booking is not in a confirmable state",
 

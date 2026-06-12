@@ -710,6 +710,7 @@ export class BookingRepository implements IBookingRepository {
         type: "pooling",
         mode,
         isDeleted: false,
+        status: { $nin: ["cancelled", "expired"] },
       },
     });
 
@@ -892,6 +893,7 @@ export class BookingRepository implements IBookingRepository {
         slot: { $first: "$slot" },
         chapter: { $first: "$chapter" },
         subject: { $first: "$subjectDoc" },
+        status: { $first: "$status" },
 
         students: {
           $push: {
@@ -949,6 +951,7 @@ export class BookingRepository implements IBookingRepository {
           ],
         },
 
+        status: 1,
         students: 1,
       },
     });

@@ -408,7 +408,9 @@ export default function FacultyModal({
   const toHHMM = (raw: string): string => {
     const d = new Date(raw);
     if (!isNaN(d.getTime())) {
-      return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+      // Slot times are stored as UTC digits representing the intended
+      // IST wall-clock time, so read them back via UTC getters
+      return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
     }
     // Already "HH:MM" or similar â€" return as-is
     return raw;

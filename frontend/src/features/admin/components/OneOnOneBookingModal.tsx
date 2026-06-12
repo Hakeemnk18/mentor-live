@@ -4,9 +4,11 @@ import { formatTimeAMPM } from "../../../shared/utils/time.utils";
 import {
   confirmChapterBooking,
   confirmSlotBooking,
+  markBookingContacted,
 } from "../../../api/booking.api";
 import { getFacultyAvailableSlots } from "../../../api/faculty.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
+import ConfirmModal from "./ConfirmModal";
 
 import type { OneOnOneBooking, AvailableSlot } from "../../../shared/types/booking.types";
 /* ───── helpers ─────────────────────────────────────────── */
@@ -42,6 +44,8 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [markingContacted, setMarkingContacted] = useState(false);
+  const [showContactConfirm, setShowContactConfirm] = useState(false);
 
   /* fetch all available faculty slots when a chapter booking opens
      (chapter bookings don't scope to a variant, so we show all slots) */
@@ -58,7 +62,7 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
             return {
               id: s.id,
               time: !isNaN(d.getTime())
-                ? d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })
+                ? d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "UTC" })
                 : String(s.time),
             };
           })
@@ -96,6 +100,22 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
       handleApiError(err);
     } finally {
       setConfirming(false);
+    }
+  };
+
+  /* mark booking as contacted */
+  const handleMarkContacted = async () => {
+    try {
+      setMarkingContacted(true);
+      await markBookingContacted(booking.id);
+      toast.success("Booking marked as contacted");
+      setShowContactConfirm(false);
+      onConfirmed();
+      onClose();
+    } catch (err: unknown) {
+      handleApiError(err);
+    } finally {
+      setMarkingContacted(false);
     }
   };
 
@@ -261,6 +281,15 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
             >
               Close
             </button>
+            {!booking.isContacted && (
+              <button
+                onClick={() => setShowContactConfirm(true)}
+                disabled={markingContacted}
+                className="px-4 py-2 text-sm font-medium border border-[#DB313E] text-[#DB313E] rounded-md hover:bg-red-50 disabled:opacity-50 transition-colors"
+              >
+                {markingContacted ? "Marking…" : "Mark as Contacted"}
+              </button>
+            )}
             {!isConfirmed && !readOnly && (
               <button
                 onClick={handleConfirm}
@@ -276,6 +305,18 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
           </div>
         </div>
       </div>
+
+      {/* Confirm mark-as-contacted */}
+      <ConfirmModal
+        open={showContactConfirm}
+        title="Mark as Contacted"
+        message="Mark this booking as contacted? This action cannot be undone."
+        confirmLabel="Mark as Contacted"
+        confirmVariant="warning"
+        loading={markingContacted}
+        onConfirm={handleMarkContacted}
+        onClose={() => setShowContactConfirm(false)}
+      />
     </>
   );
 }

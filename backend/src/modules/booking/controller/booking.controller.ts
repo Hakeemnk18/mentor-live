@@ -28,6 +28,8 @@ import type { IGetChapterBookingDetailsUseCase } from "../use-cases/interfaces/g
 import { GetChapterBookingDetailsSchema } from "../dto/chapter.booking.details.dto.js";
 import { GetAllBookingSchema } from "../dto/get.all.booking.dto.js";
 import type { IGetAllBookingUseCase } from "../use-cases/interfaces/get.all.booking.use.case.interface.js";
+import { MarkBookingContactedSchema } from "../dto/mark.booking.contacted.dto.js";
+import type { IMarkBookingContactedUseCase } from "../use-cases/interfaces/mark.booking.contacted.use-case.interface.js";
 
 @injectable()
 export class BookingController implements IBookingController {
@@ -67,6 +69,9 @@ export class BookingController implements IBookingController {
 
     @inject("IGetAllBookingUseCase")
     private readonly _getAllBookingUseCase: IGetAllBookingUseCase,
+
+    @inject("IMarkBookingContactedUseCase")
+    private readonly _markBookingContactedUseCase: IMarkBookingContactedUseCase,
   ) {}
 
   async createBooking(req: Request, res: Response): Promise<void> {
@@ -257,6 +262,20 @@ export class BookingController implements IBookingController {
         success: true,
         message: ResponseMessages.SUCCESS,
         data: data,
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async markBookingContacted(req: Request, res: Response): Promise<void> {
+    try {
+      const dto = MarkBookingContactedSchema.parse(req.params);
+      await this._markBookingContactedUseCase.execute(dto);
+
+      res.status(HttpStatusCode.OK).json({
+        success: true,
+        message: ResponseMessages.BOOKING_CONTACT_STATUS_UPDATED,
       });
     } catch (error) {
       handleError(res, error);
