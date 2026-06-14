@@ -73,7 +73,7 @@ export class ConfirmChapterOneToOneBookingUseCase
     for (const slotId of dto.slotId) {
       const slot = await this._facultySlotRepo.findById(slotId);
 
-      if (!slot || slot.facultyId !== booking.facultyId || !slot.isAvailable) {
+      if (!slot || slot.facultyId !== booking.facultyId.toString() || !slot.isAvailable) {
         throw new CustomError(
           ResponseMessages.SLOT_TIME_NOT_AVAILABLE,
           HttpStatusCode.CONFLICT

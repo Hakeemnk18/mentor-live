@@ -83,6 +83,7 @@ export const getPoolStudents = async (params: {
   mode: "chapter" | "slot";
   chapterId?: string;
   slotId?: string;
+  poolCycle?: number;
 }): Promise<PoolStudentsResponse | null> => {
   const res = await axiosInstance.get("/bookings/pooling/students", { params });
   const data = res.data.data;

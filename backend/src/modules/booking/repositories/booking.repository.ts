@@ -515,7 +515,7 @@ export class BookingRepository implements IBookingRepository {
           pipeline: [
             { $match: { $expr: { $in: ["$_id", "$$slotIds"] } } },
             { $limit: 1 },
-            { $project: { _id: 1, time: 1, poolCycle: 1 } },
+            { $project: { _id: 1, time: 1 } },
           ],
           as: "slotDoc",
         },
@@ -523,60 +523,6 @@ export class BookingRepository implements IBookingRepository {
       {
         $addFields: {
           slotDoc: { $arrayElemAt: ["$slotDoc", 0] },
-        },
-      },
-    );
-
-    /**
-     * 5b-2️⃣ POOL CYCLE FILTER
-     *
-     * Only count/list bookings that belong to the slot's/chapter slot's
-     * CURRENT pooling round. Once a round is confirmed and the slot is
-     * re-opened, poolCycle increments — bookings from the previous
-     * (already confirmed) round should drop out of this list and its
-     * student count.
-     *
-     * Bookings without a `poolCycle` field (created before this existed)
-     * are treated as cycle 1 via $ifNull, matching slots that are still
-     * on cycle 1.
-     */
-    pipeline.push(
-      {
-        $addFields: {
-          currentPoolCycle: {
-            $cond: [
-              { $eq: ["$mode", "slot"] },
-              { $ifNull: ["$slotDoc.poolCycle", 1] },
-              {
-                $ifNull: [
-                  {
-                    $let: {
-                      vars: {
-                        matched: {
-                          $first: {
-                            $filter: {
-                              input: { $ifNull: ["$faculty.chapterSlots", []] },
-                              as: "cs",
-                              cond: { $eq: ["$$cs.chapter", "$chapterId"] },
-                            },
-                          },
-                        },
-                      },
-                      in: "$$matched.poolCycle",
-                    },
-                  },
-                  1,
-                ],
-              },
-            ],
-          },
-        },
-      },
-      {
-        $match: {
-          $expr: {
-            $eq: [{ $ifNull: ["$poolCycle", 1] }, "$currentPoolCycle"],
-          },
         },
       },
     );
@@ -658,6 +604,14 @@ export class BookingRepository implements IBookingRepository {
           mode: "$mode",
           slotId: { $arrayElemAt: ["$slotId", 0] },
           chapterId: "$chapterId",
+          /*
+           * Group separately by poolCycle so that once a round is
+           * confirmed (and the slot's/chapter slot's poolCycle is
+           * incremented), the confirmed bookings keep their own row
+           * instead of disappearing or being merged with a brand-new
+           * round for the same slot/chapter.
+           */
+          poolCycle: { $ifNull: ["$poolCycle", 1] },
         },
 
         faculty: { $first: "$faculty" },
@@ -729,6 +683,7 @@ export class BookingRepository implements IBookingRepository {
           id: "$syllabus._id",
           name: "$syllabus.name",
         },
+        poolCycle: "$_id.poolCycle",
         totalStudents: 1,
         pendingContactCount: 1,
         hasPendingContact: {
@@ -765,7 +720,7 @@ export class BookingRepository implements IBookingRepository {
     dto: GetAdminPoolingStudentsDto,
   ): Promise<AdminPoolingStudentRaw[]> {
     const pipeline: any[] = [];
-    const { facultyId, slotId, chapterId, mode } = dto;
+    const { facultyId, slotId, chapterId, mode, poolCycle } = dto;
 
     /* 1️⃣ Base match */
     pipeline.push({
@@ -780,54 +735,59 @@ export class BookingRepository implements IBookingRepository {
 
     /* 2️⃣ Mode-specific match
      *
-     * For pooling, also restrict to the slot's/chapter slot's CURRENT
-     * poolCycle. The same physical slot can be confirmed, re-opened, and
-     * re-booked many times — without this, bookings from an old (already
-     * confirmed) round would be grouped together with a brand-new round
-     * just because they share the same slotId/chapterId.
+     * Restrict to a single pooling round, identified by `poolCycle`. This
+     * is normally passed by the admin "View" button (the row's own
+     * poolCycle from findAllPoolingBooking's grouping). If omitted, fall
+     * back to the slot's/chapter slot's CURRENT poolCycle — the same
+     * physical slot can be confirmed, re-opened, and re-booked many times,
+     * and without this, bookings from different rounds would be grouped
+     * together just because they share the same slotId/chapterId.
      *
      * Bookings created before poolCycle existed have no `poolCycle` field;
-     * `$ifNull` treats those as cycle 1, so they keep showing up as long as
-     * the slot itself is still on cycle 1 (and correctly drop out of view
-     * once the slot moves on to a later cycle).
+     * `$ifNull` treats those as cycle 1.
      */
     if (mode === "slot") {
-      const slotDoc = await FacultySlotModel.findById(slotId)
-        .select("poolCycle")
-        .lean();
-      const currentPoolCycle = (slotDoc as any)?.poolCycle ?? 1;
+      let targetPoolCycle = poolCycle;
+      if (targetPoolCycle === undefined) {
+        const slotDoc = await FacultySlotModel.findById(slotId)
+          .select("poolCycle")
+          .lean();
+        targetPoolCycle = (slotDoc as any)?.poolCycle ?? 1;
+      }
 
       pipeline.push({
         $match: {
           // slotId is ObjectId[] in the booking document
           slotId: { $in: [new Types.ObjectId(slotId)] },
           $expr: {
-            $eq: [{ $ifNull: ["$poolCycle", 1] }, currentPoolCycle],
+            $eq: [{ $ifNull: ["$poolCycle", 1] }, targetPoolCycle],
           },
         },
       });
     }
 
     if (mode === "chapter") {
-      const facultyDoc = await FacultyModel.findOne(
-        {
-          _id: new Types.ObjectId(facultyId),
-          "chapterSlots.chapter": new Types.ObjectId(chapterId),
-        },
-        {
-          chapterSlots: {
-            $elemMatch: { chapter: new Types.ObjectId(chapterId) },
+      let targetPoolCycle = poolCycle;
+      if (targetPoolCycle === undefined) {
+        const facultyDoc = await FacultyModel.findOne(
+          {
+            _id: new Types.ObjectId(facultyId),
+            "chapterSlots.chapter": new Types.ObjectId(chapterId),
           },
-        },
-      ).lean();
-      const currentPoolCycle =
-        (facultyDoc as any)?.chapterSlots?.[0]?.poolCycle ?? 1;
+          {
+            chapterSlots: {
+              $elemMatch: { chapter: new Types.ObjectId(chapterId) },
+            },
+          },
+        ).lean();
+        targetPoolCycle = (facultyDoc as any)?.chapterSlots?.[0]?.poolCycle ?? 1;
+      }
 
       pipeline.push({
         $match: {
           chapterId: new Types.ObjectId(chapterId),
           $expr: {
-            $eq: [{ $ifNull: ["$poolCycle", 1] }, currentPoolCycle],
+            $eq: [{ $ifNull: ["$poolCycle", 1] }, targetPoolCycle],
           },
         },
       });

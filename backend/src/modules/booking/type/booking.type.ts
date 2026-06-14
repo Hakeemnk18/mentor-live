@@ -94,6 +94,7 @@ export type AdminPoolingRaw = {
   subject?: IdNameView | undefined;
   chapter?: IdNameView | undefined;
   slot?: slotIdView | undefined;
+  poolCycle: number;
   totalStudents: number;
   pendingContactCount: number;
   hasPendingContact: boolean;
@@ -108,6 +109,7 @@ export interface AdminPoolingView {
   subject?: IdNameView | undefined;
   chapter?: IdNameView | undefined;
   slot?: slotIdView | undefined;
+  poolCycle: number;
   totalStudents: number;
   hasPendingContact: boolean;
   createdAt: string; // ISO

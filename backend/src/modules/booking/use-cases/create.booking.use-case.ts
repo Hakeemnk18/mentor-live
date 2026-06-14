@@ -170,12 +170,6 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
             HttpStatusCode.BAD_REQUEST,
           );
         }
-        if (booking.type === "oneToOne" && slot.pool.length > 0) {
-          throw new CustomError(
-            ResponseMessages.SLOT_TIME_NOT_AVAILABLE,
-            HttpStatusCode.BAD_REQUEST,
-          );
-        }
         if (booking.type === "pooling" && slot.isFull()) {
           throw new CustomError(
             ResponseMessages.SLOT_TIME_NOT_AVAILABLE,

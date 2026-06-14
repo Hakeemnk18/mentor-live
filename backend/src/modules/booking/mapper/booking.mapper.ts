@@ -140,6 +140,7 @@ export class BookingMapper {
               name: raw.chapter.name,
             }
           : undefined,
+      poolCycle: raw.poolCycle,
       totalStudents: raw.totalStudents,
       hasPendingContact: raw.hasPendingContact,
       createdAt: raw.createdAt.toISOString(),

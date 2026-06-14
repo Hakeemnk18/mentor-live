@@ -10,13 +10,20 @@ import { getFacultyAvailableSlots } from "../../../api/faculty.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 import ConfirmModal from "./ConfirmModal";
 
-import type { PoolBooking, PoolStudent, PoolStudentsResponse, AvailableSlot } from "../../../shared/types/booking.types";
+import type { PoolBooking, PoolStudent, PoolStudentsResponse } from "../../../shared/types/booking.types";
 /* ───── helpers ─────────────────────────────────────────── */
 const fmtTime = (iso: string) => {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;
   return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "UTC" });
 };
+
+/** A group of FacultySlot ids that share the same displayed time
+ *  (e.g. two subject variants both have a 4:00 PM slot). */
+interface GroupedSlot {
+  time: string;
+  ids: string[];
+}
 
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-IN", {
@@ -43,9 +50,10 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
   const [detail, setDetail] = useState<PoolStudentsResponse | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
-  // For chapter-mode: pick time slots from faculty
-  const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
-  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  // For chapter-mode: pick time slots from faculty, grouped by displayed time
+  // (multiple subject variants can each have a FacultySlot at the same time)
+  const [availableSlots, setAvailableSlots] = useState<GroupedSlot[]>([]);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
   const [confirming, setConfirming] = useState(false);
@@ -59,10 +67,11 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
     // 1. Fetch student list
     setLoadingDetail(true);
     setDetail(null);
-    setSelectedSlotId(null);
+    setSelectedTime(null);
     const params: Parameters<typeof getPoolStudents>[0] = {
       facultyId: booking.faculty.id,
       mode: booking.mode,
+      poolCycle: booking.poolCycle,
       ...(booking.mode === "chapter" && booking.chapter
         ? { chapterId: booking.chapter.id }
         : { slotId: booking.slot?.id }),
@@ -78,11 +87,17 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
       setLoadingSlots(true);
       getFacultyAvailableSlots(booking.faculty.id)
         .then((raw) => {
+          // Group slots by displayed time so identical times across
+          // different subject variants render as a single option.
+          const groups = new Map<string, string[]>();
+          raw.forEach((s) => {
+            const time = fmtTime(s.time);
+            const ids = groups.get(time);
+            if (ids) ids.push(s.id);
+            else groups.set(time, [s.id]);
+          });
           setAvailableSlots(
-            raw.map((s) => ({
-              id: s.id,
-              time: fmtTime(s.time),
-            }))
+            Array.from(groups, ([time, ids]) => ({ time, ids }))
           );
         })
         .catch(handleApiError)
@@ -94,12 +109,12 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
 
   const isConfirmed = detail?.status === "confirmed";
 
-  const toggleSlot = (id: string) =>
-    setSelectedSlotId((prev) => (prev === id ? null : id));
+  const toggleSlot = (time: string) =>
+    setSelectedTime((prev) => (prev === time ? null : time));
 
   /* ── confirm ── */
   const handleConfirm = async () => {
-    if (booking.mode === "chapter" && !selectedSlotId) {
+    if (booking.mode === "chapter" && !selectedTime) {
       toast.error("Select a time slot");
       return;
     }
@@ -111,9 +126,10 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
           slotId: booking.slot!.id,
         });
       } else {
+        const slotIds = availableSlots.find((s) => s.time === selectedTime)?.ids ?? [];
         await confirmChapterPooling({
           facultyId: booking.faculty.id,
-          slotId: [selectedSlotId!],
+          slotId: slotIds,
           chapterId: booking.chapter!.id,
         });
       }
@@ -263,12 +279,12 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {availableSlots.map((s) => {
-                      const selected = selectedSlotId === s.id;
+                      const selected = selectedTime === s.time;
                       return (
                         <button
-                          key={s.id}
+                          key={s.time}
                           type="button"
-                          onClick={() => toggleSlot(s.id)}
+                          onClick={() => toggleSlot(s.time)}
                           className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                             selected
                               ? "bg-[#DB313E] border-[#DB313E] text-white"
@@ -298,7 +314,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
                 onClick={handleConfirm}
                 disabled={
                   confirming ||
-                  (booking.mode === "chapter" && !selectedSlotId)
+                  (booking.mode === "chapter" && !selectedTime)
                 }
                 className="px-4 py-2 text-sm font-medium bg-[#DB313E] text-white rounded-md hover:bg-[#c02535] disabled:opacity-50 transition-colors"
               >

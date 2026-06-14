@@ -10,8 +10,16 @@ import { getFacultyAvailableSlots } from "../../../api/faculty.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 import ConfirmModal from "./ConfirmModal";
 
-import type { OneOnOneBooking, AvailableSlot } from "../../../shared/types/booking.types";
+import type { OneOnOneBooking } from "../../../shared/types/booking.types";
 /* ───── helpers ─────────────────────────────────────────── */
+
+/** A group of FacultySlot ids that share the same displayed time
+ *  (e.g. two subject variants both have a 4:00 PM slot). */
+interface GroupedSlot {
+  time: string;
+  ids: string[];
+}
+
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleString("en-IN", {
     day: "2-digit",
@@ -40,8 +48,8 @@ interface Props {
 
 /* ───── component ───────────────────────────────────────── */
 export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, readOnly = false }: Props) {
-  const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
-  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [availableSlots, setAvailableSlots] = useState<GroupedSlot[]>([]);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [markingContacted, setMarkingContacted] = useState(false);
@@ -51,22 +59,24 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
      (chapter bookings don't scope to a variant, so we show all slots) */
   useEffect(() => {
     if (!booking || booking.mode !== "chapter") return;
-    setSelectedSlotId(null);
+    setSelectedTime(null);
     setLoadingSlots(true);
     // no variantId → returns all available slots across all variants
     getFacultyAvailableSlots(booking.faculty.id)
       .then((raw) => {
-        setAvailableSlots(
-          raw.map((s) => {
-            const d = new Date(s.time);
-            return {
-              id: s.id,
-              time: !isNaN(d.getTime())
-                ? d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "UTC" })
-                : String(s.time),
-            };
-          })
-        );
+        // Group slots by displayed time so identical times across
+        // different subject variants render as a single option.
+        const groups = new Map<string, string[]>();
+        raw.forEach((s) => {
+          const d = new Date(s.time);
+          const time = !isNaN(d.getTime())
+            ? d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "UTC" })
+            : String(s.time);
+          const ids = groups.get(time);
+          if (ids) ids.push(s.id);
+          else groups.set(time, [s.id]);
+        });
+        setAvailableSlots(Array.from(groups, ([time, ids]) => ({ time, ids })));
       })
       .catch(handleApiError)
       .finally(() => setLoadingSlots(false));
@@ -77,19 +87,20 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
   const isConfirmed = booking.status === "confirmed";
 
   /* toggle slot selection */
-  const toggleSlot = (id: string) =>
-    setSelectedSlotId((prev) => (prev === id ? null : id));
+  const toggleSlot = (time: string) =>
+    setSelectedTime((prev) => (prev === time ? null : time));
 
   /* confirm handler */
   const handleConfirm = async () => {
-    if (booking.mode === "chapter" && !selectedSlotId) {
+    if (booking.mode === "chapter" && !selectedTime) {
       toast.error("Please select a time slot");
       return;
     }
     try {
       setConfirming(true);
       if (booking.mode === "chapter") {
-        await confirmChapterBooking(booking.id, [selectedSlotId!]);
+        const slotIds = availableSlots.find((s) => s.time === selectedTime)?.ids ?? [];
+        await confirmChapterBooking(booking.id, slotIds);
       } else {
         await confirmSlotBooking(booking.id);
       }
@@ -251,12 +262,12 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {availableSlots.map((s) => {
-                      const selected = selectedSlotId === s.id;
+                      const selected = selectedTime === s.time;
                       return (
                         <button
-                          key={s.id}
+                          key={s.time}
                           type="button"
-                          onClick={() => toggleSlot(s.id)}
+                          onClick={() => toggleSlot(s.time)}
                           className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                             selected
                               ? "bg-[#DB313E] border-[#DB313E] text-white"
@@ -295,7 +306,7 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
                 onClick={handleConfirm}
                 disabled={
                   confirming ||
-                  (booking.mode === "chapter" && !selectedSlotId)
+                  (booking.mode === "chapter" && !selectedTime)
                 }
                 className="px-4 py-2 text-sm font-medium bg-[#DB313E] text-white rounded-md hover:bg-[#c02535] disabled:opacity-50 transition-colors"
               >

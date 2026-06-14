@@ -8,6 +8,13 @@ export const GetAdminPoolingStudentsSchema = z
     mode: BookingModeEnum, // "slot" | "chapter"
     slotId: ObjectIdSchema.optional(),
     chapterId: ObjectIdSchema.optional(),
+    /**
+     * Identifies which pooling round to fetch students for. Sent by the
+     * admin "View" button from the row's own poolCycle (see
+     * findAllPoolingBooking grouping). Falls back to the slot's/chapter
+     * slot's current poolCycle when omitted.
+     */
+    poolCycle: z.coerce.number().int().positive().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.mode === "slot") {
