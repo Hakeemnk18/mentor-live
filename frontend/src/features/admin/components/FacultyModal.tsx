@@ -319,6 +319,24 @@ export default function FacultyModal({
     field: "syllabusId" | "classId",
     value: string
   ) => {
+    const group = subjectGroups.find((g) => g.id === id)!;
+    const newSyllabusId = field === "syllabusId" ? value : group.syllabusId;
+    const newClassId = field === "classId" ? value : group.classId;
+
+    // Block picking a syllabus + class combination that another group already uses
+    if (newSyllabusId && newClassId) {
+      const duplicate = subjectGroups.some(
+        (g) =>
+          g.id !== id &&
+          g.syllabusId === newSyllabusId &&
+          g.classId === newClassId
+      );
+      if (duplicate) {
+        toast.error("This syllabus & class combination is already added in another group");
+        return;
+      }
+    }
+
     setSubjectGroups((prev) =>
       prev.map((g) =>
         g.id === id
@@ -336,9 +354,6 @@ export default function FacultyModal({
       )
     );
 
-    const group = subjectGroups.find((g) => g.id === id)!;
-    const newSyllabusId = field === "syllabusId" ? value : group.syllabusId;
-    const newClassId = field === "classId" ? value : group.classId;
     if (newSyllabusId && newClassId) {
       try {
         const raw = await getSubjectVariants({
@@ -457,6 +472,10 @@ export default function FacultyModal({
         };
       })
     );
+  };
+
+  const handleSetAllRowsVariants = (variantIds: string[]) => {
+    setTimeRows((prev) => prev.map((r) => ({ ...r, variantIds: [...variantIds] })));
   };
 
   /* ================================================================ */
@@ -776,6 +795,9 @@ export default function FacultyModal({
 
   const isLoading = saving || uploading || slotWorking || chapterWorking;
 
+  // Variants already picked in ANY group â€" backend rejects duplicate variantIds
+  const allSelectedVariantIds = new Set(subjectGroups.flatMap((g) => g.selected));
+
   /* ================================================================ */
   /* RENDER                                                             */
   /* ================================================================ */
@@ -922,7 +944,7 @@ export default function FacultyModal({
                   // selectedVariants always holds full objects â€" no dependency on variants loading
                   const selected = group.selectedVariants;
                   const available = group.variants.filter(
-                    (v) => !group.selected.includes(v._id)
+                    (v) => !allSelectedVariantIds.has(v._id)
                   );
 
                   return (
@@ -1100,9 +1122,29 @@ export default function FacultyModal({
                           <div className="grid bg-gray-50 px-3 py-2 border-b border-gray-200"
                             style={{ gridTemplateColumns: "90px 1fr 28px" }}>
                             <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Time</span>
-                            <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                              {allVariants.length === 0 ? "Subjects (select subjects above)" : "Subjects"}
-                            </span>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                                {allVariants.length === 0 ? "Subjects (select subjects above)" : "Subjects"}
+                              </span>
+                              {allVariants.length > 1 && (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSetAllRowsVariants(allVariants.map((v) => v.variantId))}
+                                    className="text-xs text-[#DB313E] hover:underline"
+                                  >
+                                    Select all
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSetAllRowsVariants([])}
+                                    className="text-xs text-gray-400 hover:underline"
+                                  >
+                                    Clear all
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                             <span />
                           </div>
 
@@ -1119,7 +1161,7 @@ export default function FacultyModal({
                               </span>
 
                               {/* Variant toggle pills */}
-                              <div className="flex flex-wrap gap-1.5 py-0.5">
+                              <div className="flex flex-wrap items-center gap-1.5 py-0.5">
                                 {allVariants.length === 0 && (
                                   <span className="text-xs text-gray-400 italic">—</span>
                                 )}

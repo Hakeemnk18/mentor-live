@@ -48,6 +48,16 @@ const getYoutubeId = (url: string): string | null => {
   return null;
 };
 
+/** 30-minute interval options, value="HH:MM" (24hr), label in 12hr AM/PM */
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+  const h = Math.floor(i / 2);
+  const m = i % 2 === 0 ? "00" : "30";
+  const value = `${String(h).padStart(2, "0")}:${m}`;
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return { value, label: `${h12}:${m} ${period}` };
+});
+
 /* ================================================================== */
 /* COMPONENT                                                            */
 /* ================================================================== */
@@ -535,15 +545,19 @@ export default function FacultyDetailPage() {
                 <div className="flex flex-wrap items-end gap-3">
                   <div className="flex flex-col gap-1">
                     <label className="text-xs font-medium text-gray-500">Time</label>
-                    <input
-                      type="time"
+                    <select
                       value={newTime}
                       onChange={(e) => {
                         setNewTime(e.target.value);
                         setSlotError("");
                       }}
                       className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30 w-full sm:w-40"
-                    />
+                    >
+                      <option value="">Select time…</option>
+                      {TIME_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
                   </div>
                   <button
                     onClick={handleAddTimeSlot}
