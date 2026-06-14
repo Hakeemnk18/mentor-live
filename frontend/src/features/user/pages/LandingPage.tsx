@@ -383,12 +383,12 @@ const FacultySection: React.FC = () => {
         </div>
 
         {/* Horizontally scrollable cards + arrows */}
-        <div className="relative group/scroller">
+        <div className="relative group/scroller sm:px-10 md:px-12">
           {/* Left arrow */}
           {faculties.length > 1 && (
             <button
               onClick={() => scrollByCard("left")}
-              className="hidden sm:flex absolute -left-4 md:-left-6 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-gray-200 rounded-full shadow-md items-center justify-center hover:bg-gray-50 transition opacity-0 group-hover/scroller:opacity-100"
+              className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-gray-200 rounded-full shadow-md items-center justify-center hover:bg-gray-50 transition opacity-0 group-hover/scroller:opacity-100"
               aria-label="Scroll left"
             >
               <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
@@ -441,7 +441,7 @@ const FacultySection: React.FC = () => {
           {faculties.length > 1 && (
             <button
               onClick={() => scrollByCard("right")}
-              className="hidden sm:flex absolute -right-4 md:-right-6 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-gray-200 rounded-full shadow-md items-center justify-center hover:bg-gray-50 transition opacity-0 group-hover/scroller:opacity-100"
+              className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-gray-200 rounded-full shadow-md items-center justify-center hover:bg-gray-50 transition opacity-0 group-hover/scroller:opacity-100"
               aria-label="Scroll right"
             >
               <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
