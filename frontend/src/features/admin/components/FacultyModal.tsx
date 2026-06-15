@@ -248,6 +248,7 @@ export default function FacultyModal({
             selected: [],
             selectedVariants: [],
             prices: {},
+            slotTimes: {},
           });
         }
         // o.id IS the SubjectVariant's _id (backend maps so._id → o.id)

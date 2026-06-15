@@ -83,7 +83,8 @@ export interface PoolBooking {
   chapter?: { id: string; name: string };
   class: { id: string; name: string };
   syllabus: { id: string; name: string };
-  poolCycle: number;
+  /** Omitted for "live" pool views where the backend should use the current cycle */
+  poolCycle?: number;
   totalStudents: number;
   createdAt: string;
   hasPendingContact: boolean;

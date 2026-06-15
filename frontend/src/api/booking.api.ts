@@ -15,9 +15,10 @@ export const createBooking = async (payload: CreateBookingPayload) => {
 };
 
 
-export const getOneOnOneBookings = async (
+/** Builds the shared query params used by both list and export endpoints */
+const buildBookingFilterParams = (
   filters: BookingFilters = {}
-): Promise<{ data: OneOnOneBooking[]; total: number }> => {
+): Record<string, string | number | boolean> => {
   const params: Record<string, string | number | boolean> = {};
   if (filters.search) params.search = filters.search;
   if (filters.mode) params.mode = filters.mode;
@@ -29,9 +30,28 @@ export const getOneOnOneBookings = async (
   if (filters.isContacted !== undefined) params.isContacted = filters.isContacted;
   if (filters.page) params.page = filters.page;
   if (filters.limit) params.limit = filters.limit;
+  return params;
+};
+
+export const getOneOnOneBookings = async (
+  filters: BookingFilters = {}
+): Promise<{ data: OneOnOneBooking[]; total: number }> => {
+  const params = buildBookingFilterParams(filters);
 
   const res = await axiosInstance.get("/bookings/one-to-one", { params });
   return { data: res.data.data, total: res.data.total };
+};
+
+/** Export one-on-one bookings matching the given filters (all rows, no pagination) */
+export const exportOneOnOneBookings = async (
+  filters: BookingFilters = {}
+): Promise<Blob> => {
+  const params = buildBookingFilterParams(filters);
+  const res = await axiosInstance.get("/bookings/one-to-one/export", {
+    params,
+    responseType: "blob",
+  });
+  return res.data;
 };
 
 /** Confirm a chapter-mode one-on-one booking by assigning faculty slot IDs */
@@ -59,20 +79,22 @@ export const markBookingContacted = async (bookingId: string): Promise<void> => 
 export const getPoolBookings = async (
   filters: BookingFilters = {}
 ): Promise<{ data: PoolBooking[]; total: number }> => {
-  const params: Record<string, string | number | boolean> = {};
-  if (filters.search) params.search = filters.search;
-  if (filters.mode) params.mode = filters.mode;
-  if (filters.chapterId) params.chapterId = filters.chapterId;
-  if (filters.slotId) params.slotId = filters.slotId;
-  if (filters.faculty) params.faculty = filters.faculty;
-  if (filters.classId) params.classId = filters.classId;
-  if (filters.syllabusId) params.syllabusId = filters.syllabusId;
-  if (filters.isContacted !== undefined) params.isContacted = filters.isContacted;
-  if (filters.page) params.page = filters.page;
-  if (filters.limit) params.limit = filters.limit;
+  const params = buildBookingFilterParams(filters);
 
   const res = await axiosInstance.get("/bookings/pooling", { params });
   return { data: res.data.data, total: res.data.total };
+};
+
+/** Export pooling bookings matching the given filters (all rows, no pagination) */
+export const exportPoolBookings = async (
+  filters: BookingFilters = {}
+): Promise<Blob> => {
+  const params = buildBookingFilterParams(filters);
+  const res = await axiosInstance.get("/bookings/pooling/export", {
+    params,
+    responseType: "blob",
+  });
+  return res.data;
 };
 
 

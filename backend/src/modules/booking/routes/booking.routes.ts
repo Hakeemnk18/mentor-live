@@ -13,11 +13,19 @@ const bookingController = container.resolve(BookingController);
 router.post("/", (req, res) => bookingController.createBooking(req, res));
 
 // get all one to one booking for admin
-router.get("/one-to-one", 
+router.get("/one-to-one",
   authenticate.authenticate,
   authorizeRoles("admin", "salesPerson"),
   (req, res) =>
     bookingController.getAllOneToOneBooking(req, res),
+);
+
+// export one to one bookings (respects current filters)
+router.get("/one-to-one/export",
+  authenticate.authenticate,
+  authorizeRoles("admin", "salesPerson"),
+  (req, res) =>
+    bookingController.exportOneToOneBookings(req, res),
 );
 
 // get all booking
@@ -28,11 +36,19 @@ router.get("/",
 );
 
 // get all pooling booking
-router.get("/pooling", 
+router.get("/pooling",
   authenticate.authenticate,
   authorizeRoles("admin", "salesPerson"),
   (req, res) =>
     bookingController.getAllPoolingBooking(req, res),
+);
+
+// export pooling bookings (respects current filters)
+router.get("/pooling/export",
+  authenticate.authenticate,
+  authorizeRoles("admin", "salesPerson"),
+  (req, res) =>
+    bookingController.exportPoolingBookings(req, res),
 );
 
 // get pooling students

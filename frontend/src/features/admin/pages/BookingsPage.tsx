@@ -10,7 +10,11 @@ import type { Column } from "../components/AdminTable";
 import {
   getOneOnOneBookings,
   getPoolBookings,
+  exportOneOnOneBookings,
+  exportPoolBookings,
 } from "../../../api/booking.api";
+import ExportButton from "../../../shared/components/ExportButton";
+import { downloadBlob } from "../../../shared/utils/download.util";
 import { getClassesList } from "../../../api/class.api";
 import { getSyllabusList } from "../../../api/syllabus.api";
 import OneOnOneBookingModal from "../components/OneOnOneBookingModal";
@@ -223,6 +227,27 @@ export default function BookingsPage() {
     resetPage();
   };
 
+  /* export current filters (all matching rows, ignoring pagination) */
+  const handleExport = async () => {
+    const filters = {
+      search: search || undefined,
+      mode: (mode || undefined) as "chapter" | "slot" | undefined,
+      classId: classId || undefined,
+      syllabusId: syllabusId || undefined,
+      isContacted: isContacted === "" ? undefined : isContacted === "true",
+    };
+
+    const blob =
+      bookingType === "one-on-one"
+        ? await exportOneOnOneBookings(filters)
+        : await exportPoolBookings(filters);
+
+    downloadBlob(
+      blob,
+      bookingType === "one-on-one" ? "one-to-one-bookings.csv" : "pool-bookings.csv"
+    );
+  };
+
   return (
     <>
     <AdminPageContainer>
@@ -341,6 +366,11 @@ export default function BookingsPage() {
             <option value={20}>20</option>
             <option value={50}>50</option>
           </select>
+        </div>
+
+        {/* Export */}
+        <div className="ml-auto">
+          <ExportButton onExport={handleExport} />
         </div>
       </div>
 

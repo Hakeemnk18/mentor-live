@@ -30,6 +30,12 @@ import { GetAllBookingSchema } from "../dto/get.all.booking.dto.js";
 import type { IGetAllBookingUseCase } from "../use-cases/interfaces/get.all.booking.use.case.interface.js";
 import { MarkBookingContactedSchema } from "../dto/mark.booking.contacted.dto.js";
 import type { IMarkBookingContactedUseCase } from "../use-cases/interfaces/mark.booking.contacted.use-case.interface.js";
+import { ExportFormatSchema, EXPORT_MAX_ROWS } from "../../../core/shared/dtos/export.query.dto.js";
+import { sendExportFile } from "../../../core/utils/export.util.js";
+import {
+  oneToOneBookingExportColumns,
+  poolingBookingExportColumns,
+} from "../utils/booking.export.columns.js";
 
 @injectable()
 export class BookingController implements IBookingController {
@@ -280,6 +286,42 @@ export class BookingController implements IBookingController {
       });
     } catch (error) {
       handleError(res, error);
+    }
+  }
+
+  async exportOneToOneBookings(req: Request, res: Response): Promise<void> {
+    try {
+      const dto = GetAllBookingByOneToOneSchema.parse(req.query);
+      const { format } = ExportFormatSchema.parse(req.query);
+
+      const { data } = await this._getOneToOneBookingUseCase.execute({
+        ...dto,
+        page: 1,
+        limit: EXPORT_MAX_ROWS,
+      });
+
+      sendExportFile(res, "one-to-one-bookings", format, data, oneToOneBookingExportColumns);
+    } catch (error) {
+      handleError(res, error);
+      console.log("error in export one to one bookings ", error);
+    }
+  }
+
+  async exportPoolingBookings(req: Request, res: Response): Promise<void> {
+    try {
+      const dto = GetAllBookingByOneToOneSchema.parse(req.query);
+      const { format } = ExportFormatSchema.parse(req.query);
+
+      const { data } = await this._getPoolingBookingUseCase.execute({
+        ...dto,
+        page: 1,
+        limit: EXPORT_MAX_ROWS,
+      });
+
+      sendExportFile(res, "pool-bookings", format, data, poolingBookingExportColumns);
+    } catch (error) {
+      handleError(res, error);
+      console.log("error in export pooling bookings ", error);
     }
   }
 }
