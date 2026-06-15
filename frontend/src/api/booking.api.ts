@@ -1,6 +1,6 @@
 ﻿import axiosInstance from "./axios.instance";
 
-import type { CreateBookingPayload, BookingFilters, OneOnOneBooking, PoolBooking, PoolStudentsResponse } from "../shared/types/booking.types";
+import type { CreateBookingPayload, BookingFilters, OneOnOneBooking, PoolBooking, AllBooking, PoolStudentsResponse } from "../shared/types/booking.types";
 
 export const createBooking = async (payload: CreateBookingPayload) => {
   try {
@@ -28,6 +28,8 @@ const buildBookingFilterParams = (
   if (filters.classId) params.classId = filters.classId;
   if (filters.syllabusId) params.syllabusId = filters.syllabusId;
   if (filters.isContacted !== undefined) params.isContacted = filters.isContacted;
+  if (filters.type) params.type = filters.type;
+  if (filters.status) params.status = filters.status;
   if (filters.page) params.page = filters.page;
   if (filters.limit) params.limit = filters.limit;
   return params;
@@ -138,5 +140,27 @@ export const removeStudentFromPool = async (payload: {
   chapterId?: string;
 }): Promise<void> => {
   await axiosInstance.patch("/bookings/pooling/remove-student", payload);
+};
+
+/** Fetch every booking (one-to-one + pooling), regardless of status */
+export const getAllBookings = async (
+  filters: BookingFilters = {}
+): Promise<{ data: AllBooking[]; total: number }> => {
+  const params = buildBookingFilterParams(filters);
+
+  const res = await axiosInstance.get("/bookings", { params });
+  return { data: res.data.data, total: res.data.total };
+};
+
+/** Export all bookings matching the given filters (all rows, no pagination) */
+export const exportAllBookings = async (
+  filters: BookingFilters = {}
+): Promise<Blob> => {
+  const params = buildBookingFilterParams(filters);
+  const res = await axiosInstance.get("/bookings/export", {
+    params,
+    responseType: "blob",
+  });
+  return res.data;
 };
 

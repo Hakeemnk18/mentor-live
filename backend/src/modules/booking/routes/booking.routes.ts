@@ -29,10 +29,17 @@ router.get("/one-to-one/export",
 );
 
 // get all booking
-router.get("/", 
+router.get("/",
   authenticate.authenticate,
   authorizeRoles("admin", "salesPerson"),
   (req, res) => bookingController.getAllBookings(req, res)
+);
+
+// export all bookings (respects current filters)
+router.get("/export",
+  authenticate.authenticate,
+  authorizeRoles("admin", "salesPerson"),
+  (req, res) => bookingController.exportAllBookings(req, res)
 );
 
 // get all pooling booking

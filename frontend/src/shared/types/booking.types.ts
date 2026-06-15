@@ -40,7 +40,6 @@ export interface CreateBookingPayload {
 export interface BookingFilters {
   page?: number;
   limit?: number;
-  type?: "one-on-one" | "pool";
   search?: string;
   mode?: "chapter" | "slot";
   chapterId?: string;
@@ -49,6 +48,10 @@ export interface BookingFilters {
   classId?: string;
   syllabusId?: string;
   isContacted?: boolean;
+  /** "All Bookings" tab only — filter by booking type */
+  type?: "oneToOne" | "pooling";
+  /** "All Bookings" tab only — filter by booking status */
+  status?: "interested" | "confirmed" | "cancelled" | "expired";
 }
 
 /** Shape exactly matching what the backend AdminBookingView mapper returns */
@@ -109,4 +112,25 @@ export interface AvailableSlot {
   time: string;
 }
 
-export type BookingType = "one-on-one" | "pool";
+/** Row shape returned by GET /bookings — every booking, regardless of type */
+export interface AllBooking {
+  id: string;
+  type: "oneToOne" | "pooling";
+  student: {
+    id: string;
+    name: string;
+    phone: string;
+  };
+  faculty: { id: string; name: string };
+  class: { id: string; name: string };
+  syllabus: { id: string; name: string };
+  isContacted: boolean;
+  mode: "slot" | "chapter";
+  /** Backend statuses: "interested" | "confirmed" | "cancelled" | "expired" */
+  status: string;
+  createdAt: string;
+  slot?: { id: string; time: string };
+  chapter?: { id: string; name: string };
+}
+
+export type BookingType = "one-on-one" | "pool" | "all";

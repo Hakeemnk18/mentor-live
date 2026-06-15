@@ -145,3 +145,23 @@ export type BookingChartRaw = {
   createdAt: Date;
   type: BookingType;
 };
+
+/** Row shape returned by findAllBookings — every booking, regardless of type */
+export interface AdminAllBookingView {
+  id: string;
+  type: BookingType;
+  student: {
+    id: string;
+    name: string;
+    phone: string;
+  };
+  faculty: IdNameView;
+  class: IdNameView;
+  syllabus: IdNameView;
+  isContacted: boolean;
+  mode: BookingMode;
+  status: BookingStatus;
+  slot?: slotIdView | undefined;
+  chapter?: IdNameView | undefined;
+  createdAt: string;
+}

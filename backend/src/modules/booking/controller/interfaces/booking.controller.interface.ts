@@ -16,4 +16,5 @@ export interface IBookingController {
   markBookingContacted(req: Request, res: Response): Promise<void>;
   exportOneToOneBookings(req: Request, res: Response): Promise<void>;
   exportPoolingBookings(req: Request, res: Response): Promise<void>;
+  exportAllBookings(req: Request, res: Response): Promise<void>;
 }

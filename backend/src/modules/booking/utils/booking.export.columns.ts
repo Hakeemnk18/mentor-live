@@ -1,5 +1,5 @@
 import type { ExportColumn } from "../../../core/utils/export.util.js";
-import type { AdminBookingView, AdminPoolingView } from "../type/booking.type.js";
+import type { AdminAllBookingView, AdminBookingView, AdminPoolingView } from "../type/booking.type.js";
 
 const fmtDate = (iso: string): string =>
   new Date(iso).toLocaleDateString("en-IN", {
@@ -21,6 +21,21 @@ const fmtTime = (iso?: string): string => {
 };
 
 export const oneToOneBookingExportColumns: ExportColumn<AdminBookingView>[] = [
+  { header: "Student Name", value: (b) => b.student.name },
+  { header: "Phone", value: (b) => b.student.phone },
+  { header: "Faculty", value: (b) => b.faculty.name },
+  { header: "Class", value: (b) => b.class.name },
+  { header: "Syllabus", value: (b) => b.syllabus.name },
+  { header: "Mode", value: (b) => b.mode },
+  { header: "Chapter", value: (b) => b.chapter?.name ?? "" },
+  { header: "Slot Time", value: (b) => fmtTime(b.slot?.time) },
+  { header: "Status", value: (b) => (b.status === "interested" ? "pending" : b.status) },
+  { header: "Contacted", value: (b) => (b.isContacted ? "Yes" : "No") },
+  { header: "Booked On", value: (b) => fmtDate(b.createdAt) },
+];
+
+export const allBookingExportColumns: ExportColumn<AdminAllBookingView>[] = [
+  { header: "Type", value: (b) => (b.type === "oneToOne" ? "One-to-One" : "Pooling") },
   { header: "Student Name", value: (b) => b.student.name },
   { header: "Phone", value: (b) => b.student.phone },
   { header: "Faculty", value: (b) => b.faculty.name },

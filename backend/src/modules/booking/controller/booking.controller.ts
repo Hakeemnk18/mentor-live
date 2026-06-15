@@ -35,6 +35,7 @@ import { sendExportFile } from "../../../core/utils/export.util.js";
 import {
   oneToOneBookingExportColumns,
   poolingBookingExportColumns,
+  allBookingExportColumns,
 } from "../utils/booking.export.columns.js";
 
 @injectable()
@@ -322,6 +323,24 @@ export class BookingController implements IBookingController {
     } catch (error) {
       handleError(res, error);
       console.log("error in export pooling bookings ", error);
+    }
+  }
+
+  async exportAllBookings(req: Request, res: Response): Promise<void> {
+    try {
+      const dto = GetAllBookingSchema.parse(req.query);
+      const { format } = ExportFormatSchema.parse(req.query);
+
+      const { data } = await this._getAllBookingUseCase.execute({
+        ...dto,
+        page: 1,
+        limit: EXPORT_MAX_ROWS,
+      });
+
+      sendExportFile(res, "all-bookings", format, data, allBookingExportColumns);
+    } catch (error) {
+      handleError(res, error);
+      console.log("error in export all bookings ", error);
     }
   }
 }
