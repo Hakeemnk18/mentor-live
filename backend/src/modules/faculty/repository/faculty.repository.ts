@@ -335,13 +335,27 @@ export class FacultyRepository implements IFacultyRepository {
           ...(subjectId && { "sv._id": new ObjectId(subjectId) }),
         },
       },
+      // Collapse back to one document per faculty — a faculty teaching
+      // multiple matching subjects (e.g. English + Maths) would otherwise
+      // appear once per subjectOffering after the unwind above.
+      {
+        $group: {
+          _id: "$_id",
+          name: { $first: "$name" },
+          qualifications: { $first: "$qualifications" },
+          description: { $first: "$description" },
+          image: { $first: "$image" },
+          createdAt: { $first: "$createdAt" },
+          price: { $min: "$subjectOffering.price" },
+        },
+      },
       { $sort: sort },
       { $skip: skip },
       { $limit: limit },
       {
         $project: {
           name: 1,
-          price: "$subjectOffering.price",
+          price: 1,
           image: 1,
           qualifications: 1,
           description: 1,

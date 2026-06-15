@@ -175,6 +175,8 @@ const ChapterListingPage: React.FC = () => {
                 subjectName=""
                 syllabusId={syllabusId}
                 classId={classId}
+                syllabusName={syllabusName}
+                className={className}
               />
             ))}
           </div>
