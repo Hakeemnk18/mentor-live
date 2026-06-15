@@ -238,6 +238,7 @@ export const ResponseMessages = {
   STUDENT_UNBLOCK_FAILED: "Failed to unblock student",
   STUDENT_UNBLOCKED: "Student successfully unblocked",
   STUDENT_BLOCKED: "Student successfully blocked",
+  STUDENT_BLOCKED_CANNOT_BOOK: "This phone number has been blocked and cannot make bookings",
 
   BANNER_NOT_FOUND: "Banner not found",
   BANNER_IMAGE_INVALID: "Banner image URL is invalid",

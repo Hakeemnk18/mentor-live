@@ -18,7 +18,7 @@ export class GetAllForAdminStudentUseCase implements IGetAllForAdminStudentUseCa
     const { page, search, limit, filters } = dto;
     let query: Record<string, any> = {};
     let sort: Record<string, any> = {
-      createdAt: 1,
+      createdAt: -1,
     };
 
     if (search && search.trim() !== "") {

@@ -92,6 +92,15 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
       const existingStudent = await this._studentRepository.findByNamePhoneNumber(
         user.phoneNumber,
       );
+
+      /* Blocked (soft-deleted) students cannot create new bookings */
+      if (existingStudent?.isDeleted) {
+        throw new CustomError(
+          ResponseMessages.STUDENT_BLOCKED_CANNOT_BOOK,
+          HttpStatusCode.FORBIDDEN,
+        );
+      }
+
       const newStudent = new Student({
         id: null,
         name: user.name,
