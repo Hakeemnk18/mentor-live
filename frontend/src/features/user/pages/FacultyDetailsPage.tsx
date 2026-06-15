@@ -459,7 +459,7 @@ const FacultyDetailsPage = () => {
                       : "bg-[#111] text-white hover:bg-black cursor-pointer"
                   }`}
                 >
-                  Book One-on-One — ₹{slotPrice}/hr
+                  Book One-to-One — ₹{slotPrice}/hr
                 </button>
                 <button
                   onClick={() => { setBookingType("pooling"); setBookingModalOpen(true); }}

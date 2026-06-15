@@ -55,6 +55,7 @@ export type AdminBookingRaw = {
   class: IdNameView;
   isContacted: boolean;
   syllabus: IdNameView;
+  subject?: IdNameView | undefined;
   slot?: slotIdView | undefined;
   chapter?: IdNameView | undefined;
   mode: BookingMode;
@@ -73,6 +74,7 @@ export interface AdminBookingView {
   class: IdNameView;
   isContacted: boolean;
   syllabus: IdNameView;
+  subject?: IdNameView | undefined;
   slot?: slotIdView | undefined;
   chapter?: IdNameView | undefined;
   mode: BookingMode;
@@ -161,6 +163,7 @@ export interface AdminAllBookingView {
   isContacted: boolean;
   mode: BookingMode;
   status: BookingStatus;
+  subject?: IdNameView | undefined;
   slot?: slotIdView | undefined;
   chapter?: IdNameView | undefined;
   createdAt: string;

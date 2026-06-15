@@ -301,6 +301,64 @@ export class BookingRepository implements IBookingRepository {
     );
 
     /**
+     * 4c️⃣ SUBJECT — resolve via chapter.subjectVariant (chapter mode)
+     *     or booking.subjectVariantId (slot mode), then join Subject.
+     */
+    pipeline.push(
+      // SubjectVariant for chapter-mode bookings
+      {
+        $lookup: {
+          from: "subjectvariants",
+          let: { svId: "$chapter.subjectVariant" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$svId"] } } },
+            { $project: { _id: 1, subject: 1 } },
+          ],
+          as: "chapterSV",
+        },
+      },
+      { $unwind: { path: "$chapterSV", preserveNullAndEmptyArrays: true } },
+      // SubjectVariant for slot-mode bookings
+      {
+        $lookup: {
+          from: "subjectvariants",
+          let: { svId: "$subjectVariantId" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$svId"] } } },
+            { $project: { _id: 1, subject: 1 } },
+          ],
+          as: "slotSV",
+        },
+      },
+      { $unwind: { path: "$slotSV", preserveNullAndEmptyArrays: true } },
+      // Pick the relevant SubjectVariant's subject ObjectId
+      {
+        $addFields: {
+          resolvedSubjectId: {
+            $cond: [
+              { $eq: ["$mode", "chapter"] },
+              "$chapterSV.subject",
+              "$slotSV.subject",
+            ],
+          },
+        },
+      },
+      // Lookup the Subject document
+      {
+        $lookup: {
+          from: "subjects",
+          let: { subjectId: "$resolvedSubjectId" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$subjectId"] } } },
+            { $project: { _id: 1, name: 1 } },
+          ],
+          as: "subjectDoc",
+        },
+      },
+      { $unwind: { path: "$subjectDoc", preserveNullAndEmptyArrays: true } },
+    );
+
+    /**
      * 6️⃣ SEARCH (student name OR faculty name)
      */
     if (search.trim()) {
@@ -337,6 +395,14 @@ export class BookingRepository implements IBookingRepository {
         syllabus: {
           id: "$syllabus._id",
           name: "$syllabus.name",
+        },
+
+        subject: {
+          $cond: [
+            { $ifNull: ["$subjectDoc._id", false] },
+            { id: "$subjectDoc._id", name: "$subjectDoc.name" },
+            "$$REMOVE",
+          ],
         },
 
         // slot comes from FacultySlot collection lookup above
@@ -1286,6 +1352,58 @@ export class BookingRepository implements IBookingRepository {
       { $unwind: { path: "$chapter", preserveNullAndEmptyArrays: true } },
     );
 
+    // ─── 2b. SUBJECT — resolve via chapter.subjectVariant (chapter mode)
+    //         or booking.subjectVariantId (slot mode), then join Subject. ──
+    pipeline.push(
+      {
+        $lookup: {
+          from: "subjectvariants",
+          let: { svId: "$chapter.subjectVariant" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$svId"] } } },
+            { $project: { _id: 1, subject: 1 } },
+          ],
+          as: "chapterSV",
+        },
+      },
+      { $unwind: { path: "$chapterSV", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "subjectvariants",
+          let: { svId: "$subjectVariantId" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$svId"] } } },
+            { $project: { _id: 1, subject: 1 } },
+          ],
+          as: "slotSV",
+        },
+      },
+      { $unwind: { path: "$slotSV", preserveNullAndEmptyArrays: true } },
+      {
+        $addFields: {
+          resolvedSubjectId: {
+            $cond: [
+              { $eq: ["$mode", "chapter"] },
+              "$chapterSV.subject",
+              "$slotSV.subject",
+            ],
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: "subjects",
+          let: { subjectId: "$resolvedSubjectId" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$subjectId"] } } },
+            { $project: { _id: 1, name: 1 } },
+          ],
+          as: "subjectDoc",
+        },
+      },
+      { $unwind: { path: "$subjectDoc", preserveNullAndEmptyArrays: true } },
+    );
+
     // ─── 3. SEARCH ────────────────────────────────────────────────────
     if (search.trim()) {
       pipeline.push({
@@ -1327,6 +1445,14 @@ export class BookingRepository implements IBookingRepository {
         syllabus: {
           id: "$syllabus._id",
           name: "$syllabus.name",
+        },
+
+        subject: {
+          $cond: [
+            { $ifNull: ["$subjectDoc._id", false] },
+            { id: "$subjectDoc._id", name: "$subjectDoc.name" },
+            "$$REMOVE",
+          ],
         },
 
         // Only present when mode === "chapter"

@@ -52,11 +52,18 @@ const oneOnOneColumns: Column<OneOnOneBooking>[] = [
   { key: "faculty", label: "Faculty", render: (b) => b.faculty.name },
   {
     key: "subject",
-    label: "Subject / Chapter",
-    render: (b) =>
-      b.mode === "chapter"
-        ? b.chapter?.name ?? "—"
-        : formatTimeAMPM(b.slot?.time) ?? "—",
+    label: "Subject",
+    render: (b) => b.subject?.name ?? "—",
+  },
+  {
+    key: "chapter",
+    label: "Chapter",
+    render: (b) => b.chapter?.name ?? "—",
+  },
+  {
+    key: "time",
+    label: "Time",
+    render: (b) => formatTimeAMPM(b.slot?.time) ?? "—",
   },
   { key: "class", label: "Class", render: (b) => b.class.name },
   { key: "syllabus", label: "Syllabus", render: (b) => b.syllabus.name },
@@ -100,18 +107,17 @@ const poolColumns: Column<PoolBooking>[] = [
   {
     key: "subject",
     label: "Subject",
-    render: (b) => b.subject?.name ?? "N/A",
+    render: (b) => b.subject?.name ?? "—",
   },
   {
     key: "chapter",
     label: "Chapter",
-    render: (b) => b.chapter?.name ?? "N/A",
+    render: (b) => b.chapter?.name ?? "—",
   },
   {
     key: "time",
     label: "Time",
-    render: (b) =>
-      b.slot?.time ? formatTimeAMPM(b.slot.time) ?? "N/A" : "N/A",
+    render: (b) => formatTimeAMPM(b.slot?.time) ?? "—",
   },
   { key: "class", label: "Class", render: (b) => b.class.name },
   { key: "syllabus", label: "Syllabus", render: (b) => b.syllabus.name },
@@ -169,11 +175,18 @@ const allBookingColumns: Column<AllBooking>[] = [
   { key: "faculty", label: "Faculty", render: (b) => b.faculty.name },
   {
     key: "subject",
-    label: "Subject / Chapter",
-    render: (b) =>
-      b.mode === "chapter"
-        ? b.chapter?.name ?? "—"
-        : formatTimeAMPM(b.slot?.time) ?? "—",
+    label: "Subject",
+    render: (b) => b.subject?.name ?? "—",
+  },
+  {
+    key: "chapter",
+    label: "Chapter",
+    render: (b) => b.chapter?.name ?? "—",
+  },
+  {
+    key: "time",
+    label: "Time",
+    render: (b) => formatTimeAMPM(b.slot?.time) ?? "—",
   },
   { key: "class", label: "Class", render: (b) => b.class.name },
   { key: "syllabus", label: "Syllabus", render: (b) => b.syllabus.name },

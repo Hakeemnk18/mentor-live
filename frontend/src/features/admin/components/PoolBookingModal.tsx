@@ -53,7 +53,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
   // For chapter-mode: pick time slots from faculty, grouped by displayed time
   // (multiple subject variants can each have a FacultySlot at the same time)
   const [availableSlots, setAvailableSlots] = useState<GroupedSlot[]>([]);
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
   const [confirming, setConfirming] = useState(false);
@@ -67,7 +67,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
     // 1. Fetch student list
     setLoadingDetail(true);
     setDetail(null);
-    setSelectedTime(null);
+    setSelectedTimes([]);
     const params: Parameters<typeof getPoolStudents>[0] = {
       facultyId: booking.faculty.id,
       mode: booking.mode,
@@ -110,12 +110,14 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
   const isConfirmed = detail?.status === "confirmed";
 
   const toggleSlot = (time: string) =>
-    setSelectedTime((prev) => (prev === time ? null : time));
+    setSelectedTimes((prev) =>
+      prev.includes(time) ? prev.filter((t) => t !== time) : [...prev, time]
+    );
 
   /* ── confirm ── */
   const handleConfirm = async () => {
-    if (booking.mode === "chapter" && !selectedTime) {
-      toast.error("Select a time slot");
+    if (booking.mode === "chapter" && selectedTimes.length === 0) {
+      toast.error("Select at least one time slot");
       return;
     }
     try {
@@ -126,7 +128,9 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
           slotId: booking.slot!.id,
         });
       } else {
-        const slotIds = availableSlots.find((s) => s.time === selectedTime)?.ids ?? [];
+        const slotIds = availableSlots
+          .filter((s) => selectedTimes.includes(s.time))
+          .flatMap((s) => s.ids);
         await confirmChapterPooling({
           facultyId: booking.faculty.id,
           slotId: slotIds,
@@ -279,7 +283,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {availableSlots.map((s) => {
-                      const selected = selectedTime === s.time;
+                      const selected = selectedTimes.includes(s.time);
                       return (
                         <button
                           key={s.time}
@@ -314,7 +318,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
                 onClick={handleConfirm}
                 disabled={
                   confirming ||
-                  (booking.mode === "chapter" && !selectedTime)
+                  (booking.mode === "chapter" && selectedTimes.length === 0)
                 }
                 className="px-4 py-2 text-sm font-medium bg-[#DB313E] text-white rounded-md hover:bg-[#c02535] disabled:opacity-50 transition-colors"
               >

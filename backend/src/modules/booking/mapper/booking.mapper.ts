@@ -107,6 +107,9 @@ export class BookingMapper {
       class: raw.class,
       syllabus: raw.syllabus,
       isContacted: raw.isContacted,
+      subject: raw.subject
+        ? { id: String(raw.subject.id), name: raw.subject.name }
+        : undefined,
       slot: raw.mode === "slot" ? raw.slot : undefined,
 
       chapter:

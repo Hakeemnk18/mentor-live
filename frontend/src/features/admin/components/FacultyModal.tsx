@@ -1,6 +1,7 @@
 ﻿import { useEffect, useRef, useState, type ReactNode } from "react";
 import toast from "react-hot-toast";
 import SearchableSelect from "../../../shared/components/SearchableSelect";
+import TimeInput from "../../../shared/components/TimeInput";
 import { formatTimeAMPM } from "../../../shared/utils/time.utils";
 import ImageCropModal from "../../../shared/components/ImageCropModal/ImageCropModal";
 import { getSubjectVariants, getChaptersList } from "../../../api/chapter.api";
@@ -135,14 +136,18 @@ export default function FacultyModal({
     DEFAULT_SLOT_TIMES.map((t) => ({ time: t, variantIds: [] }))
   );
   const [newRowTime, setNewRowTime] = useState("");
+  const [newRowTimeKey, setNewRowTimeKey] = useState(0);
 
   /* ---------- Chapter slots ---------- */
   const [chapterSlots, setChapterSlots] = useState<ChapterSlotState[]>([]);
   const [chapterSyllabusId, setChapterSyllabusId] = useState("");
   const [chapterClassId, setChapterClassId] = useState("");
   const [chapterOptions, setChapterOptions] = useState<{ _id: string; name: string }[]>([]);
+  const [chapterOptionsLoaded, setChapterOptionsLoaded] = useState(false);
   const [chapterId, setChapterId] = useState("");
   const [chapterWorking, setChapterWorking] = useState(false);
+  const chapterDropdownRef = useRef<HTMLDivElement>(null);
+  const chapterNoResultsRef = useRef<HTMLParagraphElement>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [slotError, setSlotError] = useState("");
@@ -173,7 +178,9 @@ export default function FacultyModal({
       setChapterSyllabusId("");
       setChapterClassId("");
       setChapterOptions([]);
+      setChapterOptionsLoaded(false);
       setChapterId("");
+      setChapterError("");
       setErrors({});
       return;
     }
@@ -226,7 +233,9 @@ export default function FacultyModal({
       setChapterSyllabusId("");
       setChapterClassId("");
       setChapterOptions([]);
+      setChapterOptionsLoaded(false);
       setChapterId("");
+      setChapterError("");
       setErrors({});
 
       // Subject groups grouped by syllabus+class
@@ -290,15 +299,26 @@ export default function FacultyModal({
   useEffect(() => {
     if (!chapterSyllabusId || !chapterClassId) {
       setChapterOptions([]);
+      setChapterOptionsLoaded(false);
       setChapterId("");
       return;
     }
+    setChapterOptionsLoaded(false);
     getChaptersList({ syllabusId: chapterSyllabusId, classId: chapterClassId })
-      .then((items) =>
-        setChapterOptions(items.map((c) => ({ _id: c._id, name: c.name })))
-      )
+      .then((items) => {
+        setChapterOptions(items.map((c) => ({ _id: c._id, name: c.name })));
+        setChapterOptionsLoaded(true);
+      })
       .catch(handleApiError);
   }, [chapterSyllabusId, chapterClassId]);
+
+  // Scroll the chapter dropdown (or the "no chapters found" alert) into view once it appears
+  useEffect(() => {
+    if (chapterOptionsLoaded) {
+      const target = chapterOptions.length > 0 ? chapterDropdownRef.current : chapterNoResultsRef.current;
+      target?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [chapterOptionsLoaded, chapterOptions]);
 
   if (!open) return null;
 
@@ -454,6 +474,7 @@ export default function FacultyModal({
       )
     );
     setNewRowTime("");
+    setNewRowTimeKey((k) => k + 1);
   };
 
   const handleRemoveTimeRow = (time: string) => {
@@ -1093,18 +1114,12 @@ export default function FacultyModal({
                     <div className="space-y-3">
                       {/* Add-time row */}
                       <div className="flex gap-2">
-                        <select
+                        <TimeInput
+                          key={newRowTimeKey}
                           value={newRowTime}
-                          onChange={(e) => { setNewRowTime(e.target.value); setSlotError(""); }}
-                          className={inp(!!slotError) + " flex-1 text-sm"}
-                        >
-                          <option value="">Add a time slot…</option>
-                          {TIME_OPTIONS.filter(
-                            (opt) => !timeRows.some((r) => r.time === opt.value)
-                          ).map((opt) => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </select>
+                          onChange={(v) => { setNewRowTime(v); setSlotError(""); }}
+                          hasError={!!slotError}
+                        />
                         <button
                           type="button"
                           onClick={handleAddTimeRow}
@@ -1335,6 +1350,7 @@ export default function FacultyModal({
                   onChange={(v) => {
                     setChapterSyllabusId(v);
                     setChapterClassId("");
+                    setChapterError("");
                   }}
                   options={syllabuses.map((s) => ({ value: s._id, label: s.name }))}
                   placeholder="Syllabus"
@@ -1342,15 +1358,21 @@ export default function FacultyModal({
 
                 <SearchableSelect
                   value={chapterClassId}
-                  onChange={setChapterClassId}
+                  onChange={(v) => { setChapterClassId(v); setChapterError(""); }}
                   options={classes.map((c) => ({ value: c._id, label: c.name }))}
                   placeholder={chapterSyllabusId ? "Class" : "Select syllabus first"}
                   disabled={!chapterSyllabusId}
                 />
               </div>
 
+              {chapterSyllabusId && chapterClassId && chapterOptionsLoaded && chapterOptions.length === 0 && (
+                <p ref={chapterNoResultsRef} className="text-xs text-gray-400 mt-2">
+                  No chapters found for this syllabus & class combination.
+                </p>
+              )}
+
               {chapterOptions.length > 0 && (
-                <div className="flex gap-2 mt-2">
+                <div ref={chapterDropdownRef} className="flex gap-2 mt-2">
                   <SearchableSelect
                     value={chapterId}
                     onChange={(v) => { setChapterId(v); setChapterError(""); }}
@@ -1390,10 +1412,10 @@ export default function FacultyModal({
                               type="button"
                               onClick={() => handleBlockChapterSlot(cs)}
                               disabled={chapterWorking}
-                              title="Block chapter slot"
-                              className="ml-1 text-green-400 hover:text-red-500 disabled:opacity-50"
+                              title="Remove chapter"
+                              className="ml-1 text-green-400 hover:text-red-500 disabled:opacity-50 leading-none"
                             >
-                              
+                              {String.fromCharCode(215)}
                             </button>
                           )}
                         </span>

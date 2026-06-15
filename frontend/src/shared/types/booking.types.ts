@@ -70,6 +70,7 @@ export interface OneOnOneBooking {
   /** Backend statuses: "interested" | "confirmed" | "cancelled" | "expired" */
   status: string;
   createdAt: string;
+  subject?: { id: string; name: string };
   slot?: { id: string; time: string };
   chapter?: { id: string; name: string };
 }
@@ -129,6 +130,7 @@ export interface AllBooking {
   /** Backend statuses: "interested" | "confirmed" | "cancelled" | "expired" */
   status: string;
   createdAt: string;
+  subject?: { id: string; name: string };
   slot?: { id: string; time: string };
   chapter?: { id: string; name: string };
 }
