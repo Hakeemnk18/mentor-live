@@ -1,1 +1,0 @@
-{"version":3,"file":"subject.variant.mapper.d.ts","sourceRoot":"","sources":["../../../../src/modules/subject-variant/mappers/subject.variant.mapper.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,cAAc,EAAE,MAAM,uCAAuC,CAAC;AAEvE,qBAAa,oBAAoB;IAC/B,MAAM,CAAC,QAAQ,CAAC,uBAAuB,EAAE,GAAG,GAAG,cAAc,GAAG,IAAI;IAgCpE,MAAM,CAAC,aAAa,CAAC,oBAAoB,EAAE,cAAc,GAAG,GAAG;CAQhE"}

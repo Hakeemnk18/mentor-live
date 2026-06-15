@@ -1,1 +1,0 @@
-{"version":3,"file":"class.schema.d.ts","sourceRoot":"","sources":["../../../../src/modules/class/infrastructure/class.schema.ts"],"names":[],"mappings":"AAAA,OAAO,EAAiB,QAAQ,EAAE,MAAM,UAAU,CAAC;AAEnD,MAAM,WAAW,MAAO,SAAQ,QAAQ;IACtC,IAAI,EAAE,MAAM,CAAC;IACb,SAAS,EAAE,OAAO,CAAC;CACpB;AA4BD,eAAO,MAAM,UAAU;;;;;;eAAsC,CAAC"}

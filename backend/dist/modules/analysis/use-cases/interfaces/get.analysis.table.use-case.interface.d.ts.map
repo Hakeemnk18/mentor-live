@@ -1,1 +1,0 @@
-{"version":3,"file":"get.analysis.table.use-case.interface.d.ts","sourceRoot":"","sources":["../../../../../src/modules/analysis/use-cases/interfaces/get.analysis.table.use-case.interface.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,qBAAqB,EAAE,MAAM,6BAA6B,CAAC;AAEzE,MAAM,WAAW,wBAAwB;IACvC,OAAO,IAAI,OAAO,CAAC,qBAAqB,CAAC,CAAC;CAC3C"}

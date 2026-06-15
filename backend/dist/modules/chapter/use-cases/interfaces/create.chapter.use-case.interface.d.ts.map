@@ -1,1 +1,0 @@
-{"version":3,"file":"create.chapter.use-case.interface.d.ts","sourceRoot":"","sources":["../../../../../src/modules/chapter/use-cases/interfaces/create.chapter.use-case.interface.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,uBAAuB,EAAE,MAAM,kCAAkC,CAAC;AAEhF,MAAM,WAAW,qBAAqB;IACpC,OAAO,CAAC,GAAG,EAAE,uBAAuB,GAAG,OAAO,CAAC,IAAI,CAAC,CAAC;CACtD"}

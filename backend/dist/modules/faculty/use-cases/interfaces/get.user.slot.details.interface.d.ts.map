@@ -1,1 +1,0 @@
-{"version":3,"file":"get.user.slot.details.interface.d.ts","sourceRoot":"","sources":["../../../../../src/modules/faculty/use-cases/interfaces/get.user.slot.details.interface.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,SAAS,EAAE,MAAM,6BAA6B,CAAC;AAE7D,MAAM,WAAW,0BAA0B;IACvC,OAAO,CAAC,SAAS,EAAE,MAAM,EAAE,MAAM,EAAE,MAAM,GAAG,OAAO,CAAC,SAAS,GAAG,IAAI,CAAC,CAAC;CACzE"}
