@@ -1,1 +1,0 @@
-{"version":3,"file":"set.faculty.slot.availability.usecase.interface.d.ts","sourceRoot":"","sources":["../../../../../src/modules/faculty/use-cases/interfaces/set.faculty.slot.availability.usecase.interface.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,sBAAsB,EAAE,MAAM,6BAA6B,CAAC;AAE1E,MAAM,WAAW,kCAAkC;IACjD,OAAO,CACL,GAAG,EAAE,sBAAsB,GAC1B,OAAO,CAAC,IAAI,CAAC,CAAC;CAClB"}

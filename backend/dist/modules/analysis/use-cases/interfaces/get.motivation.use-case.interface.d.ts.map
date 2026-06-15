@@ -1,1 +1,0 @@
-{"version":3,"file":"get.motivation.use-case.interface.d.ts","sourceRoot":"","sources":["../../../../../src/modules/analysis/use-cases/interfaces/get.motivation.use-case.interface.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,0BAA0B,EAAE,MAAM,6BAA6B,CAAC;AAE9E,MAAM,WAAW,gCAAgC;IAC/C,OAAO,IAAI,OAAO,CAAC,0BAA0B,CAAC,CAAC;CAChD"}

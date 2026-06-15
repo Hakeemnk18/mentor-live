@@ -1,1 +1,0 @@
-{"version":3,"file":"find.by.class.and.syllbus.dto.js","sourceRoot":"","sources":["../../../../src/modules/faculty/dtos/find.by.class.and.syllbus.dto.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,2BAA2B,EAAE,MAAM,gDAAgD,CAAC;AAC7F,OAAO,EAAE,cAAc,EAAE,MAAM,6CAA6C,CAAC;AAE7E,MAAM,CAAC,MAAM,qCAAqC,GAChD,2BAA2B,CAAC,MAAM,CAAC;IACjC,OAAO,EAAE,cAAc;IACvB,UAAU,EAAE,cAAc;CAE3B,CAAC,CAAC"}
