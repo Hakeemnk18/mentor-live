@@ -1,1 +1,25 @@
 @import "tailwindcss";
+
+/* Remove tap highlight on iOS/Android */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent iOS Safari auto-zoom on input focus (font-size must be >= 16px) */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+}
+
+/* Hide scrollbar while keeping scroll functionality */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

@@ -53,7 +53,10 @@ const AdminNavbar: React.FC = () => {
     }`;
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-200">
+    <header
+      className="sticky top-0 z-50 w-full bg-white border-b border-gray-200"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
       <div className="flex items-center justify-between h-16 px-4 lg:px-6">
 
         {/* Brand - Added shrink-0 and min-w-max so it never squishes */}

@@ -4,7 +4,7 @@ export default function NotFoundPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
+    <div className="min-h-dvh bg-gray-50 flex flex-col items-center justify-center px-4">
       {/* Card */}
       <div className="w-full max-w-md text-center">
         {/* Logo mark */}

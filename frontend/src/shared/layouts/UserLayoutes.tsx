@@ -7,7 +7,7 @@ const WA_URL = `https://wa.me/${WA_NUMBER}`;
 
 const UserLayout = () => {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <UserNavbar />
 
       <main className="flex-1">
@@ -22,7 +22,8 @@ const UserLayout = () => {
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Chat on WhatsApp"
-        className="fixed bottom-6 right-6 z-50 group flex items-center gap-2"
+        className="fixed right-6 z-50 group flex items-center gap-2"
+        style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
       >
         {/* Tooltip */}
         <span className="hidden sm:block opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all duration-200 bg-gray-900 text-white text-xs font-medium px-3 py-1.5 rounded-full whitespace-nowrap shadow-lg pointer-events-none">
