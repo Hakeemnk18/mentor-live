@@ -12,7 +12,7 @@ const AdminLayout = () => {
   ];
   const hideNavbar = hideNavbarRoutes.includes(location.pathname);
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       { !hideNavbar && <AdminNavbar />}
       
       <main className="flex-1 px-4 py-4 md:px-6 md:py-6">

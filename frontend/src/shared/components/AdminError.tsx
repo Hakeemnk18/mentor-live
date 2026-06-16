@@ -5,7 +5,7 @@ export default function AdminError() {
   console.error("Admin Route Error:", error);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <div className="min-h-dvh flex items-center justify-center bg-gray-50 p-4">
       <div className="max-w-md w-full bg-white rounded-xl shadow-lg border border-red-100 overflow-hidden">
         <div className="bg-red-50 p-6 flex flex-col items-center text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
