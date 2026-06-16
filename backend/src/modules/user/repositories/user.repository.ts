@@ -24,7 +24,7 @@ export class UserRepository implements IUserRepository {
 
   async findByEmail(email: string): Promise<User | null> {
     const users = await UserModel.find({}).lean();
-    console.log("users", users);
+    
     const foundDocument = await UserModel.findOne({
       email: email.toLowerCase(),
     }).lean();

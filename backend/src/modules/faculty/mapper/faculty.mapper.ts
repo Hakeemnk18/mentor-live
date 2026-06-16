@@ -2,6 +2,7 @@ import { Faculty } from "../entities/faculty.entity.js";
 import type {
   FacultyDetailsViewForUser,
   FacultyView,
+  FeaturedFacultyView,
 } from "../types/faculty.type.js";
 
 export class FacultyMapper {
@@ -35,23 +36,17 @@ export class FacultyMapper {
         }),
       ),
 
-      slots: (facultyModelData.slots ?? []).map((slot: any) => ({
-        id: slot._id?.toString(),
-        time: slot.time,
-        isAvailable: slot.isAvailable,
-        pool: (slot.pool ?? []).map((u: any) => u.toString()),
-        poolLimit: slot.poolLimit,
-      })),
-
       chapterSlots: (facultyModelData.chapterSlots ?? []).map((slot: any) => ({
         id: slot._id?.toString(),
         chapterId: slot.chapter?.toString(),
         isAvailable: slot.isAvailable,
         pool: (slot.pool ?? []).map((u: any) => u.toString()),
         poolLimit: slot.poolLimit,
+        poolCycle: slot.poolCycle ?? 1,
       })),
 
       isDeleted: facultyModelData.isDeleted,
+      isFeatured: facultyModelData.isFeatured ?? false,
     });
   }
 
@@ -69,19 +64,15 @@ export class FacultyMapper {
         variantId: so.variantId,
         price: so.price,
       })),
-      slots: facultyEntity.slots.map((slot) => ({
-        time: slot.time,
-        isAvailable: slot.isAvailable,
-        pool: slot.pool,
-        poolLimit: slot.poolLimit,
-      })),
       chapterSlots: facultyEntity.chapterSlots.map((slot) => ({
         chapter: slot.chapterId,
         isAvailable: slot.isAvailable,
         pool: slot.pool,
         poolLimit: slot.poolLimit,
+        poolCycle: slot.poolCycle,
       })),
       isDeleted: facultyEntity.isDeleted,
+      isFeatured: facultyEntity.isFeatured,
     };
   }
 
@@ -94,6 +85,20 @@ export class FacultyMapper {
       demoClass: raw.demoClass,
       image: raw.image,
       isDeleted: raw.isDeleted ?? false,
+      isFeatured: raw.isFeatured ?? false,
+    };
+  }
+
+  static toFeaturedView(raw: any): FeaturedFacultyView {
+    return {
+      id: raw._id?.toString() ?? raw.id,
+      name: raw.name,
+      qualifications: raw.qualifications ?? [],
+      description: raw.description,
+      image: {
+        url: raw.image?.url ?? "",
+        publicId: raw.image?.publicId ?? "",
+      },
     };
   }
 
@@ -132,11 +137,11 @@ export class FacultyMapper {
       image: doc.image.url,
       price,
       slot: {
-        id: doc.slots._id.toString(),
-        isAvailable: doc.slots.isAvailable,
-        time: doc.slots.time,
-        pool: doc.slots.pool,
-        poolLimit: doc.slots.poolLimit,
+        id: doc.slot._id?.toString() ?? doc.slot.id,
+        isAvailable: doc.slot.isAvailable,
+        time: doc.slot.time,
+        pool: (doc.slot.pool ?? []).map((u: any) => ({ id: u.toString() })),
+        poolLimit: doc.slot.poolLimit,
       },
     };
   }

@@ -7,15 +7,27 @@ export type FacultySlotPayload = {
   time: string; // ISO string
 };
 
+/**
+ * Per-variant slot group — sent to the backend as `subjectSlots[]`.
+ * One entry per subject variant the faculty teaches.
+ */
+export type SubjectSlotGroup = {
+  variantId: string;
+  times: { time: string }[]; // ISO date strings
+};
+
 /** subjects is now an array of { variantId, price } — price lives per variant */
 export type CreateFacultyPayload = {
   name: string;
   qualifications: string[];
   description: string;
   demoClass: string;
-  image: FacultyImagePayload;
+  image?: FacultyImagePayload;
+  isFeatured?: boolean;
   subjects: { variantId: string; price: number }[];
-  slots: FacultySlotPayload[];
+  /** Time-based slots keyed per variant — replaces the old flat slots[] */
+  subjectSlots?: SubjectSlotGroup[];
+  chapterSlots?: { chapter: string }[];
 };
 
 export type UpdateFacultyPayload = {
@@ -24,7 +36,17 @@ export type UpdateFacultyPayload = {
   description?: string;
   demoClass?: string;
   image?: { url: string; publicId: string };
+  isFeatured?: boolean;
   subjects?: { variantId: string; price: number }[];
+};
+
+/** Lightweight card shape returned by the dedicated featured-faculty endpoint */
+export type FeaturedFaculty = {
+  id: string;
+  name: string;
+  qualifications: string[];
+  description: string;
+  image: { url: string; publicId: string };
 };
 
 export type FacultyListParams = {
@@ -50,6 +72,7 @@ export type FacultyByChapterParams = {
   chapterId: string;
   page?: number;
   limit?: number;
+  search?: string;
 };
 
 export type FacultyRow = {
@@ -60,6 +83,7 @@ export type FacultyRow = {
   demoClass: string;
   image: string | { url: string; publicId: string };
   isDeleted: boolean;
+  isFeatured: boolean;
 };
 
 /** price is now per subject offering, not top-level */
@@ -73,10 +97,12 @@ export type SubjectOffering = {
 
 export type TimeSlot = {
   id: string;
+  /** variantId this slot belongs to (from FacultySlot collection) */
+  variantId: string;
   time: string;
   isAvailable: boolean;
   poolLimit: number;
-  pool: any[];
+  pool: unknown[];
 };
 
 export type ChapterSlot = {
@@ -84,7 +110,7 @@ export type ChapterSlot = {
   chapter: string | { id: string; name: string };
   isAvailable: boolean;
   poolLimit: number;
-  pool: any[];
+  pool: unknown[];
 };
 
 export type FacultyData = {
@@ -95,7 +121,9 @@ export type FacultyData = {
   demoClass: string;
   image: string | { url: string; publicId: string };
   isDeleted: boolean;
+  isFeatured: boolean;
   subjectOffering: SubjectOffering[];
+  /** Slots now live in FacultySlot collection — each has a variantId */
   slots: TimeSlot[];
   chapterSlots: ChapterSlot[];
 };
@@ -113,6 +141,11 @@ export type SubjectGroup = {
   selectedVariants: SubjectVariant[];
   /** price per variantId */
   prices: Record<string, number>;
+  /**
+   * Time slots assigned to this subject group's variants.
+   * Key = variantId, value = HH:mm strings.
+   */
+  slotTimes: Record<string, string[]>;
 };
 
 export type FacultyModalData = {
@@ -120,18 +153,20 @@ export type FacultyModalData = {
   qualifications?: string[];
   description?: string;
   demoClass?: string;
+  isFeatured?: boolean;
   image?: string | { url: string; publicId: string };
   subjectOffering?: SubjectOffering[];
   slots?: {
     id?: string;
+    variantId?: string;
     time: string;
     isAvailable?: boolean;
-    pool?: any[];
+    pool?: unknown[];
   }[];
   chapterSlots?: {
     id?: string;
     chapter: string | { id: string; name: string };
-    pool?: any[];
+    pool?: unknown[];
     isAvailable?: boolean;
   }[];
 };

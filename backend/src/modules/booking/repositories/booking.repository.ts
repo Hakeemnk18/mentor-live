@@ -5,6 +5,7 @@ import type { IGetAllDocDB } from "../../../core/shared/interfaces/get.all.doc.i
 import type { GetAllOneToOneBookingDto } from "../dto/get.all.one.to.one.dto.js";
 import { Booking } from "../entities/booking.entity.js";
 import { BookingModel } from "../infrastructure/booking.schema.js";
+import { FacultySlotModel } from "../../faculty-slot/infrastructure/faculty.slot.schema.js";
 import { BookingMapper } from "../mapper/booking.mapper.js";
 import { Types } from "mongoose";
 import type {
@@ -37,9 +38,9 @@ import type {
 const { ObjectId } = Types;
 
 export class BookingRepository implements IBookingRepository {
-  async create(bookingEntity: Booking): Promise<Booking> {
+  async create(bookingEntity: Booking, session?: ClientSession): Promise<Booking> {
     const persistenceData = BookingMapper.toPersistence(bookingEntity);
-    const created = await BookingModel.create(persistenceData);
+    const [created] = await BookingModel.create([persistenceData], { ...(session ? { session } : {}) });
 
     const domainBooking = BookingMapper.toDomain(created);
     if (!domainBooking) {
@@ -73,7 +74,7 @@ export class BookingRepository implements IBookingRepository {
     const updatedDocument = await BookingModel.findByIdAndUpdate(
       bookingEntity.id,
       { $set: persistenceData },
-      { new: true, session: session ?? null },
+      { new: true, ...(session ? { session } : {}) },
     ).lean();
 
     if (!updatedDocument) {
@@ -152,8 +153,12 @@ export class BookingRepository implements IBookingRepository {
     return Boolean(existing);
   }
 
-  async deleteById(id: string): Promise<void> {
-    await BookingModel.updateOne({ _id: id }, { $set: { isDeleted: true } });
+  async deleteById(id: string, session?: ClientSession): Promise<void> {
+    await BookingModel.updateOne(
+      { _id: id },
+      { $set: { isDeleted: true } },
+      { ...(session ? { session } : {}) },
+    );
   }
 
   async findAllOneToOneBooking(
@@ -277,6 +282,83 @@ export class BookingRepository implements IBookingRepository {
     );
 
     /**
+     * 4b️⃣ LOOKUP SLOT from FacultySlot collection (slots no longer embedded in Faculty)
+     */
+    pipeline.push(
+      {
+        $lookup: {
+          from: "facultyslots",
+          let: { slotIds: "$slotId" },
+          pipeline: [
+            { $match: { $expr: { $in: ["$_id", "$$slotIds"] } } },
+            { $limit: 1 },
+            { $project: { _id: 1, time: 1 } },
+          ],
+          as: "slotDoc",
+        },
+      },
+      { $addFields: { slotDoc: { $arrayElemAt: ["$slotDoc", 0] } } },
+    );
+
+    /**
+     * 4c️⃣ SUBJECT — resolve via chapter.subjectVariant (chapter mode)
+     *     or booking.subjectVariantId (slot mode), then join Subject.
+     */
+    pipeline.push(
+      // SubjectVariant for chapter-mode bookings
+      {
+        $lookup: {
+          from: "subjectvariants",
+          let: { svId: "$chapter.subjectVariant" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$svId"] } } },
+            { $project: { _id: 1, subject: 1 } },
+          ],
+          as: "chapterSV",
+        },
+      },
+      { $unwind: { path: "$chapterSV", preserveNullAndEmptyArrays: true } },
+      // SubjectVariant for slot-mode bookings
+      {
+        $lookup: {
+          from: "subjectvariants",
+          let: { svId: "$subjectVariantId" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$svId"] } } },
+            { $project: { _id: 1, subject: 1 } },
+          ],
+          as: "slotSV",
+        },
+      },
+      { $unwind: { path: "$slotSV", preserveNullAndEmptyArrays: true } },
+      // Pick the relevant SubjectVariant's subject ObjectId
+      {
+        $addFields: {
+          resolvedSubjectId: {
+            $cond: [
+              { $eq: ["$mode", "chapter"] },
+              "$chapterSV.subject",
+              "$slotSV.subject",
+            ],
+          },
+        },
+      },
+      // Lookup the Subject document
+      {
+        $lookup: {
+          from: "subjects",
+          let: { subjectId: "$resolvedSubjectId" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$subjectId"] } } },
+            { $project: { _id: 1, name: 1 } },
+          ],
+          as: "subjectDoc",
+        },
+      },
+      { $unwind: { path: "$subjectDoc", preserveNullAndEmptyArrays: true } },
+    );
+
+    /**
      * 6️⃣ SEARCH (student name OR faculty name)
      */
     if (search.trim()) {
@@ -290,9 +372,6 @@ export class BookingRepository implements IBookingRepository {
       });
     }
 
-    // /**
-    //  * 7️⃣ PROJECT (normalize for admin table)
-    //  */
     pipeline.push({
       $project: {
         id: "$_id",
@@ -318,42 +397,19 @@ export class BookingRepository implements IBookingRepository {
           name: "$syllabus.name",
         },
 
+        subject: {
+          $cond: [
+            { $ifNull: ["$subjectDoc._id", false] },
+            { id: "$subjectDoc._id", name: "$subjectDoc.name" },
+            "$$REMOVE",
+          ],
+        },
+
+        // slot comes from FacultySlot collection lookup above
         slot: {
           $cond: [
             { $eq: ["$mode", "slot"] },
-            {
-              $let: {
-                vars: {
-                  matchedSlot: {
-                    $arrayElemAt: [
-                      {
-                        $filter: {
-                          input: "$faculty.slots",
-                          as: "slot",
-                          cond: {
-                            $in: [
-                              "$$slot._id",
-                              {
-                                $map: {
-                                  input: "$slotId",
-                                  as: "id",
-                                  in: { $toObjectId: "$$id" },
-                                },
-                              },
-                            ],
-                          },
-                        },
-                      },
-                      0,
-                    ],
-                  },
-                },
-                in: {
-                  id: "$$matchedSlot._id",
-                  time: "$$matchedSlot.time",
-                },
-              },
-            },
+            { id: "$slotDoc._id", time: "$slotDoc.time" },
             "$$REMOVE",
           ],
         },
@@ -426,7 +482,16 @@ export class BookingRepository implements IBookingRepository {
     };
 
     if (mode) baseMatch.mode = mode;
-    if (status) baseMatch.status = status;
+    if (status) {
+      baseMatch.status = status;
+    } else {
+      /*
+       * Without an explicit status filter, drop cancelled/expired bookings
+       * (e.g. a student removed from the pool) so they don't inflate the
+       * student count for this slot/chapter.
+       */
+      baseMatch.status = { $nin: ["cancelled", "expired"] };
+    }
     if (typeof isContacted === "boolean") {
       baseMatch.isContacted = isContacted;
     }
@@ -505,6 +570,88 @@ export class BookingRepository implements IBookingRepository {
     );
 
     /**
+     * 5b️⃣ LOOKUP SLOT from FacultySlot collection (slots no longer embedded in Faculty)
+     * booking.slotId is ObjectId[] — look up the first one.
+     */
+    pipeline.push(
+      {
+        $lookup: {
+          from: "facultyslots",
+          let: { slotIds: "$slotId" },
+          pipeline: [
+            { $match: { $expr: { $in: ["$_id", "$$slotIds"] } } },
+            { $limit: 1 },
+            { $project: { _id: 1, time: 1 } },
+          ],
+          as: "slotDoc",
+        },
+      },
+      {
+        $addFields: {
+          slotDoc: { $arrayElemAt: ["$slotDoc", 0] },
+        },
+      },
+    );
+
+    /**
+     * 5c️⃣ SUBJECT — resolve via chapter.subjectVariant (chapter mode)
+     *     or booking.subjectVariantId (slot mode), then join Subject.
+     */
+    pipeline.push(
+      // SubjectVariant for chapter-mode bookings
+      {
+        $lookup: {
+          from: "subjectvariants",
+          let: { svId: "$chapter.subjectVariant" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$svId"] } } },
+            { $project: { _id: 1, subject: 1 } },
+          ],
+          as: "chapterSV",
+        },
+      },
+      { $unwind: { path: "$chapterSV", preserveNullAndEmptyArrays: true } },
+      // SubjectVariant for slot-mode bookings
+      {
+        $lookup: {
+          from: "subjectvariants",
+          let: { svId: "$subjectVariantId" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$svId"] } } },
+            { $project: { _id: 1, subject: 1 } },
+          ],
+          as: "slotSV",
+        },
+      },
+      { $unwind: { path: "$slotSV", preserveNullAndEmptyArrays: true } },
+      // Pick the relevant SubjectVariant's subject ObjectId
+      {
+        $addFields: {
+          resolvedSubjectId: {
+            $cond: [
+              { $eq: ["$mode", "chapter"] },
+              "$chapterSV.subject",
+              "$slotSV.subject",
+            ],
+          },
+        },
+      },
+      // Lookup the Subject document
+      {
+        $lookup: {
+          from: "subjects",
+          let: { subjectId: "$resolvedSubjectId" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$subjectId"] } } },
+            { $project: { _id: 1, name: 1 } },
+          ],
+          as: "subjectDoc",
+        },
+      },
+      { $unwind: { path: "$subjectDoc", preserveNullAndEmptyArrays: true } },
+    );
+
+    /**
      * 6️⃣ SEARCH
      */
     if (search.trim()) {
@@ -514,7 +661,7 @@ export class BookingRepository implements IBookingRepository {
     }
 
     /**
-     * 7️⃣ GROUP → THIS IS THE CORE CHANGE
+     * 7️⃣ GROUP
      */
     pipeline.push({
       $group: {
@@ -523,46 +670,27 @@ export class BookingRepository implements IBookingRepository {
           mode: "$mode",
           slotId: { $arrayElemAt: ["$slotId", 0] },
           chapterId: "$chapterId",
+          /*
+           * Group separately by poolCycle so that once a round is
+           * confirmed (and the slot's/chapter slot's poolCycle is
+           * incremented), the confirmed bookings keep their own row
+           * instead of disappearing or being merged with a brand-new
+           * round for the same slot/chapter.
+           */
+          poolCycle: { $ifNull: ["$poolCycle", 1] },
         },
 
         faculty: { $first: "$faculty" },
         chapter: { $first: "$chapter" },
+        subject: { $first: "$subjectDoc" },
+        // slotDoc is the FacultySlot document looked up above
         slot: {
           $first: {
             $cond: [
               { $eq: ["$mode", "slot"] },
               {
-                $let: {
-                  vars: {
-                    matchedSlot: {
-                      $arrayElemAt: [
-                        {
-                          $filter: {
-                            input: "$faculty.slots",
-                            as: "slot",
-                            cond: {
-                              $in: [
-                                "$$slot._id",
-                                {
-                                  $map: {
-                                    input: "$slotId",
-                                    as: "id",
-                                    in: { $toObjectId: "$$id" },
-                                  },
-                                },
-                              ],
-                            },
-                          },
-                        },
-                        0,
-                      ],
-                    },
-                  },
-                  in: {
-                    id: "$$matchedSlot._id",
-                    time: "$$matchedSlot.time",
-                  },
-                },
+                id: "$slotDoc._id",
+                time: "$slotDoc.time",
               },
               null,
             ],
@@ -593,6 +721,13 @@ export class BookingRepository implements IBookingRepository {
           name: "$faculty.name",
         },
         mode: 1,
+        subject: {
+          $cond: [
+            { $ifNull: ["$subject._id", false] },
+            { id: "$subject._id", name: "$subject.name" },
+            "$$REMOVE",
+          ],
+        },
         chapter: {
           $cond: [
             { $eq: ["$mode", "chapter"] },
@@ -614,6 +749,7 @@ export class BookingRepository implements IBookingRepository {
           id: "$syllabus._id",
           name: "$syllabus.name",
         },
+        poolCycle: "$_id.poolCycle",
         totalStudents: 1,
         pendingContactCount: 1,
         hasPendingContact: {
@@ -650,7 +786,7 @@ export class BookingRepository implements IBookingRepository {
     dto: GetAdminPoolingStudentsDto,
   ): Promise<AdminPoolingStudentRaw[]> {
     const pipeline: any[] = [];
-    const { facultyId, slotId, chapterId, mode } = dto;
+    const { facultyId, slotId, chapterId, mode, poolCycle } = dto;
 
     /* 1️⃣ Base match */
     pipeline.push({
@@ -659,22 +795,66 @@ export class BookingRepository implements IBookingRepository {
         type: "pooling",
         mode,
         isDeleted: false,
+        status: { $nin: ["cancelled", "expired"] },
       },
     });
 
-    /* 2️⃣ Mode-specific match */
+    /* 2️⃣ Mode-specific match
+     *
+     * Restrict to a single pooling round, identified by `poolCycle`. This
+     * is normally passed by the admin "View" button (the row's own
+     * poolCycle from findAllPoolingBooking's grouping). If omitted, fall
+     * back to the slot's/chapter slot's CURRENT poolCycle — the same
+     * physical slot can be confirmed, re-opened, and re-booked many times,
+     * and without this, bookings from different rounds would be grouped
+     * together just because they share the same slotId/chapterId.
+     *
+     * Bookings created before poolCycle existed have no `poolCycle` field;
+     * `$ifNull` treats those as cycle 1.
+     */
     if (mode === "slot") {
+      let targetPoolCycle = poolCycle;
+      if (targetPoolCycle === undefined) {
+        const slotDoc = await FacultySlotModel.findById(slotId)
+          .select("poolCycle")
+          .lean();
+        targetPoolCycle = (slotDoc as any)?.poolCycle ?? 1;
+      }
+
       pipeline.push({
         $match: {
-          slotId: { $in: [slotId] },
+          // slotId is ObjectId[] in the booking document
+          slotId: { $in: [new Types.ObjectId(slotId)] },
+          $expr: {
+            $eq: [{ $ifNull: ["$poolCycle", 1] }, targetPoolCycle],
+          },
         },
       });
     }
 
     if (mode === "chapter") {
+      let targetPoolCycle = poolCycle;
+      if (targetPoolCycle === undefined) {
+        const facultyDoc = await FacultyModel.findOne(
+          {
+            _id: new Types.ObjectId(facultyId),
+            "chapterSlots.chapter": new Types.ObjectId(chapterId),
+          },
+          {
+            chapterSlots: {
+              $elemMatch: { chapter: new Types.ObjectId(chapterId) },
+            },
+          },
+        ).lean();
+        targetPoolCycle = (facultyDoc as any)?.chapterSlots?.[0]?.poolCycle ?? 1;
+      }
+
       pipeline.push({
         $match: {
           chapterId: new Types.ObjectId(chapterId),
+          $expr: {
+            $eq: [{ $ifNull: ["$poolCycle", 1] }, targetPoolCycle],
+          },
         },
       });
     }
@@ -737,41 +917,89 @@ export class BookingRepository implements IBookingRepository {
       },
     );
 
-    /* 4️⃣ Slot resolution (only for slot mode) */
-    pipeline.push({
-      $addFields: {
-        slot: {
-          $cond: [
-            { $eq: ["$mode", "slot"] },
-            {
-              $let: {
-                vars: {
-                  matchedSlot: {
-                    $arrayElemAt: [
-                      {
-                        $filter: {
-                          input: "$faculty.slots",
-                          as: "slot",
-                          cond: {
-                            $eq: ["$$slot._id", { $toObjectId: slotId }],
-                          },
-                        },
-                      },
-                      0,
-                    ],
-                  },
-                },
-                in: {
-                  id: "$$matchedSlot._id",
-                  time: "$$matchedSlot.time",
-                },
-              },
-            },
-            null,
+    /* 4️⃣ Slot resolution — lookup from FacultySlot collection (slots no longer embedded) */
+    pipeline.push(
+      {
+        $lookup: {
+          from: "facultyslots",
+          let: { slotIds: "$slotId" },
+          pipeline: [
+            { $match: { $expr: { $in: ["$_id", "$$slotIds"] } } },
+            { $limit: 1 },
+            { $project: { _id: 1, time: 1 } },
           ],
+          as: "slotDoc",
         },
       },
-    });
+      {
+        $addFields: {
+          slot: {
+            $cond: [
+              { $eq: ["$mode", "slot"] },
+              {
+                $let: {
+                  vars: { s: { $arrayElemAt: ["$slotDoc", 0] } },
+                  in: { id: "$$s._id", time: "$$s.time" },
+                },
+              },
+              null,
+            ],
+          },
+        },
+      },
+    );
+
+    /* 4b️⃣ Subject resolution — chapter.subjectVariant → Subject (chapter mode)
+     *       or booking.subjectVariantId → Subject (slot mode) */
+    pipeline.push(
+      {
+        $lookup: {
+          from: "subjectvariants",
+          let: { svId: "$chapter.subjectVariant" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$svId"] } } },
+            { $project: { _id: 1, subject: 1 } },
+          ],
+          as: "chapterSV",
+        },
+      },
+      { $unwind: { path: "$chapterSV", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "subjectvariants",
+          let: { svId: "$subjectVariantId" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$svId"] } } },
+            { $project: { _id: 1, subject: 1 } },
+          ],
+          as: "slotSV",
+        },
+      },
+      { $unwind: { path: "$slotSV", preserveNullAndEmptyArrays: true } },
+      {
+        $addFields: {
+          resolvedSubjectId: {
+            $cond: [
+              { $eq: ["$mode", "chapter"] },
+              "$chapterSV.subject",
+              "$slotSV.subject",
+            ],
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: "subjects",
+          let: { subjectId: "$resolvedSubjectId" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$subjectId"] } } },
+            { $project: { _id: 1, name: 1 } },
+          ],
+          as: "subjectDoc",
+        },
+      },
+      { $unwind: { path: "$subjectDoc", preserveNullAndEmptyArrays: true } },
+    );
 
     //group faculty
     pipeline.push({
@@ -791,19 +1019,21 @@ export class BookingRepository implements IBookingRepository {
         syllabus: { $first: "$syllabus" },
         slot: { $first: "$slot" },
         chapter: { $first: "$chapter" },
+        subject: { $first: "$subjectDoc" },
+        status: { $first: "$status" },
 
-        student: {
+        students: {
           $push: {
             id: "$student._id",
             name: "$student.name",
-            phone: "$student.phone",
+            phone: "$student.phoneNumber",   // Student schema uses phoneNumber
             isContacted: "$isContacted",
           },
         },
       },
     });
 
-    /* 5️⃣ Final projection (EXACTLY your type) */
+    /* 5️⃣ Final projection */
     pipeline.push({
       $project: {
         _id: 0,
@@ -825,6 +1055,14 @@ export class BookingRepository implements IBookingRepository {
           name: "$syllabus.name",
         },
 
+        subject: {
+          $cond: [
+            { $ifNull: ["$subject._id", false] },
+            { id: "$subject._id", name: "$subject.name" },
+            "$$REMOVE",
+          ],
+        },
+
         slot: {
           $cond: [{ $eq: ["$mode", "slot"] }, "$slot", "$$REMOVE"],
         },
@@ -840,7 +1078,8 @@ export class BookingRepository implements IBookingRepository {
           ],
         },
 
-        student: 1,
+        status: 1,
+        students: 1,
       },
     });
 
@@ -851,23 +1090,25 @@ export class BookingRepository implements IBookingRepository {
 
   async expireOtherBookingsForSlots(
     params: ExpireOtherBookingsForSlotParams,
-    session: ClientSession,
+    session?: ClientSession,
   ): Promise<void> {
     const { facultyId, slotIds, excludeBookingIds } = params;
 
-    const result = await BookingModel.updateMany(
+    /* slotId is now an ObjectId[] in the schema — cast for the query */
+    const slotObjectIds = slotIds.map((id) => new ObjectId(id));
+    const excludeObjectIds = excludeBookingIds.map((id) => new ObjectId(id));
+
+    await BookingModel.updateMany(
       {
-        facultyId,
-        slotId: { $in: slotIds },
+        facultyId: new ObjectId(facultyId),
+        slotId: { $elemMatch: { $in: slotObjectIds } },
         mode: "slot",
         status: "interested",
         isDeleted: false,
-        _id: { $nin: excludeBookingIds },
+        _id: { $nin: excludeObjectIds },
       },
       {
-        $set: {
-          status: "expired",
-        },
+        $set: { status: "expired" },
       },
       session ? { session } : undefined,
     );
@@ -1111,6 +1352,58 @@ export class BookingRepository implements IBookingRepository {
       { $unwind: { path: "$chapter", preserveNullAndEmptyArrays: true } },
     );
 
+    // ─── 2b. SUBJECT — resolve via chapter.subjectVariant (chapter mode)
+    //         or booking.subjectVariantId (slot mode), then join Subject. ──
+    pipeline.push(
+      {
+        $lookup: {
+          from: "subjectvariants",
+          let: { svId: "$chapter.subjectVariant" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$svId"] } } },
+            { $project: { _id: 1, subject: 1 } },
+          ],
+          as: "chapterSV",
+        },
+      },
+      { $unwind: { path: "$chapterSV", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "subjectvariants",
+          let: { svId: "$subjectVariantId" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$svId"] } } },
+            { $project: { _id: 1, subject: 1 } },
+          ],
+          as: "slotSV",
+        },
+      },
+      { $unwind: { path: "$slotSV", preserveNullAndEmptyArrays: true } },
+      {
+        $addFields: {
+          resolvedSubjectId: {
+            $cond: [
+              { $eq: ["$mode", "chapter"] },
+              "$chapterSV.subject",
+              "$slotSV.subject",
+            ],
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: "subjects",
+          let: { subjectId: "$resolvedSubjectId" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$subjectId"] } } },
+            { $project: { _id: 1, name: 1 } },
+          ],
+          as: "subjectDoc",
+        },
+      },
+      { $unwind: { path: "$subjectDoc", preserveNullAndEmptyArrays: true } },
+    );
+
     // ─── 3. SEARCH ────────────────────────────────────────────────────
     if (search.trim()) {
       pipeline.push({
@@ -1152,6 +1445,14 @@ export class BookingRepository implements IBookingRepository {
         syllabus: {
           id: "$syllabus._id",
           name: "$syllabus.name",
+        },
+
+        subject: {
+          $cond: [
+            { $ifNull: ["$subjectDoc._id", false] },
+            { id: "$subjectDoc._id", name: "$subjectDoc.name" },
+            "$$REMOVE",
+          ],
         },
 
         // Only present when mode === "chapter"

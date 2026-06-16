@@ -1,3 +1,8 @@
+export type GetAllSubjectForUserFilters = {
+  syllabusId?: string | undefined;
+  classId?: string | undefined;
+};
+
 export interface IGetAllSubjectForUserUseCase {
-  execute(): Promise<{ id: string; name: string }[]>;
+  execute(filters?: GetAllSubjectForUserFilters): Promise<{ id: string; name: string }[]>;
 }

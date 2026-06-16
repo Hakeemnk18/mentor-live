@@ -10,13 +10,23 @@ export interface IBooking extends Document {
   facultyId: Types.ObjectId;
   type: BookingType;
   mode: BookingMode;
-  slotId?: string[];
+  /** For slot-mode: the FacultySlot _id(s) */
+  slotId?: Types.ObjectId[];
+  /** For slot-mode: which subject variant the student is booking for */
+  subjectVariantId?: Types.ObjectId;
   chapterId?: Types.ObjectId;
+  /**
+   * For pooling bookings (slot or chapter mode): the pool round this
+   * booking belongs to. Stamped from the slot's/chapter slot's current
+   * `poolCycle` at creation time, so it stays tied to that round even
+   * after the slot is consumed and reused for a later round.
+   */
+  poolCycle?: number;
   isContacted: boolean;
   status: BookingStatus;
   isDeleted: boolean;
   class: Types.ObjectId;
-  syllabus: Types.ObjectId
+  syllabus: Types.ObjectId;
 }
 
 const bookingSchema = new Schema<IBooking>(
@@ -46,17 +56,29 @@ const bookingSchema = new Schema<IBooking>(
     },
 
     slotId: {
-      type: [String],
+      type: [Schema.Types.ObjectId],
+      ref: "FacultySlot",
+    },
+
+    subjectVariantId: {
+      type: Schema.Types.ObjectId,
+      ref: "SubjectVariant",
     },
 
     chapterId: {
       type: Schema.Types.ObjectId,
       ref: "Chapter",
     },
+
+    poolCycle: {
+      type: Number,
+    },
+
     class: {
       type: Schema.Types.ObjectId,
       ref: "Class",
     },
+
     syllabus: {
       type: Schema.Types.ObjectId,
       ref: "Syllabus",
@@ -81,5 +103,8 @@ const bookingSchema = new Schema<IBooking>(
     timestamps: true,
   },
 );
+
+bookingSchema.index({ facultyId: 1, status: 1 });
+bookingSchema.index({ userId: 1, status: 1 });
 
 export const BookingModel = model<IBooking>("Booking", bookingSchema);

@@ -32,6 +32,11 @@ router.get('/list',
   (req, res) => facultyController.findAllFacultyForUser(req, res)
 )
 
+// get featured faculty for landing page (no auth, max 8)
+router.get('/featured',
+  (req, res) => facultyController.getFeaturedFaculty(req, res)
+)
+
 // get faculty details for admin
 router.get('/:id',
   authenticate.authenticate,
@@ -47,6 +52,11 @@ router.get('/:id/chapter',
 // get faculty details by slot
 router.get('/:id/slot',
   (req, res) => facultyController.getFacultyDetailsBySlot(req, res)
+)
+
+// public faculty profile (no auth) — returns basic info + offerings filtered by class+syllabus
+router.get('/:id/public-profile',
+  (req, res) => facultyController.getFacultyPublicProfile(req, res)
 )
 
 // get available slots for a faculty

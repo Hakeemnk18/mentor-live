@@ -23,7 +23,7 @@ export const updateClass = async (
 /** Lightweight dropdown list — only name + id, no pagination */
 export const getClassesList = async (): Promise<{ _id: string; name: string }[]> => {
   const res = await axiosInstance.get("/classes/list");
-  return (res.data.data ?? []).map((c: any) => ({ _id: c.id ?? c._id, name: c.name }));
+  return (res.data.data ?? []).map((c: { id?: string; _id?: string; name: string }) => ({ _id: c.id ?? c._id, name: c.name }));
 };
 
 export const getClasses = async (

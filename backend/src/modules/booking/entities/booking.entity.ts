@@ -11,7 +11,9 @@ export interface BookingProps {
   type: BookingType;
   mode: BookingMode;
   slotId?: string[];
+  subjectVariantId?: string;
   chapterId?: string;
+  poolCycle?: number;
   class: string;
   syllabus: string;
   isContacted?: boolean;
@@ -26,7 +28,9 @@ export class Booking {
   public readonly type: BookingType;
   public readonly mode: BookingMode;
   public readonly slotId?: string[];
+  public readonly subjectVariantId?: string;
   public readonly chapterId?: string;
+  public readonly poolCycle?: number;
   public readonly class: string;
   public readonly syllabus: string;
   public readonly isContacted: boolean;
@@ -40,68 +44,46 @@ export class Booking {
     this.type = props.type;
     this.mode = props.mode;
     this.class = props.class;
-    this.syllabus = props.syllabus
-    if (props.slotId !== undefined) {
-      this.slotId = props.slotId;
-    }
+    this.syllabus = props.syllabus;
 
-    if (props.chapterId !== undefined) {
-      this.chapterId = props.chapterId;
-    }
+    if (props.slotId !== undefined) this.slotId = props.slotId;
+    if (props.subjectVariantId !== undefined) this.subjectVariantId = props.subjectVariantId;
+    if (props.chapterId !== undefined) this.chapterId = props.chapterId;
+    if (props.poolCycle !== undefined) this.poolCycle = props.poolCycle;
+
     this.isContacted = props.isContacted ?? false;
     this.status = props.status ?? "interested";
     this.isDeleted = props.isDeleted ?? false;
   }
 
   delete(): Booking {
-    if (this.isDeleted) {
-      throw new Error("Booking already deleted");
-    }
-
-    return new Booking({
-      ...this,
-      isDeleted: true,
-    });
+    if (this.isDeleted) throw new Error("Booking already deleted");
+    return new Booking({ ...this, isDeleted: true });
   }
 
   restore(): Booking {
-    if (!this.isDeleted) {
-      throw new Error("Booking is not deleted");
-    }
-
-    return new Booking({
-      ...this,
-      isDeleted: false,
-    });
+    if (!this.isDeleted) throw new Error("Booking is not deleted");
+    return new Booking({ ...this, isDeleted: false });
   }
 
   confirm(): Booking {
-  if (this.status !== "interested") {
-    throw new Error("Invalid booking state transition");
+    if (this.status !== "interested") {
+      throw new Error("Invalid booking state transition");
+    }
+    return new Booking({ ...this, isContacted: true, status: "confirmed" });
   }
 
-  return new Booking ({
-    ...this,
-    isContacted: true,
-    status: "confirmed"
-  })
-
-  
-
- 
-}
-confirmWithSlots(slotId: string[]): Booking {
-  if (this.status !== "interested") {
-    throw new Error("Invalid booking state transition");
+  confirmWithSlots(slotId: string[]): Booking {
+    if (this.status !== "interested") {
+      throw new Error("Invalid booking state transition");
+    }
+    return new Booking({ ...this, slotId, status: "confirmed", isContacted: true });
   }
 
-  return new Booking({
-    ...this,
-    slotId,
-    status: "confirmed",
-    isContacted: true,
-  });
-}
-
-  
+  markAsContacted(): Booking {
+    if (this.isContacted) {
+      throw new Error("Booking is already marked as contacted");
+    }
+    return new Booking({ ...this, isContacted: true });
+  }
 }

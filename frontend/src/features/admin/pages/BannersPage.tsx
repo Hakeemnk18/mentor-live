@@ -122,13 +122,14 @@ export default function BannersPage() {
       setBanners(res.data);
       setTotalPages(res.totalPages);
       setTotal(res.total);
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setLoading(false);
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchAll(); }, [page, search, visibilityFilter]);
 
   /* ── handlers ── */
@@ -157,7 +158,7 @@ export default function BannersPage() {
       setModalOpen(false);
       setEditing(undefined);
       fetchAll();
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setSubmitting(false);
@@ -194,7 +195,7 @@ export default function BannersPage() {
       );
       setToggleTarget(null);
       fetchAll();
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setToggleLoading(false);
@@ -219,7 +220,7 @@ export default function BannersPage() {
       toast.success("Banner deleted");
       setDeleteTarget(null);
       fetchAll();
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setDeleteLoading(false);
@@ -258,7 +259,7 @@ export default function BannersPage() {
           <label className="text-xs font-medium text-gray-600">Visibility</label>
           <select
             value={visibilityFilter}
-            onChange={(e) => { setPage(1); setVisibilityFilter(e.target.value as any); }}
+            onChange={(e) => { setPage(1); setVisibilityFilter(e.target.value as "" | "visible" | "hidden"); }}
             className={sel}
           >
             <option value="">All</option>

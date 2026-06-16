@@ -1,3 +1,4 @@
+import type { ClientSession } from "mongoose";
 import { HttpStatusCode } from "../../../core/constants/http.status.codes.js";
 import { ResponseMessages } from "../../../core/constants/response.message.js";
 import { CustomError } from "../../../core/errors/custom.error.js";
@@ -8,9 +9,9 @@ import { StudentMapper } from "../mapper/student.mapper.js";
 import type { IStudentRepository } from "./student.repository.interface.js";
 
 export class StudentRepository implements IStudentRepository {
-  async create(studentEntity: Student): Promise<Student> {
+  async create(studentEntity: Student, session?: ClientSession): Promise<Student> {
     const persistenceData = StudentMapper.toPersistence(studentEntity);
-    const created = await StudentModel.create(persistenceData);
+    const [created] = await StudentModel.create([persistenceData], { ...(session ? { session } : {}) });
 
     const domainStudent = StudentMapper.toDomain(created);
     if (!domainStudent) {
@@ -38,7 +39,7 @@ export class StudentRepository implements IStudentRepository {
     return StudentMapper.toDomain(foundDocument);
   }
 
-  async save(studentEntity: Student): Promise<Student> {
+  async save(studentEntity: Student, session?: ClientSession): Promise<Student> {
     if (!studentEntity.id) {
       throw new CustomError(
         ResponseMessages.ID_MISSING,
@@ -51,7 +52,7 @@ export class StudentRepository implements IStudentRepository {
     const updatedDocument = await StudentModel.findByIdAndUpdate(
       studentEntity.id,
       { $set: persistenceData },
-      { new: true },
+      { new: true, ...(session ? { session } : {}) },
     ).lean();
 
     if (!updatedDocument) {

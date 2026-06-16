@@ -1,6 +1,6 @@
 import axiosInstance from "./axios.instance";
 
-import type { Student, GetStudentsParams, GetStudentsResult } from "../shared/types/student.types";
+import type { GetStudentsParams, GetStudentsResult } from "../shared/types/student.types";
 export const getStudents = async (
   params: GetStudentsParams
 ): Promise<GetStudentsResult> => {

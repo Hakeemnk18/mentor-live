@@ -7,7 +7,9 @@ import { twilioClient } from "../../config/twilio.js";
 @injectable()
 export class OtpService implements IOtpService {
   async generateOtp() {
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // TODO: testing only — always returns a fixed OTP. Switch back to
+    // Math.floor(100000 + Math.random() * 900000).toString() for production.
+    const otp = "111111";
     const hashedOtp = await bcrypt.hash(otp, 10);
 
     return { otp, hashedOtp };

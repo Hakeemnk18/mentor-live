@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import type { Student } from "../../../shared/types/student.types";
 import type { Testimonial, TestimonialPayload } from "../../../shared/types/testimonial.types";
 interface Props {
   open: boolean;
@@ -26,6 +25,7 @@ export default function TestimonialModal({
   /* populate fields when editing */
   useEffect(() => {
     if (open && mode === "edit" && initialData) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAuthor(initialData.author);
       setDesignation(initialData.designation);
       setComment(initialData.comment);

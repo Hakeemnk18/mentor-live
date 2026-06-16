@@ -23,6 +23,7 @@ import { FindByClassSyllabusQuerySchema } from "../../../core/shared/dtos/get.by
 import { parseListQuery } from "../../../core/utils/parse.list.query.helper.js";
 import { ChapterListQuerySchema } from "../dtos/get.chapter.dto.js";
 import type { IGetChapterNameUseCase } from "../use-cases/interfaces/get.chapter.name.use-case.interface.js";
+import type { IGetChapterByIdForAdminUseCase } from "../use-cases/interfaces/get.chapter.by.id.for.admin.use-case.interface.js";
 
 @injectable()
 export class ChapterController implements IChapterController {
@@ -46,7 +47,10 @@ export class ChapterController implements IChapterController {
     private readonly _unblockChapterUseCase: IUnblockChapterUseCase,
 
     @inject("IGetChapterNameUseCase")
-    private readonly _getChapterNameUseCase: IGetChapterNameUseCase
+    private readonly _getChapterNameUseCase: IGetChapterNameUseCase,
+
+    @inject("IGetChapterByIdForAdminUseCase")
+    private readonly _getChapterByIdForAdminUseCase: IGetChapterByIdForAdminUseCase
   ) {}
 
   /** 🏗️ Create chapter (Admin) */
@@ -161,6 +165,25 @@ export class ChapterController implements IChapterController {
       });
     } catch (error) {
       console.log("Error in unblockChapter:", error);
+      handleError(res, error);
+    }
+  }
+
+  /** 🔍 Admin: get single chapter details by ID */
+  async getChapterDetailsForAdmin(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      validateObjectId(id);
+
+      const data = await this._getChapterByIdForAdminUseCase.execute(id!);
+
+      res.status(HttpStatusCode.OK).json({
+        success: true,
+        message: ResponseMessages.SUCCESS,
+        data,
+      });
+    } catch (error) {
+      console.log("Error in getChapterDetailsForAdmin:", error);
       handleError(res, error);
     }
   }

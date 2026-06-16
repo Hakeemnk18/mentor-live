@@ -11,7 +11,7 @@ const SubjectPills: React.FC<SubjectPillsProps> = ({
   activeId,
   onSelect,
 }) => {
-  console.log("items in subject pills", items);
+ 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);

@@ -1,1 +1,0 @@
-{"version":3,"file":"syllabus.mapper.d.ts","sourceRoot":"","sources":["../../../../src/modules/syllabus/mappers/syllabus.mapper.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,QAAQ,EAAE,MAAM,gCAAgC,CAAC;AAE1D,qBAAa,cAAc;IACzB,MAAM,CAAC,QAAQ,CAAC,iBAAiB,EAAE,GAAG,GAAG,QAAQ,GAAG,IAAI;IAoBxD,MAAM,CAAC,aAAa,CAAC,cAAc,EAAE,QAAQ,GAAG,GAAG;CAMpD"}

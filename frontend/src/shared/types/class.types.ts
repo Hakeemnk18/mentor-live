@@ -11,12 +11,10 @@ export type ClassResponse = {
 export type GetClassesApiResponse = {
   success: boolean;
   message: string;
-  data: {
-    data: ClassResponse[];
-    currentPage: number;
-    totalPages: number;
-    total: number;
-  };
+  currentPage: number;
+  totalPages: number;
+  total: number;
+  data: ClassResponse[];
 };
 
 export type GetClassesParams = {

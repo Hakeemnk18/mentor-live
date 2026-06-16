@@ -1,7 +1,14 @@
-﻿import { timeStringToISOSlot } from "../features/admin/components/FacultyModal";
+import { timeStringToISOSlot } from "../features/admin/components/FacultyModal";
 import axiosInstance from "./axios.instance";
 
-import type { CreateFacultyPayload, UpdateFacultyPayload, FacultyListParams, FacultyListItem, FacultyByChapterParams } from "../shared/types/faculty.types";
+import type {
+  CreateFacultyPayload,
+  UpdateFacultyPayload,
+  FacultyListParams,
+  FacultyListItem,
+  FacultyByChapterParams,
+  FeaturedFaculty,
+} from "../shared/types/faculty.types";
 
 export const getFaculties = async (params: {
   page?: number;
@@ -13,8 +20,6 @@ export const getFaculties = async (params: {
   isDeleted?: boolean;
 }) => {
   const res = await axiosInstance.get("/faculties", { params });
-  console.log("fetched faculties ",res);
-  
   return res.data;
 };
 
@@ -27,6 +32,15 @@ export const getFacultiesList = async (
   return res.data;
 };
 
+/**
+ * Fetch the dedicated featured-faculty list for the landing page.
+ * Returns at most 8 active faculty marked as `isFeatured`.
+ */
+export const getFeaturedFaculty = async (): Promise<FeaturedFaculty[]> => {
+  const res = await axiosInstance.get("/faculties/featured");
+  return res.data.data ?? [];
+};
+
 export const getFacultiesByChapter = async (
   params: FacultyByChapterParams
 ): Promise<{ data: FacultyListItem[] }> => {
@@ -35,42 +49,94 @@ export const getFacultiesByChapter = async (
   });
   return res.data;
 };
-export const createFaculty = async (
-  payload: CreateFacultyPayload
-) => {
+
+export const createFaculty = async (payload: CreateFacultyPayload) => {
   const res = await axiosInstance.post("/faculties", payload);
   return res.data;
 };
 
-export const updateFaculty = async (id: string, payload: UpdateFacultyPayload) => {
+export const updateFaculty = async (
+  id: string,
+  payload: UpdateFacultyPayload
+) => {
   const res = await axiosInstance.put(`/faculties/${id}`, payload);
   return res.data;
 };
 
 export const getFacultyById = async (id: string) => {
   const res = await axiosInstance.get(`/faculties/${id}`);
-  return res.data.data; // assume backend returns { data: faculty }
+  return res.data.data;
+};
+
+/**
+ * Fetch faculty profile + first available slot for a subject variant.
+ * Used on the user-facing faculty details page (slot mode).
+ * variantId is REQUIRED after the per-variant slot refactor.
+ */
+export const getFacultyBySlot = async (
+  facultyId: string,
+  variantId: string,
+  slotId?: string
+) => {
+  const res = await axiosInstance.get(`/faculties/${facultyId}/slot`, {
+    params: { variantId, ...(slotId ? { slotId } : {}) },
+  });
+  return res.data.data;
+};
+
+/**
+ * Public faculty profile — always loadable without a slot or chapter context.
+ * Returns basic info + subject offerings filtered by classId+syllabusId.
+ */
+export const getFacultyPublicProfile = async (
+  facultyId: string,
+  params: { classId?: string; syllabusId?: string } = {}
+) => {
+  const res = await axiosInstance.get(`/faculties/${facultyId}/public-profile`, { params });
+  return res.data.data as {
+    id: string;
+    name: string;
+    qualifications: string[];
+    description: string;
+    demoClass: string;
+    image: string;
+    subjectOffering: {
+      variantId: string;
+      subjectName: string;
+      className: string;
+      syllabusName: string;
+      price: number;
+    }[];
+  };
 };
 
 /** Fetch faculty details for a specific chapter */
-export const getFacultyByChapter = async (facultyId: string, chapterId: string) => {
+export const getFacultyByChapter = async (
+  facultyId: string,
+  chapterId: string
+) => {
   const res = await axiosInstance.get(`/faculties/${facultyId}/chapter`, {
     params: { chapterId },
   });
   return res.data.data;
 };
 
-/** Fetch only available (unbooked) time slots for a faculty ” used in booking confirm flows */
+/**
+ * Fetch only available time slots for a faculty + subject variant.
+ * variantId is REQUIRED — the backend returns slots scoped to that variant.
+ */
 export const getFacultyAvailableSlots = async (
-  facultyId: string
-): Promise<{ id: string; time: string }[]> => {
-  const res = await axiosInstance.get(`/faculties/${facultyId}/available-slots`);
-  console.log("available slots",res.data.data);
-  
+  facultyId: string,
+  variantId?: string
+): Promise<{ id: string; time: string; variantId: string; poolCount: number; poolLimit: number }[]> => {
+  const res = await axiosInstance.get(
+    `/faculties/${facultyId}/available-slots`,
+    { params: { variantId } }
+  );
   return res.data.data ?? [];
 };
 
-/** Fetch slot details (pool info, price, etc.) for a specific slot */
+/** Fetch slot details (pool info, etc.) for a specific slot */
 export const getFacultySlotDetails = async (
   facultyId: string,
   slotId: string
@@ -81,13 +147,17 @@ export const getFacultySlotDetails = async (
   return res.data.data;
 };
 
-// faculty.api.ts
+/**
+ * Add one time slot for a faculty for a SPECIFIC subject variant.
+ * variantId is now required by the backend.
+ */
 export const addFacultySlotIST = async (
   facultyId: string,
-  payload: { time: string }
+  payload: { time: string; variantId: string }
 ) => {
   const res = await axiosInstance.post(`/faculties/${facultyId}/slots`, {
-    slots: [timeStringToISOSlot(payload.time)], // uses the helper with correct IST offset
+    variantId: payload.variantId,
+    slots: [timeStringToISOSlot(payload.time)],
   });
   return res.data;
 };
@@ -132,6 +202,7 @@ export const setFacultyChapterSlotAvailability = async (
 };
 
 /** @deprecated use setFacultyChapterSlotAvailability */
-export const removeFacultyChapterSlot = (facultyId: string, slotId: string) =>
-  setFacultyChapterSlotAvailability(facultyId, slotId, false);
-
+export const removeFacultyChapterSlot = (
+  facultyId: string,
+  slotId: string
+) => setFacultyChapterSlotAvailability(facultyId, slotId, false);

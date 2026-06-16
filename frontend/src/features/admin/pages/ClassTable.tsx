@@ -20,7 +20,7 @@ export default function ClassPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(5);
   const [search, setSearch] = useState("");
-  const [isDeleted, setIsDeleted] = useState<boolean | undefined>(undefined);
+  const [isDeleted] = useState<boolean | undefined>(undefined);
 
   const [totalPages, setTotalPages] = useState(1);
 
@@ -59,17 +59,16 @@ export default function ClassPage() {
       console.log("response from getClasses", res);
       setClasses(res.rows);
       setTotalPages(res.totalPages);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.log("error fetching classes", err);
-      toast.error(err?.response?.data?.message || "Failed to load classes");
+      handleApiError(err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchClasses();
-  }, [page, search, isDeleted, limit]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchClasses(); }, [page, search, isDeleted, limit]);
 
   const handleCreate = () => {
     setMode("create");
@@ -102,7 +101,7 @@ export default function ClassPage() {
       setMode("create");
 
       await fetchClasses();
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setSubmitting(false);

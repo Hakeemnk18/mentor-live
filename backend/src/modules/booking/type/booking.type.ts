@@ -23,6 +23,7 @@ export type ExistingBookingProps = {
 };
 export type ExpireOtherBookingsForSlotParams = {
   facultyId: string;
+  /** IDs of FacultySlot documents whose "interested" bookings should be expired */
   slotIds: string[];
   excludeBookingIds: string[];
 };
@@ -54,6 +55,7 @@ export type AdminBookingRaw = {
   class: IdNameView;
   isContacted: boolean;
   syllabus: IdNameView;
+  subject?: IdNameView | undefined;
   slot?: slotIdView | undefined;
   chapter?: IdNameView | undefined;
   mode: BookingMode;
@@ -72,6 +74,7 @@ export interface AdminBookingView {
   class: IdNameView;
   isContacted: boolean;
   syllabus: IdNameView;
+  subject?: IdNameView | undefined;
   slot?: slotIdView | undefined;
   chapter?: IdNameView | undefined;
   mode: BookingMode;
@@ -90,8 +93,10 @@ export type AdminPoolingRaw = {
   mode: BookingMode;
   class: IdNameView;
   syllabus: IdNameView;
+  subject?: IdNameView | undefined;
   chapter?: IdNameView | undefined;
   slot?: slotIdView | undefined;
+  poolCycle: number;
   totalStudents: number;
   pendingContactCount: number;
   hasPendingContact: boolean;
@@ -103,8 +108,10 @@ export interface AdminPoolingView {
   mode: BookingMode;
   class: IdNameView;
   syllabus: IdNameView;
+  subject?: IdNameView | undefined;
   chapter?: IdNameView | undefined;
   slot?: slotIdView | undefined;
+  poolCycle: number;
   totalStudents: number;
   hasPendingContact: boolean;
   createdAt: string; // ISO
@@ -115,9 +122,11 @@ export type AdminPoolingStudentRaw = {
   mode: BookingMode;
   class: IdNameView;
   syllabus: IdNameView;
+  subject?: IdNameView | undefined;
   slot?: slotIdView | undefined;
   chapter?: IdNameView | undefined;
-  student: {
+  status: string;
+  students: {
     id: string;
     name: string;
     phone: string;
@@ -138,3 +147,24 @@ export type BookingChartRaw = {
   createdAt: Date;
   type: BookingType;
 };
+
+/** Row shape returned by findAllBookings — every booking, regardless of type */
+export interface AdminAllBookingView {
+  id: string;
+  type: BookingType;
+  student: {
+    id: string;
+    name: string;
+    phone: string;
+  };
+  faculty: IdNameView;
+  class: IdNameView;
+  syllabus: IdNameView;
+  isContacted: boolean;
+  mode: BookingMode;
+  status: BookingStatus;
+  subject?: IdNameView | undefined;
+  slot?: slotIdView | undefined;
+  chapter?: IdNameView | undefined;
+  createdAt: string;
+}

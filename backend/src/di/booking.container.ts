@@ -2,7 +2,7 @@ import { container } from "tsyringe";
 import type { IBookingRepository } from "../modules/booking/repositories/booking.repository.interface.js";
 import { BookingRepository } from "../modules/booking/repositories/booking.repository.js";
 import type { ICreateBookingUseCase } from "../modules/booking/use-cases/interfaces/create.booking.use-case.interface.js";
-import { CreateBookingUseCase } from "../modules/booking/use-cases/crete.booking.use-case.js";
+import { CreateBookingUseCase } from "../modules/booking/use-cases/create.booking.use-case.js";
 import type { IGetOneToOneBookingUseCase } from "../modules/booking/use-cases/interfaces/get.one.to.one.booking.use-case.interface.js";
 import { GetOneToOneBookingUseCase } from "../modules/booking/use-cases/get.one.to.one.booking.use-case.js";
 import type { IGetPoolingBookingUseCase } from "../modules/booking/use-cases/interfaces/get.pooling.booking.use-case.interfaces.js";
@@ -25,6 +25,10 @@ import type { IGetChapterBookingDetailsUseCase } from "../modules/booking/use-ca
 import { GetChapterBookingDetailsUseCase } from "../modules/booking/use-cases/get.chapter.booking.details.use-case.js";
 import type { IGetAllBookingUseCase } from "../modules/booking/use-cases/interfaces/get.all.booking.use.case.interface.js";
 import { GetAllBookingUseCase } from "../modules/booking/use-cases/get.all.booking.use.case.js";
+import type { ICancelConfirmedBookingUseCase } from "../modules/booking/use-cases/interfaces/cancel.confirmed.booking.use-case.interface.js";
+import { CancelConfirmedBookingUseCase } from "../modules/booking/use-cases/cancel.confirmed.booking.use-case.js";
+import type { IMarkBookingContactedUseCase } from "../modules/booking/use-cases/interfaces/mark.booking.contacted.use-case.interface.js";
+import { MarkBookingContactedUseCase } from "../modules/booking/use-cases/mark.booking.contacted.use-case.js";
 
 export const registerBookingDependencies = () => {
   container.register<IBookingRepository>("IBookingRepository", {
@@ -89,4 +93,14 @@ export const registerBookingDependencies = () => {
   container.register<IGetAllBookingUseCase>("IGetAllBookingUseCase", {
     useClass: GetAllBookingUseCase,
   });
+
+  container.register<ICancelConfirmedBookingUseCase>(
+    "ICancelConfirmedBookingUseCase",
+    { useClass: CancelConfirmedBookingUseCase },
+  );
+
+  container.register<IMarkBookingContactedUseCase>(
+    "IMarkBookingContactedUseCase",
+    { useClass: MarkBookingContactedUseCase },
+  );
 };

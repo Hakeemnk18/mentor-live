@@ -6,14 +6,17 @@ import { AdminPageActions } from "../components/AdminPageActions";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
 import TopLoader from "../../../shared/components/TopLoader";
-import toast from "react-hot-toast";
 import type { Column } from "../components/AdminTable";
 import {
   getOneOnOneBookings,
   getPoolBookings,
-  type 
-  type 
+  getAllBookings,
+  exportOneOnOneBookings,
+  exportPoolBookings,
+  exportAllBookings,
 } from "../../../api/booking.api";
+import ExportButton from "../../../shared/components/ExportButton";
+import { downloadBlob } from "../../../shared/utils/download.util";
 import { getClassesList } from "../../../api/class.api";
 import { getSyllabusList } from "../../../api/syllabus.api";
 import OneOnOneBookingModal from "../components/OneOnOneBookingModal";
@@ -22,8 +25,7 @@ import { handleApiError } from "../../../shared/utils/handle.api.error";
 import { useQueryClient } from "@tanstack/react-query";
 import type { AuthUser } from "../../auth/type/auth.type";
 
-import type { OneOnOneBooking, PoolBooking, BookingType } from "../../../shared/types/booking.types";
-import type { Student } from "../../../shared/types/student.types";
+import type { OneOnOneBooking, PoolBooking, AllBooking, BookingType } from "../../../shared/types/booking.types";
 /* ─── helpers ─────────────────────────────────────────── */
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-IN", {
@@ -50,11 +52,18 @@ const oneOnOneColumns: Column<OneOnOneBooking>[] = [
   { key: "faculty", label: "Faculty", render: (b) => b.faculty.name },
   {
     key: "subject",
-    label: "Subject / Chapter",
-    render: (b) =>
-      b.mode === "chapter"
-        ? b.chapter?.name ?? "—"
-        : formatTimeAMPM(b.slot?.time) ?? "—",
+    label: "Subject",
+    render: (b) => b.subject?.name ?? "—",
+  },
+  {
+    key: "chapter",
+    label: "Chapter",
+    render: (b) => b.chapter?.name ?? "—",
+  },
+  {
+    key: "time",
+    label: "Time",
+    render: (b) => formatTimeAMPM(b.slot?.time) ?? "—",
   },
   { key: "class", label: "Class", render: (b) => b.class.name },
   { key: "syllabus", label: "Syllabus", render: (b) => b.syllabus.name },
@@ -71,7 +80,7 @@ const oneOnOneColumns: Column<OneOnOneBooking>[] = [
             : "bg-gray-100 text-gray-600"
         }`}
       >
-        {b.status}
+        {b.status === "interested" ? "Pending" : b.status}
       </span>
     ),
   },
@@ -97,11 +106,18 @@ const poolColumns: Column<PoolBooking>[] = [
   { key: "faculty", label: "Faculty", render: (b) => b.faculty.name },
   {
     key: "subject",
-    label: "Subject / Chapter",
-    render: (b) =>
-      b.mode === "chapter"
-        ? b.chapter?.name ?? "—"
-        : formatTimeAMPM(b.slot?.time) ?? "—",
+    label: "Subject",
+    render: (b) => b.subject?.name ?? "—",
+  },
+  {
+    key: "chapter",
+    label: "Chapter",
+    render: (b) => b.chapter?.name ?? "—",
+  },
+  {
+    key: "time",
+    label: "Time",
+    render: (b) => formatTimeAMPM(b.slot?.time) ?? "—",
   },
   { key: "class", label: "Class", render: (b) => b.class.name },
   { key: "syllabus", label: "Syllabus", render: (b) => b.syllabus.name },
@@ -130,8 +146,86 @@ const poolColumns: Column<PoolBooking>[] = [
   { key: "createdAt", label: "Date", render: (b) => fmtDate(b.createdAt) },
 ];
 
+const allBookingColumns: Column<AllBooking>[] = [
+  {
+    key: "type",
+    label: "Type",
+    render: (b) => (
+      <span
+        className={`px-2 py-1 rounded text-xs font-medium ${
+          b.type === "oneToOne"
+            ? "bg-purple-100 text-purple-700"
+            : "bg-indigo-100 text-indigo-700"
+        }`}
+      >
+        {b.type === "oneToOne" ? "One-to-One" : "Pooling"}
+      </span>
+    ),
+  },
+  {
+    key: "student",
+    label: "Student",
+    render: (b) => (
+      <div>
+        <p className="font-medium text-gray-900">{b.student.name}</p>
+        <p className="text-xs text-gray-400">{b.student.phone}</p>
+      </div>
+    ),
+  },
+  { key: "faculty", label: "Faculty", render: (b) => b.faculty.name },
+  {
+    key: "subject",
+    label: "Subject",
+    render: (b) => b.subject?.name ?? "—",
+  },
+  {
+    key: "chapter",
+    label: "Chapter",
+    render: (b) => b.chapter?.name ?? "—",
+  },
+  {
+    key: "time",
+    label: "Time",
+    render: (b) => formatTimeAMPM(b.slot?.time) ?? "—",
+  },
+  { key: "class", label: "Class", render: (b) => b.class.name },
+  { key: "syllabus", label: "Syllabus", render: (b) => b.syllabus.name },
+  {
+    key: "status",
+    label: "Status",
+    render: (b) => (
+      <span
+        className={`px-2 py-1 rounded text-xs font-medium ${
+          b.status === "confirmed"
+            ? "bg-green-100 text-green-700"
+            : b.status === "interested"
+            ? "bg-blue-100 text-blue-700"
+            : "bg-gray-100 text-gray-600"
+        }`}
+      >
+        {b.status === "interested" ? "Pending" : b.status}
+      </span>
+    ),
+  },
+  {
+    key: "isContacted",
+    label: "Contacted",
+    render: (b) => (
+      <span
+        className={`px-2 py-1 rounded text-xs font-medium ${
+          b.isContacted
+            ? "bg-green-100 text-green-700"
+            : "bg-yellow-100 text-yellow-700"
+        }`}
+      >
+        {b.isContacted ? "Yes" : "Pending"}
+      </span>
+    ),
+  },
+  { key: "createdAt", label: "Date", render: (b) => fmtDate(b.createdAt) },
+];
+
 /* ─── component ───────────────────────────────────────── */
-type BookingType = "one-on-one" | "pool";
 
 export default function BookingsPage() {
   const queryClient = useQueryClient();
@@ -149,6 +243,7 @@ export default function BookingsPage() {
   /* data */
   const [oneOnOneData, setOneOnOneData] = useState<OneOnOneBooking[]>([]);
   const [poolData, setPoolData] = useState<PoolBooking[]>([]);
+  const [allBookingsData, setAllBookingsData] = useState<AllBooking[]>([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
 
@@ -160,6 +255,9 @@ export default function BookingsPage() {
   const [classId, setClassId] = useState<string>("");
   const [syllabusId, setSyllabusId] = useState<string>("");
   const [isContacted, setIsContacted] = useState<"" | "true" | "false">("");
+  /* All Bookings tab only */
+  const [bookingTypeFilter, setBookingTypeFilter] = useState<"" | "oneToOne" | "pooling">("");
+  const [status, setStatus] = useState<"" | "interested" | "confirmed" | "cancelled" | "expired">("");
 
   /* dropdown lists */
   const [classesList, setClassesList] = useState<{ _id: string; name: string }[]>([]);
@@ -188,8 +286,11 @@ export default function BookingsPage() {
       syllabusId: syllabusId || undefined,
       isContacted:
         isContacted === "" ? undefined : isContacted === "true",
+      type: bookingTypeFilter || undefined,
+      status: status || undefined,
     };
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
 
     if (bookingType === "one-on-one") {
@@ -200,7 +301,7 @@ export default function BookingsPage() {
         })
         .catch(handleApiError)
         .finally(() => setLoading(false));
-    } else {
+    } else if (bookingType === "pool") {
       getPoolBookings(filters)
         .then((r) => {
           setPoolData(r.data);
@@ -208,8 +309,16 @@ export default function BookingsPage() {
         })
         .catch(handleApiError)
         .finally(() => setLoading(false));
+    } else {
+      getAllBookings(filters)
+        .then((r) => {
+          setAllBookingsData(r.data);
+          setTotal(r.total);
+        })
+        .catch(handleApiError)
+        .finally(() => setLoading(false));
     }
-  }, [bookingType, page, limit, search, mode, classId, syllabusId, isContacted, refreshKey]);
+  }, [bookingType, page, limit, search, mode, classId, syllabusId, isContacted, bookingTypeFilter, status, refreshKey]);
 
   /* reset page when switching type or filters change */
   const resetPage = () => setPage(1);
@@ -217,6 +326,27 @@ export default function BookingsPage() {
   const switchType = (t: BookingType) => {
     setBookingType(t);
     resetPage();
+  };
+
+  /* export current filters (all matching rows, ignoring pagination) */
+  const handleExport = async () => {
+    const filters = {
+      search: search || undefined,
+      mode: (mode || undefined) as "chapter" | "slot" | undefined,
+      classId: classId || undefined,
+      syllabusId: syllabusId || undefined,
+      isContacted: isContacted === "" ? undefined : isContacted === "true",
+      type: bookingTypeFilter || undefined,
+      status: status || undefined,
+    };
+
+    if (bookingType === "one-on-one") {
+      downloadBlob(await exportOneOnOneBookings(filters), "one-to-one-bookings.csv");
+    } else if (bookingType === "pool") {
+      downloadBlob(await exportPoolBookings(filters), "pool-bookings.csv");
+    } else {
+      downloadBlob(await exportAllBookings(filters), "all-bookings.csv");
+    }
   };
 
   return (
@@ -246,6 +376,16 @@ export default function BookingsPage() {
         >
           Pool Bookings
         </button>
+        <button
+          onClick={() => switchType("all")}
+          className={`px-5 py-2 text-sm font-medium rounded-md transition-all ${
+            bookingType === "all"
+              ? "bg-white text-[#DB313E] shadow-sm"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          All Bookings
+        </button>
       </div>
 
       {/* ── Filters ────────────────────────────────────── */}
@@ -258,7 +398,7 @@ export default function BookingsPage() {
             value={search}
             onChange={(e) => { setSearch(e.target.value); resetPage(); }}
             placeholder={
-              bookingType === "one-on-one" ? "Student / faculty…" : "Faculty…"
+              bookingType === "pool" ? "Faculty…" : "Student / faculty…"
             }
             className={sel}
           />
@@ -269,7 +409,7 @@ export default function BookingsPage() {
           <label className="text-xs font-medium text-gray-600">Mode</label>
           <select
             value={mode}
-            onChange={(e) => { setMode(e.target.value as any); resetPage(); }}
+            onChange={(e) => { setMode(e.target.value as "" | "chapter" | "slot"); resetPage(); }}
             className={`${sel} w-36`}
           >
             <option value="">All</option>
@@ -308,13 +448,47 @@ export default function BookingsPage() {
           />
         </div>
 
-        {/* Contacted (one-on-one only) */}
-        {bookingType === "one-on-one" && (
+        {/* Booking Type (all bookings only) */}
+        {bookingType === "all" && (
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-600">Type</label>
+            <select
+              value={bookingTypeFilter}
+              onChange={(e) => { setBookingTypeFilter(e.target.value as "" | "oneToOne" | "pooling"); resetPage(); }}
+              className={`${sel} w-36`}
+            >
+              <option value="">All</option>
+              <option value="oneToOne">One-to-One</option>
+              <option value="pooling">Pooling</option>
+            </select>
+          </div>
+        )}
+
+        {/* Status (all bookings only) */}
+        {bookingType === "all" && (
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-600">Status</label>
+            <select
+              value={status}
+              onChange={(e) => { setStatus(e.target.value as "" | "interested" | "confirmed" | "cancelled" | "expired"); resetPage(); }}
+              className={`${sel} w-36`}
+            >
+              <option value="">All</option>
+              <option value="interested">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="expired">Expired</option>
+            </select>
+          </div>
+        )}
+
+        {/* Contacted (one-on-one + all bookings) */}
+        {(bookingType === "one-on-one" || bookingType === "all") && (
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-gray-600">Contacted</label>
             <select
               value={isContacted}
-              onChange={(e) => { setIsContacted(e.target.value as any); resetPage(); }}
+              onChange={(e) => { setIsContacted(e.target.value as "" | "true" | "false"); resetPage(); }}
               className={`${sel} w-36`}
             >
               <option value="">All</option>
@@ -338,6 +512,11 @@ export default function BookingsPage() {
             <option value={50}>50</option>
           </select>
         </div>
+
+        {/* Export */}
+        <div className="ml-auto">
+          <ExportButton onExport={handleExport} />
+        </div>
       </div>
 
       {/* ── Table ──────────────────────────────────────── */}
@@ -350,12 +529,18 @@ export default function BookingsPage() {
           actions={[{ label: "View", onClick: (row) => setSelectedBooking(row) }]}
           getRowId={(row) => row.id}
         />
-      ) : (
+      ) : bookingType === "pool" ? (
         <AdminTable
           data={poolData}
           columns={poolColumns}
           actions={[{ label: "View", onClick: (row) => setSelectedPoolBooking(row) }]}
           getRowId={(_, i) => String(i)}
+        />
+      ) : (
+        <AdminTable
+          data={allBookingsData}
+          columns={allBookingColumns}
+          getRowId={(row) => row.id}
         />
       )}
 

@@ -1,4 +1,3 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
 import type { DashboardMotivationSummary } from "../types/admin.types";// Adjust path to where your type is
 

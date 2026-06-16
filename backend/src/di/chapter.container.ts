@@ -23,6 +23,9 @@ import { UnblockChapterUseCase } from "../modules/chapter/use-cases/unblock.chap
 import type { IGetChapterNameUseCase } from "../modules/chapter/use-cases/interfaces/get.chapter.name.use-case.interface.js";
 import { GetChapterNameUseCase } from "../modules/chapter/use-cases/get.chapter.name.use-case.js";
 
+import type { IGetChapterByIdForAdminUseCase } from "../modules/chapter/use-cases/interfaces/get.chapter.by.id.for.admin.use-case.interface.js";
+import { GetChapterByIdForAdminUseCase } from "../modules/chapter/use-cases/get.chapter.by.id.for.admin.use-case.js";
+
 export const registerChapterDependencies = () => {
   container.register<IChapterRepository>("IChapterRepository", {
     useClass: ChapterRepository,
@@ -54,5 +57,9 @@ export const registerChapterDependencies = () => {
 
   container.register<IGetChapterNameUseCase>("IGetChapterNameUseCase", {
     useClass: GetChapterNameUseCase,
+  });
+
+  container.register<IGetChapterByIdForAdminUseCase>("IGetChapterByIdForAdminUseCase", {
+    useClass: GetChapterByIdForAdminUseCase,
   });
 };

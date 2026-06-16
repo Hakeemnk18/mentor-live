@@ -25,7 +25,7 @@ export default function SyllabusPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(5);
   const [search, setSearch] = useState("");
-  const [isDeleted, setIsDeleted] = useState<boolean | undefined>(undefined);
+  const [isDeleted] = useState<boolean | undefined>(undefined);
   const [totalPages, setTotalPages] = useState(1);
 
   const columns: Column<SyllabusRow>[] = [
@@ -67,6 +67,7 @@ export default function SyllabusPage() {
       setLoading(false);
     }
   };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchSyllabus();
   }, [page, search, isDeleted, limit]);
@@ -88,13 +89,13 @@ export default function SyllabusPage() {
       setSubmitting(true);
 
       if (mode === "create") {
-        const created = await createSyllabus({ name: data.name });
+        await createSyllabus({ name: data.name });
 
         toast.success("Syllabus created");
       }
 
       if (mode === "edit" && data._id) {
-        const updated = await updateSyllabus(data._id, {
+        await updateSyllabus(data._id, {
           name: data.name,
         });
 
@@ -104,7 +105,7 @@ export default function SyllabusPage() {
       setModalOpen(false);
       setMode("create");
       setEditing(undefined);
-    } catch (error: any) {
+    } catch (error: unknown) {
       handleApiError(error);
     } finally {
       setSubmitting(false);

@@ -8,14 +8,22 @@ import {
 } from "../../../api/booking.api";
 import { getFacultyAvailableSlots } from "../../../api/faculty.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
+import ConfirmModal from "./ConfirmModal";
 
-import type { PoolBooking, PoolStudent, PoolStudentsResponse, AvailableSlot } from "../../../shared/types/booking.types";
+import type { PoolBooking, PoolStudent, PoolStudentsResponse } from "../../../shared/types/booking.types";
 /* ───── helpers ─────────────────────────────────────────── */
 const fmtTime = (iso: string) => {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;
-  return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+  return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "UTC" });
 };
+
+/** A group of FacultySlot ids that share the same displayed time
+ *  (e.g. two subject variants both have a 4:00 PM slot). */
+interface GroupedSlot {
+  time: string;
+  ids: string[];
+}
 
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-IN", {
@@ -42,13 +50,15 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
   const [detail, setDetail] = useState<PoolStudentsResponse | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
-  // For chapter-mode: pick time slots from faculty
-  const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
-  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  // For chapter-mode: pick time slots from faculty, grouped by displayed time
+  // (multiple subject variants can each have a FacultySlot at the same time)
+  const [availableSlots, setAvailableSlots] = useState<GroupedSlot[]>([]);
+  const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
   const [confirming, setConfirming] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<PoolStudent | null>(null);
 
   /* ── fetch students + faculty slots on open ── */
   useEffect(() => {
@@ -57,10 +67,11 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
     // 1. Fetch student list
     setLoadingDetail(true);
     setDetail(null);
-    setSelectedSlotId(null);
+    setSelectedTimes([]);
     const params: Parameters<typeof getPoolStudents>[0] = {
       facultyId: booking.faculty.id,
       mode: booking.mode,
+      poolCycle: booking.poolCycle,
       ...(booking.mode === "chapter" && booking.chapter
         ? { chapterId: booking.chapter.id }
         : { slotId: booking.slot?.id }),
@@ -70,32 +81,43 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
       .catch(handleApiError)
       .finally(() => setLoadingDetail(false));
 
-    // 2. For chapter mode also fetch faculty time slots for confirm
+    // 2. For chapter mode also fetch all faculty time slots for confirm
+    //    (no variantId — returns all slots across variants)
     if (booking.mode === "chapter") {
       setLoadingSlots(true);
       getFacultyAvailableSlots(booking.faculty.id)
         .then((raw) => {
+          // Group slots by displayed time so identical times across
+          // different subject variants render as a single option.
+          const groups = new Map<string, string[]>();
+          raw.forEach((s) => {
+            const time = fmtTime(s.time);
+            const ids = groups.get(time);
+            if (ids) ids.push(s.id);
+            else groups.set(time, [s.id]);
+          });
           setAvailableSlots(
-            raw.map((s) => ({
-              id: s.id,
-              time: fmtTime(s.time),
-            }))
+            Array.from(groups, ([time, ids]) => ({ time, ids }))
           );
         })
         .catch(handleApiError)
         .finally(() => setLoadingSlots(false));
     }
-  }, [booking?.faculty.id, booking?.mode, booking?.chapter?.id, booking?.slot?.id]);
+  }, [booking]);
 
   if (!booking) return null;
 
-  const toggleSlot = (id: string) =>
-    setSelectedSlotId((prev) => (prev === id ? null : id));
+  const isConfirmed = detail?.status === "confirmed";
+
+  const toggleSlot = (time: string) =>
+    setSelectedTimes((prev) =>
+      prev.includes(time) ? prev.filter((t) => t !== time) : [...prev, time]
+    );
 
   /* ── confirm ── */
   const handleConfirm = async () => {
-    if (booking.mode === "chapter" && !selectedSlotId) {
-      toast.error("Select a time slot");
+    if (booking.mode === "chapter" && selectedTimes.length === 0) {
+      toast.error("Select at least one time slot");
       return;
     }
     try {
@@ -106,9 +128,12 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
           slotId: booking.slot!.id,
         });
       } else {
+        const slotIds = availableSlots
+          .filter((s) => selectedTimes.includes(s.time))
+          .flatMap((s) => s.ids);
         await confirmChapterPooling({
           facultyId: booking.faculty.id,
-          slotId: [selectedSlotId!],
+          slotId: slotIds,
           chapterId: booking.chapter!.id,
         });
       }
@@ -125,10 +150,10 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
   /* ── remove student ── */
   const handleRemove = async (student: PoolStudent) => {
     try {
-      setRemovingId(student.studentId);
+      setRemovingId(student.id);
       await removeStudentFromPool({
         facultyId: booking.faculty.id,
-        userId: student.studentId,
+        userId: student.id,
         mode: booking.mode,
         ...(booking.mode === "slot"
           ? { slotId: booking.slot!.id }
@@ -138,13 +163,14 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
       // update local list
       setDetail((prev) =>
         prev
-          ? { ...prev, students: prev.students.filter((s) => s.studentId !== student.studentId) }
+          ? { ...prev, students: prev.students.filter((s) => s.id !== student.id) }
           : prev
       );
     } catch (err) {
       handleApiError(err);
     } finally {
       setRemovingId(null);
+      setRemoveTarget(null);
     }
   };
 
@@ -158,14 +184,21 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
       {/* Panel */}
       <div className="fixed inset-0 z-[1001] flex items-center justify-center pointer-events-none">
         <div
-          className="pointer-events-auto relative w-full max-w-xl bg-white rounded-xl shadow-xl flex flex-col max-h-[90vh]"
+          className="pointer-events-auto relative w-full max-w-xl mx-4 bg-white rounded-xl shadow-xl flex flex-col max-h-[90vh]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b px-6 py-4">
-            <div>
-              <h2 className="text-base font-semibold text-gray-900">Pool Booking</h2>
-              <p className="text-xs text-gray-400 mt-0.5 capitalize">{booking.mode} mode</p>
+            <div className="flex items-center gap-2">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900">Pool Booking</h2>
+                <p className="text-xs text-gray-400 mt-0.5 capitalize">{booking.mode} mode</p>
+              </div>
+              {isConfirmed && (
+                <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                  Confirmed
+                </span>
+              )}
             </div>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
           </div>
@@ -202,32 +235,35 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
               </p>
               {loadingDetail ? (
                 <p className="text-sm text-gray-400">Loading students…</p>
-              ) : !detail || detail.students.length === 0 ? (
+              ) : !detail || !detail.students || detail.students.length === 0 ? (
                 <p className="text-sm text-gray-400">No students found.</p>
               ) : (
                 <div className="divide-y divide-gray-100 rounded-lg border border-gray-200 overflow-hidden">
                   {detail.students.map((s) => (
-                    <div key={s.studentId} className="flex items-center justify-between px-4 py-2.5">
+                    <div key={s.id} className="flex items-center justify-between px-4 py-2.5">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600">
                           {s.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-800">{s.name}</p>
+                          <p className="text-xs text-gray-400">{s.phone}</p>
                           <span className={`text-xs px-1.5 py-0.5 rounded ${
-                            s.contactStatus === "contacted" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+                            s.isContacted ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
                           }`}>
-                            {s.contactStatus === "contacted" ? "Contacted" : "Not Contacted"}
+                            {s.isContacted ? "Contacted" : "Not Contacted"}
                           </span>
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleRemove(s)}
-                        disabled={removingId === s.studentId}
-                        className="text-xs px-2.5 py-1 text-red-600 border border-red-200 rounded-md hover:bg-red-50 disabled:opacity-50 transition-colors"
-                      >
-                        {removingId === s.studentId ? "Removing…" : "Remove"}
-                      </button>
+                      {!isConfirmed && !readOnly && (
+                        <button
+                          onClick={() => setRemoveTarget(s)}
+                          disabled={removingId === s.id}
+                          className="text-xs px-2.5 py-1 text-red-600 border border-red-200 rounded-md hover:bg-red-50 disabled:opacity-50 transition-colors"
+                        >
+                          {removingId === s.id ? "Removing…" : "Remove"}
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -235,7 +271,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
             </div>
 
             {/* Slot picker — chapter mode confirm, hidden for read-only roles */}
-            {booking.mode === "chapter" && !readOnly && (
+            {booking.mode === "chapter" && !readOnly && !isConfirmed && (
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                   Assign Time Slot(s) to Confirm
@@ -247,12 +283,12 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {availableSlots.map((s) => {
-                      const selected = selectedSlotId === s.id;
+                      const selected = selectedTimes.includes(s.time);
                       return (
                         <button
-                          key={s.id}
+                          key={s.time}
                           type="button"
-                          onClick={() => toggleSlot(s.id)}
+                          onClick={() => toggleSlot(s.time)}
                           className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                             selected
                               ? "bg-[#DB313E] border-[#DB313E] text-white"
@@ -277,12 +313,12 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
             >
               Close
             </button>
-            {!readOnly && (
+            {!readOnly && !isConfirmed && (
               <button
                 onClick={handleConfirm}
                 disabled={
                   confirming ||
-                  (booking.mode === "chapter" && !selectedSlotId)
+                  (booking.mode === "chapter" && selectedTimes.length === 0)
                 }
                 className="px-4 py-2 text-sm font-medium bg-[#DB313E] text-white rounded-md hover:bg-[#c02535] disabled:opacity-50 transition-colors"
               >
@@ -292,6 +328,17 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        open={!!removeTarget}
+        title="Remove Student"
+        message={`Are you sure you want to remove ${removeTarget?.name} from this pool?`}
+        confirmLabel="Remove"
+        confirmVariant="danger"
+        loading={removingId === removeTarget?.id}
+        onConfirm={() => removeTarget && handleRemove(removeTarget)}
+        onClose={() => setRemoveTarget(null)}
+      />
     </>
   );
 }

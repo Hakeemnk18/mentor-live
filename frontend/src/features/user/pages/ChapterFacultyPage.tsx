@@ -4,19 +4,23 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { getFacultiesByChapter } from "../../../api/faculty.api";
 import FacultyCard from "../components/FacultyCard";
 import SearchInput from "../components/SearchInput";
+import LeadFormModal from "../components/LeadFormModal";
 
 const LIMIT = 8;
 
 const ChapterFacultyPage: React.FC = () => {
   const location = useLocation();
-  const { chapterId = "", chapterName = "", syllabusId = "", classId = "" } = (location.state ?? {}) as {
+  const { chapterId = "", chapterName = "", syllabusId = "", classId = "", syllabusName = "", className = "" } = (location.state ?? {}) as {
     chapterId?: string;
     chapterName?: string;
     syllabusId?: string;
     classId?: string;
+    syllabusName?: string;
+    className?: string;
   };
 
   const [search, setSearch] = useState("");
+  const [requestOpen, setRequestOpen] = useState(false);
   const observerRef = useRef<HTMLDivElement | null>(null);
 
   /* ── Infinite query for faculties by chapter ── */
@@ -121,9 +125,42 @@ const ChapterFacultyPage: React.FC = () => {
               </svg>
             </div>
             <p className="text-gray-500 text-lg font-medium">No tutors found</p>
-            <p className="text-gray-400 text-sm mt-1">No faculty available for this chapter yet.</p>
+            <p className="text-gray-400 text-sm mt-1 mb-6">No faculty available for this chapter yet.</p>
+            <button
+              onClick={() => setRequestOpen(true)}
+              className="inline-flex items-center gap-2 bg-[#DB313E] text-white text-sm font-semibold px-6 py-3 rounded-full shadow-md hover:bg-[#c12a36] transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Request a Faculty
+            </button>
           </div>
         )}
+
+        {/* Faculty request modal */}
+        <LeadFormModal
+          open={requestOpen}
+          onClose={() => setRequestOpen(false)}
+          type="request"
+          purpose={
+            chapterName && className && syllabusName
+              ? `I'm looking for a faculty for the "${chapterName}" chapter in ${className} class ${syllabusName}`
+              : chapterName && className
+              ? `I'm looking for a faculty for the "${chapterName}" chapter in ${className} class`
+              : chapterName && syllabusName
+              ? `I'm looking for a faculty for the "${chapterName}" chapter in ${syllabusName}`
+              : chapterName
+              ? `I'm looking for a faculty for the "${chapterName}" chapter`
+              : className && syllabusName
+              ? `I'm looking for a faculty for ${className} class ${syllabusName}`
+              : "I'm looking for a faculty for this chapter"
+          }
+          classId={classId || null}
+          syllabusId={syllabusId || null}
+          className={className || null}
+          syllabusName={syllabusName || null}
+        />
 
         {/* Faculty grid */}
         {faculties.length > 0 && !isError && !isLoading && (

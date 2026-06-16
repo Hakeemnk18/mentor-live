@@ -3,6 +3,7 @@ import type { ConfirmChapterPoolingBookingDto } from "../dto/confirm.chapter.poo
 import type { IConfirmChapterPoolingBookingUseCase } from "./interfaces/confirm.chapter.pooling.booking.interface.js";
 import type { IBookingRepository } from "../repositories/booking.repository.interface.js";
 import type { IFacultyRepository } from "../../faculty/repository/faculty.repository.interface.js";
+import type { IFacultySlotRepository } from "../../faculty-slot/repository/faculty.slot.repository.interface.js";
 import { CustomError } from "../../../core/errors/custom.error.js";
 import { ResponseMessages } from "../../../core/constants/response.message.js";
 import { HttpStatusCode } from "../../../core/constants/http.status.codes.js";
@@ -16,6 +17,9 @@ export class ConfirmChapterPoolingBookingUseCase implements IConfirmChapterPooli
 
     @inject("IFacultyRepository")
     private readonly _facultyRepo: IFacultyRepository,
+
+    @inject("IFacultySlotRepository")
+    private readonly _facultySlotRepo: IFacultySlotRepository,
   ) {}
   async execute(dto: ConfirmChapterPoolingBookingDto): Promise<void> {
     const { slotId, facultyId, chapterId } = dto;
@@ -32,21 +36,12 @@ export class ConfirmChapterPoolingBookingUseCase implements IConfirmChapterPooli
       );
     }
 
-    // defensive slot existence and availability check
-    const facultySlots = await this._facultyRepo.getAllSlots(facultyId);
+    // defensive slot existence and availability check — validate each
+    // selected time slot belongs to this faculty and is available
+    for (const id of slotId) {
+      const slot = await this._facultySlotRepo.findById(id);
 
-    if (facultySlots.length === 0) {
-      throw new CustomError(
-        ResponseMessages.SLOT_TIME_NOT_AVAILABLE,
-        HttpStatusCode.BAD_REQUEST,
-      );
-    }
-
-    // validate all selected slots
-    for (const slotId of dto.slotId) {
-      const slot = facultySlots.find((s) => String(s.id) === String(slotId));
-
-      if (!slot || !slot.isAvailable) {
+      if (!slot || slot.facultyId !== facultyId || !slot.isAvailable) {
         throw new CustomError(
           ResponseMessages.SLOT_TIME_NOT_AVAILABLE,
           HttpStatusCode.CONFLICT,
@@ -91,7 +86,9 @@ export class ConfirmChapterPoolingBookingUseCase implements IConfirmChapterPooli
 
       console.log("slots added to bookings");
       //consume slots
-      await this._facultyRepo.consumeSlots(facultyId, slotId, session);
+      for (const id of slotId) {
+        await this._facultySlotRepo.consumeSlot(id, session);
+      }
       console.log("slot consumed");
 
       //consume chapter slot

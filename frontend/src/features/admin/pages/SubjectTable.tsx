@@ -18,8 +18,6 @@ import { getSyllabus } from "../../../api/syllabus.api";
 import { getClasses } from "../../../api/class.api";
 import SubjectFormModal from "../components/SubjectFormModal";
 import type { CreateSubjectPayload, SubjectRow, SubjectVariantForm } from "../../../shared/types/subject.types";
-const getErrorMessage = (err: any, fallback: string) =>
-  err?.response?.data?.message || fallback;
 
 export default function SubjectPage() {
   const [subjects, setSubjects] = useState<SubjectRow[]>([]);
@@ -39,7 +37,7 @@ export default function SubjectPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(5);
   const [search, setSearch] = useState("");
-  const [isDeleted, setIsDeleted] = useState<boolean | undefined>(undefined);
+  const [isDeleted] = useState<boolean | undefined>(undefined);
   const [totalPages, setTotalPages] = useState(1);
   const [syllabuses, setSyllabuses] = useState<{ _id: string; name: string }[]>(
     []
@@ -82,7 +80,7 @@ export default function SubjectPage() {
 
       setSubjects(res.rows);
       setTotalPages(res.totalPages);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.log("error fetching subjects ", err);
       handleApiError(err);
     } finally {
@@ -90,6 +88,7 @@ export default function SubjectPage() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchSubjects();
   }, [page, limit, search, isDeleted]);
@@ -154,7 +153,7 @@ export default function SubjectPage() {
     setMode("create");
 
     await fetchSubjects();
-  } catch (err: any) {
+  } catch (err: unknown) {
     handleApiError(err);
   } finally {
     setSubmitting(false);
@@ -174,7 +173,7 @@ export default function SubjectPage() {
       toast.success("Subject name updated");
 
       await fetchSubjects();
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setSubmitting(false);
@@ -196,7 +195,7 @@ export default function SubjectPage() {
       setMode("create");
 
       await fetchSubjects();
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setSubmitting(false);

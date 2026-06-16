@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 import type { Column } from "../components/AdminTable";
 import { getLeads, updateLeadStatus } from "../../../api/lead.api";
 import type { Lead, LeadStatus, LeadType } from "../../../shared/types/lead.types";
+import Tooltip from "../../../shared/components/Tooltip";
 
 /* ── helpers ─────────────────────────────────────────────── */
 const TYPE_COLORS: Record<LeadType, string> = {
@@ -47,23 +48,37 @@ const columns: Column<Lead>[] = [
   {
     key: "purpose",
     label: "Purpose / Message",
-    render: (l) => (
-      <div className="max-w-[220px]">
-        <p className="text-sm text-gray-700 line-clamp-2">{l.purpose}</p>
-        {l.type === "request" && l.className && (
-          <p className="text-xs text-gray-400 mt-0.5">
-            {l.className}{l.syllabusName ? ` · ${l.syllabusName}` : ""}
-          </p>
-        )}
-        {l.message ? (
-          <p className="text-xs text-gray-500 mt-1 italic line-clamp-2 bg-gray-50 px-2 py-1 rounded">
-            "{l.message}"
-          </p>
-        ) : (
-          <p className="text-xs text-gray-300 mt-1 italic">No message</p>
-        )}
-      </div>
-    ),
+    render: (l) => {
+      const academicInfo =
+        l.type === "request" && l.className
+          ? `${l.className}${l.syllabusName ? ` · ${l.syllabusName}` : ""}`
+          : null;
+
+      return (
+        <Tooltip
+          className="max-w-[260px] cursor-help"
+          content={
+            <div className="space-y-1.5">
+              <p>{l.purpose}</p>
+              {academicInfo && <p className="text-gray-400">{academicInfo}</p>}
+              {l.message && <p className="italic text-gray-400">"{l.message}"</p>}
+            </div>
+          }
+        >
+          <p className="text-sm text-gray-700 line-clamp-2">{l.purpose}</p>
+          {academicInfo && (
+            <p className="text-xs text-gray-400 mt-0.5">{academicInfo}</p>
+          )}
+          {l.message ? (
+            <p className="text-xs text-gray-500 mt-1 italic line-clamp-2 bg-gray-50 px-2 py-1 rounded">
+              "{l.message}"
+            </p>
+          ) : (
+            <p className="text-xs text-gray-300 mt-1 italic">No message</p>
+          )}
+        </Tooltip>
+      );
+    },
   },
   {
     key: "status",
@@ -122,13 +137,14 @@ export default function LeadsPage() {
       setLeads(res.data);
       setTotalPages(res.totalPages);
       setTotal(res.total);
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setLoading(false);
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchAll(); }, [page, limit, search, typeFilter, statusFilter, sortValue]);
 
   /* ── status update ── */
@@ -138,7 +154,7 @@ export default function LeadsPage() {
       await updateLeadStatus(lead.id, status);
       toast.success(`Marked as ${status}`);
       fetchAll();
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setUpdatingId(null);
@@ -171,7 +187,7 @@ export default function LeadsPage() {
           <label className="text-xs font-medium text-gray-600">Type</label>
           <select
             value={typeFilter}
-            onChange={(e) => { setPage(1); setTypeFilter(e.target.value as any); }}
+            onChange={(e) => { setPage(1); setTypeFilter(e.target.value as LeadType | ""); }}
             className={sel}
           >
             <option value="">All Types</option>
@@ -185,7 +201,7 @@ export default function LeadsPage() {
           <label className="text-xs font-medium text-gray-600">Status</label>
           <select
             value={statusFilter}
-            onChange={(e) => { setPage(1); setStatusFilter(e.target.value as any); }}
+            onChange={(e) => { setPage(1); setStatusFilter(e.target.value as LeadStatus | ""); }}
             className={sel}
           >
             <option value="">All</option>

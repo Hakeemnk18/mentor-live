@@ -1,1 +1,0 @@
-{"version":3,"file":"subject.mapper.d.ts","sourceRoot":"","sources":["../../../../src/modules/subject/mappers/subject.mapper.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,OAAO,EAAE,MAAM,+BAA+B,CAAC;AAExD,qBAAa,aAAa;IACxB,MAAM,CAAC,QAAQ,CAAC,gBAAgB,EAAE,GAAG,GAAG,OAAO,GAAG,IAAI;IAoBtD,MAAM,CAAC,aAAa,CAAC,aAAa,EAAE,OAAO,GAAG,GAAG;CAMlD"}

@@ -8,11 +8,10 @@ import type {
   FacultyClassAndSyllabusSearchFilters,
   FacultyDetailsViewForUser,
   FacultyFullAdminView,
+  FacultyPublicProfileView,
   FacultyView,
   FacultyViewForUser,
-  SetSlotAvailabilityDto,
-  SlotProps,
-  AvailableSlots,
+  FeaturedFacultyView,
 } from "../types/faculty.type.js";
 import type { RemoveUserFromPoolDto } from "../../booking/dto/remove.student.from.pooling.dto.js";
 
@@ -35,58 +34,80 @@ export interface IFacultyRepository {
     facultyId: string,
     chapterId: string,
   ): Promise<FacultyDetailsViewForUser | null>;
-  findFacultyFullByIdAndSlot(
+
+  /**
+   * Find faculty details + a specific slot from FacultySlotCollection.
+   * variantId is required so we can look up the correct price.
+   */
+  findFacultyWithSlot(
     facultyId: string,
     slotId: string,
-    variantId?: string,
+    variantId: string,
   ): Promise<FacultyDetailsViewForUser | null>;
-  findFacultyByIdWithFirstSlot(
+
+  /**
+   * Find faculty details + its first available slot for a given variant.
+   */
+  findFacultyWithFirstAvailableSlot(
     facultyId: string,
-    variantId?: string,
+    variantId: string,
   ): Promise<FacultyDetailsViewForUser | null>;
-  getSlot(facultyId: string, slotId: string): Promise<SlotProps | null>;
+
   getChapterSlot(
     facultyId: string,
     chapterId: string,
   ): Promise<ChapterSlotProps | null>;
-  addToSlotPool(
-    facultyId: string,
-    slotId: string,
-    studentId: string,
-  ): Promise<void>;
+
   addToChapterSlotPool(
     facultyId: string,
     chapterSlotId: string,
     studentId: string,
+    session?: ClientSession,
   ): Promise<void>;
+
   findFacultyByQuery(query: Record<string, any>): Promise<Faculty | null>;
-  consumeSlot(
-    facultyId: string,
-    slotId: string,
-    session?: ClientSession,
-  ): Promise<void>;
-  consumeSlots(
-    facultyId: string,
-    slotIds: string[],
-    session?: ClientSession,
-  ): Promise<void>;
-  getAllSlots(facultyId: string): Promise<SlotProps[]>;
-  addSlots(facultyId: string, slots: { time: Date }[]): Promise<void>;
+
   addChapterSlots(
     facultyId: string,
     slots: AddChapterSlotRequestDto,
   ): Promise<void>;
+
   consumeChapterSlot(
     facultyId: string,
     chapterId: string,
     session: ClientSession,
   ): Promise<void>;
+
   removeUserFromPool(
     params: RemoveUserFromPoolDto,
     session: ClientSession,
   ): Promise<void>;
-  setSlotAvailability(params: SetSlotAvailabilityDto): Promise<void>;
-  getAllAvailableSlots(facultyId: string): Promise<AvailableSlots[]>;
+
+  setChapterSlotAvailability(
+    facultyId: string,
+    chapterId: string,
+    isAvailable: boolean,
+  ): Promise<void>;
+
+  /**
+   * Public profile: basic faculty info + subject offerings.
+   * Optionally filtered to offerings matching classId+syllabusId.
+   */
+  findFacultyPublicProfile(
+    id: string,
+    classId?: string,
+    syllabusId?: string,
+  ): Promise<FacultyPublicProfileView | null>;
+
+  /**
+   * Count faculty currently marked as featured (excluding the given id, if any).
+   * Used to enforce the max-8 featured faculty limit on create/edit.
+   */
+  countFeatured(excludeId?: string): Promise<number>;
+
+  /** Active, non-deleted faculty marked as featured — for the landing page. */
+  findFeatured(limit: number): Promise<FeaturedFacultyView[]>;
+
   getFacultyCountInRange(startDate: Date, endDate: Date): Promise<number>;
   getDailyFacultyKpiStats(
     startDate: Date,

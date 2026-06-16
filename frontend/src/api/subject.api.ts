@@ -1,13 +1,13 @@
 import axiosInstance from "./axios.instance";
 
-import type { GetSubjectsParams, GetSubjectsApiResponse, GetSubjectsResult, GetSubjectByIdApiResponse, SyllabusAndClassPayload, CreateSubjectPayload, EditSubjectNamePayload } from "../shared/types/subject.types";
+import type { GetSubjectsParams, GetSubjectsApiResponse, GetSubjectsResult, GetSubjectByIdApiResponse, SyllabusAndClassPayload, CreateSubjectPayload, EditSubjectNamePayload, SubjectForUser, GetSubjectsForUserParams } from "../shared/types/subject.types";
 export const getSubjects = async (
   params: GetSubjectsParams
 ): Promise<GetSubjectsResult> => {
   const res = await axiosInstance.get<GetSubjectsApiResponse>("/subjects", {
     params,
   });
-  console.log("fetch subjects response ", res);
+  
   const apiData = res.data;
 
   return {
@@ -15,6 +15,7 @@ export const getSubjects = async (
       _id: s.id,
       name: s.name,
       isDeleted: s.isDeleted,
+      variants: 0, // count not returned by the list endpoint
     })),
     currentPage: apiData.currentPage,
     totalPages: apiData.totalPages,
@@ -79,4 +80,16 @@ export const mapVariantsToSyllabusAndClass = (
     syllabus,
     classes: Array.from(classes),
   }));
+};
+
+/**
+ * Fetch subjects for the user-facing filter pills, optionally scoped to a syllabus + class.
+ * Returns the real Subject id (usable directly as a chapter `subjectId` filter).
+ * When no filters are passed, returns all subjects.
+ */
+export const getSubjectsForUser = async (
+  params: GetSubjectsForUserParams = {}
+): Promise<SubjectForUser[]> => {
+  const res = await axiosInstance.get("/subjects/list", { params });
+  return res.data.data ?? [];
 };

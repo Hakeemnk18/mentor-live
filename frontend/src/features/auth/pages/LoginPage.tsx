@@ -20,7 +20,6 @@ const LoginPage = ({ role }: LoginPageProps) => {
   const { mutateAsync: loginMutate } = useLogin();
 //   const { mutateAsync: forgotPasswordMutate } = useForgotPassword();
 
-  const [isForgotPsd, setIsForgotPsd] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState<{ email?: string; password?: string }>(
     {}
@@ -62,7 +61,7 @@ const LoginPage = ({ role }: LoginPageProps) => {
       } else {
         navigate(from, { replace: true });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       const fieldErrors = handleApiError(err);
       if (fieldErrors) setErrors(fieldErrors);
     } finally {
@@ -71,10 +70,6 @@ const LoginPage = ({ role }: LoginPageProps) => {
   };
 
 
-  const handleForgotPassword = async (email: string) => {
-    //await forgotPasswordMutate({ email });
-    setIsForgotPsd(false);
-  };
 
   return (
   <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -150,7 +145,6 @@ const LoginPage = ({ role }: LoginPageProps) => {
           <div className="text-right">
             <button
               type="button"
-              onClick={() => setIsForgotPsd(true)}
               className="text-xs text-[#DB313E] cursor-pointer hover:opacity-80"
             >
               Forgot password?

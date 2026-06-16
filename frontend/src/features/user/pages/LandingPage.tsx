@@ -1,19 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import heroImage from "/hero-image.png";
-import { getFaculties } from "../../../api/faculty.api";
-import { getBlogs, getFeaturedBlogs } from "../../../api/blog.api";
-import { getTestimonials } from "../../../api/testimonial.api";
+import { getFeaturedFaculty } from "../../../api/faculty.api";
+import { getFeaturedBlogs } from "../../../api/blog.api";
+import { getTestimonialsForUser } from "../../../api/testimonial.api";
 import FacultyCard from "../components/FacultyCard";
 import BlogCard from "../components/BlogCard";
 import TestimonialCard from "../components/TestimonialCard";
 import BannerCarousel from "../components/BannerCarousel";
 
-import type { Student } from "../../../shared/types/student.types";
-import type { Banner } from "../../../shared/types/banner.types";
-import type { Blog } from "../../../shared/types/blog.types";
-import type { Testimonial } from "../../../shared/types/testimonial.types";
 const stats = [
   { value: "500+", label: "QUALIFIED TUTORS" },
   { value: "50+", label: "SUBJECTS COVERED" },
@@ -358,17 +354,22 @@ const LandingPage: React.FC = () => {
 /* ── Faculty sub-component (keeps LandingPage clean) ── */
 const FacultySection: React.FC = () => {
   const { data, isLoading } = useQuery({
-    queryKey: ["landing-faculties"],
-    queryFn: () => getFaculties({ page: 1, limit: 4, isDeleted: false }),
+    queryKey: ["landing-faculties-featured"],
+    queryFn: getFeaturedFaculty,
   });
 
-  const faculties: {
-    id: string;
-    name: string;
-    qualifications: string[];
-    description: string;
-    image?: { url: string; publicId: string };
-  }[] = data?.data ?? [];
+  const faculties = data ?? [];
+  const scrollerRef = useRef<HTMLDivElement>(null);
+
+  const scrollByCard = (direction: "left" | "right") => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const amount = el.clientWidth * 0.85;
+    el.scrollBy({
+      left: direction === "left" ? -amount : amount,
+      behavior: "smooth",
+    });
+  };
 
   return (
     <section className="bg-[#FAFAFA] border-t border-gray-100">
@@ -381,34 +382,74 @@ const FacultySection: React.FC = () => {
           <div className="w-16 h-1 bg-[#DB313E] mx-auto rounded-full" />
         </div>
 
-        {/* Cards grid */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white rounded-md shadow-md animate-pulse">
-                <div className="h-64 bg-gray-200" />
-                <div className="p-5 space-y-3">
-                  <div className="h-4 bg-gray-200 rounded w-3/4" />
-                  <div className="h-3 bg-gray-200 rounded w-1/2" />
-                  <div className="h-3 bg-gray-200 rounded w-full" />
+        {/* Horizontally scrollable cards + arrows */}
+        <div className="relative group/scroller sm:px-10 md:px-12">
+          {/* Left arrow */}
+          {faculties.length > 1 && (
+            <button
+              onClick={() => scrollByCard("left")}
+              className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-gray-200 rounded-full shadow-md items-center justify-center hover:bg-gray-50 transition opacity-0 group-hover/scroller:opacity-100"
+              aria-label="Scroll left"
+            >
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+
+          <div
+            ref={scrollerRef}
+            className="flex gap-6 md:gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {isLoading ? (
+              [...Array(4)].map((_, i) => (
+                <div
+                  key={i}
+                  className="snap-start shrink-0 w-[78%] xs:w-[60%] sm:w-[46%] lg:w-[calc(25%-1.5rem)] bg-white rounded-md shadow-md animate-pulse"
+                >
+                  <div className="h-64 bg-gray-200" />
+                  <div className="p-5 space-y-3">
+                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                    <div className="h-3 bg-gray-200 rounded w-1/2" />
+                    <div className="h-3 bg-gray-200 rounded w-full" />
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : faculties.length === 0 ? (
+              <p className="text-sm text-gray-400 py-10 mx-auto">
+                No featured faculty to show right now.
+              </p>
+            ) : (
+              faculties.map((f) => (
+                <div
+                  key={f.id}
+                  className="snap-start shrink-0 w-[78%] xs:w-[60%] sm:w-[46%] lg:w-[calc(25%-1.5rem)]"
+                >
+                  <FacultyCard
+                    id={f.id}
+                    name={f.name}
+                    qualifications={f.qualifications}
+                    description={f.description}
+                    image={f.image}
+                  />
+                </div>
+              ))
+            )}
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-            {faculties.map((f) => (
-              <FacultyCard
-                key={f.id}
-                id={f.id}
-                name={f.name}
-                qualifications={f.qualifications}
-                description={f.description}
-                image={f.image}
-              />
-            ))}
-          </div>
-        )}
+
+          {/* Right arrow */}
+          {faculties.length > 1 && (
+            <button
+              onClick={() => scrollByCard("right")}
+              className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-gray-200 rounded-full shadow-md items-center justify-center hover:bg-gray-50 transition opacity-0 group-hover/scroller:opacity-100"
+              aria-label="Scroll right"
+            >
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
     </section>
   );
@@ -544,7 +585,7 @@ const TESTIMONIALS_PER_PAGE = 3;
 const TestimonialSection: React.FC = () => {
   const { data, isLoading } = useQuery({
     queryKey: ["landing-testimonials"],
-    queryFn: getTestimonials,
+    queryFn: getTestimonialsForUser,
   });
 
   const testimonials = (data ?? []).filter((t) => !t.isDeleted);

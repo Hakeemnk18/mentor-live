@@ -13,4 +13,8 @@ export interface IBookingController {
   getSlotBookingDetails(req: Request, res: Response): Promise<void>;
   getChapterBookingDetails(req: Request, res: Response): Promise<void>;
   getAllBookings(req: Request, res: Response): Promise<void>;
+  markBookingContacted(req: Request, res: Response): Promise<void>;
+  exportOneToOneBookings(req: Request, res: Response): Promise<void>;
+  exportPoolingBookings(req: Request, res: Response): Promise<void>;
+  exportAllBookings(req: Request, res: Response): Promise<void>;
 }

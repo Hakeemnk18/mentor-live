@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { getSyllabus } from "../../../api/syllabus.api";
-import { getClasses } from "../../../api/class.api";
+import { getSyllabusList } from "../../../api/syllabus.api";
+import { getClassesList } from "../../../api/class.api";
 
 const BookTutorPage: React.FC = () => {
   const [syllabusId, setSyllabusId] = useState("");
@@ -12,18 +12,18 @@ const BookTutorPage: React.FC = () => {
   /* ── Fetch syllabus list ── */
   const { data: syllabusData, isLoading: syllabusLoading } = useQuery({
     queryKey: ["user-syllabus"],
-    queryFn: () => getSyllabus({ page: 1, limit: 100, isDeleted: false }),
+    queryFn: () => getSyllabusList(),
   });
 
   /* ── Fetch classes (enabled after syllabus) ── */
   const { data: classData, isLoading: classLoading } = useQuery({
     queryKey: ["user-classes", syllabusId],
-    queryFn: () => getClasses({ page: 1, limit: 100, isDeleted: false }),
+    queryFn: () => getClassesList(),
     enabled: !!syllabusId,
   });
 
-  const syllabuses = syllabusData?.rows ?? [];
-  const classes = classData?.rows ?? [];
+  const syllabuses = syllabusData ?? [];
+  const classes = classData ?? [];
 
   const handleSyllabusChange = (val: string) => {
     setSyllabusId(val);

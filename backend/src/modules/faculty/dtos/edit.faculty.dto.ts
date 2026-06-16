@@ -21,6 +21,8 @@ export const EditFacultySchema = z
       publicId: z.string().trim().min(1, "Icon publicId is required"),
     }),
 
+    isFeatured: z.boolean().optional().default(false),
+
     subjects: z
       .array(SubjectOfferingSchema)
       .min(1, "At least one subject is required"),

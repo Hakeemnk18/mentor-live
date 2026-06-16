@@ -1,6 +1,8 @@
+type CropArea = { x: number; y: number; width: number; height: number };
+
 export async function getCroppedImage(
   imageSrc: string,
-  crop: any
+  crop: CropArea
 ): Promise<File> {
   const image = await createImage(imageSrc);
   const canvas = document.createElement("canvas");

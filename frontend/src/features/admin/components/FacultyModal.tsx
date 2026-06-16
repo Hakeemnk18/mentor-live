@@ -1,6 +1,7 @@
 ﻿import { useEffect, useRef, useState, type ReactNode } from "react";
 import toast from "react-hot-toast";
 import SearchableSelect from "../../../shared/components/SearchableSelect";
+import TimeInput from "../../../shared/components/TimeInput";
 import { formatTimeAMPM } from "../../../shared/utils/time.utils";
 import ImageCropModal from "../../../shared/components/ImageCropModal/ImageCropModal";
 import { getSubjectVariants, getChaptersList } from "../../../api/chapter.api";
@@ -14,17 +15,30 @@ import {
 } from "../../../api/faculty.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
-import type { ImagePayload, SubjectGroup, SubjectVariant, FacultyModalData, FacultyData } from "../../../shared/types/faculty.types";
+import type { ImagePayload, SubjectGroup, SubjectVariant, FacultyModalData, FacultyData, SubjectSlotGroup } from "../../../shared/types/faculty.types";
 /* ================================================================== */
 /* TYPES                                                                */
 /* ================================================================== */
 
 type SlotState = {
   id?: string;
+  /** variantId this slot belongs to */
+  variantId?: string;
   time: string;
   isAvailable: boolean;
   pool?: unknown[];
 };
+
+/**
+ * CREATE-mode only: one row per time, with a set of variant IDs
+ * indicating which subjects this time slot applies to.
+ */
+type TimeRow = {
+  time: string;         // HH:mm
+  variantIds: string[]; // checked variants for this time
+};
+
+const DEFAULT_SLOT_TIMES: string[] = ["15:00", "16:00", "17:00", "18:00", "19:00"];
 
 type ChapterSlotState = {
   id?: string;
@@ -34,14 +48,16 @@ type ChapterSlotState = {
   pool?: unknown[];
 };
 
-type FacultySubmitPayload = {
+export type FacultySubmitPayload = {
   name: string;
   qualifications: string[];
   description: string;
   demoClass: string;
+  isFeatured?: boolean;
   subjects: { variantId: string; price: number }[];
   image?: ImagePayload;
-  slots?: { time: string }[];
+  /** Per-variant slot groups — replaces the old flat slots[] */
+  subjectSlots?: SubjectSlotGroup[];
   chapterSlots?: { chapter: string }[];
 };
 
@@ -96,6 +112,7 @@ export default function FacultyModal({
   const [qualifications, setQualifications] = useState("");
   const [description, setDescription] = useState("");
   const [demoClass, setDemoClass] = useState("");
+  const [isFeatured, setIsFeatured] = useState(false);
 
   /* ---------- Image ---------- */
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -108,18 +125,29 @@ export default function FacultyModal({
   /* ---------- Subject groups ---------- */
   const [subjectGroups, setSubjectGroups] = useState<SubjectGroup[]>([]);
 
-  /* ---------- Time slots ---------- */
+  /* ---------- Time slots (EDIT mode) ---------- */
   const [timeSlots, setTimeSlots] = useState<SlotState[]>([]);
   const [newTime, setNewTime] = useState("");
+  const [newSlotVariantId, setNewSlotVariantId] = useState("");
   const [slotWorking, setSlotWorking] = useState(false);
+
+  /* ---------- Time rows (CREATE mode only) ---------- */
+  const [timeRows, setTimeRows] = useState<TimeRow[]>(
+    DEFAULT_SLOT_TIMES.map((t) => ({ time: t, variantIds: [] }))
+  );
+  const [newRowTime, setNewRowTime] = useState("");
+  const [newRowTimeKey, setNewRowTimeKey] = useState(0);
 
   /* ---------- Chapter slots ---------- */
   const [chapterSlots, setChapterSlots] = useState<ChapterSlotState[]>([]);
   const [chapterSyllabusId, setChapterSyllabusId] = useState("");
   const [chapterClassId, setChapterClassId] = useState("");
   const [chapterOptions, setChapterOptions] = useState<{ _id: string; name: string }[]>([]);
+  const [chapterOptionsLoaded, setChapterOptionsLoaded] = useState(false);
   const [chapterId, setChapterId] = useState("");
   const [chapterWorking, setChapterWorking] = useState(false);
+  const chapterDropdownRef = useRef<HTMLDivElement>(null);
+  const chapterNoResultsRef = useRef<HTMLParagraphElement>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [slotError, setSlotError] = useState("");
@@ -141,18 +169,18 @@ export default function FacultyModal({
       setImageFile(null);
       setImagePayload(null);
       setSubjectGroups([makeEmptyGroup()]);
-      setTimeSlots(
-        Array.from({ length: 5 }, (_, i) => ({
-          time: `${String(15 + i).padStart(2, "0")}:00`,
-          isAvailable: true,
-        }))
-      );
+      setTimeRows(DEFAULT_SLOT_TIMES.map((t) => ({ time: t, variantIds: [] })));
+      setNewRowTime("");
+      setTimeSlots([]);
       setNewTime("");
+      setNewSlotVariantId("");
       setChapterSlots([]);
       setChapterSyllabusId("");
       setChapterClassId("");
       setChapterOptions([]);
+      setChapterOptionsLoaded(false);
       setChapterId("");
+      setChapterError("");
       setErrors({});
       return;
     }
@@ -163,6 +191,7 @@ export default function FacultyModal({
       setQualifications((initialData.qualifications ?? []).join(", "));
       setDescription(initialData.description ?? "");
       setDemoClass(initialData.demoClass ?? "");
+      setIsFeatured(initialData.isFeatured ?? false);
 
       const initImageUrl = typeof initialData.image === "object" && initialData.image !== null 
         ? initialData.image.url 
@@ -176,15 +205,17 @@ export default function FacultyModal({
           : null
       );
 
-      // Time slots " load ALL, preserving isAvailable state
+      // Time slots — load ALL, preserving isAvailable + variantId
       setTimeSlots(
         (initialData.slots ?? []).map((s) => ({
           id: s.id,
+          variantId: s.variantId,
           time: toHHMM(s.time),
           pool: s.pool ?? [],
           isAvailable: s.isAvailable !== false,
         }))
       );
+      setNewSlotVariantId("");
 
       // Chapter slots " load ALL, preserving isAvailable state
       setChapterSlots(
@@ -202,7 +233,9 @@ export default function FacultyModal({
       setChapterSyllabusId("");
       setChapterClassId("");
       setChapterOptions([]);
+      setChapterOptionsLoaded(false);
       setChapterId("");
+      setChapterError("");
       setErrors({});
 
       // Subject groups grouped by syllabus+class
@@ -224,6 +257,7 @@ export default function FacultyModal({
             selected: [],
             selectedVariants: [],
             prices: {},
+            slotTimes: {},
           });
         }
         // o.id IS the SubjectVariant's _id (backend maps so._id → o.id)
@@ -265,15 +299,26 @@ export default function FacultyModal({
   useEffect(() => {
     if (!chapterSyllabusId || !chapterClassId) {
       setChapterOptions([]);
+      setChapterOptionsLoaded(false);
       setChapterId("");
       return;
     }
+    setChapterOptionsLoaded(false);
     getChaptersList({ syllabusId: chapterSyllabusId, classId: chapterClassId })
-      .then((items) =>
-        setChapterOptions(items.map((c) => ({ _id: c._id, name: c.name })))
-      )
+      .then((items) => {
+        setChapterOptions(items.map((c) => ({ _id: c._id, name: c.name })));
+        setChapterOptionsLoaded(true);
+      })
       .catch(handleApiError);
   }, [chapterSyllabusId, chapterClassId]);
+
+  // Scroll the chapter dropdown (or the "no chapters found" alert) into view once it appears
+  useEffect(() => {
+    if (chapterOptionsLoaded) {
+      const target = chapterOptions.length > 0 ? chapterDropdownRef.current : chapterNoResultsRef.current;
+      target?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [chapterOptionsLoaded, chapterOptions]);
 
   if (!open) return null;
 
@@ -282,7 +327,7 @@ export default function FacultyModal({
   /* ================================================================ */
 
   function makeEmptyGroup(): SubjectGroup {
-    return { id: ++groupCounter, syllabusId: "", classId: "", variants: [], selected: [], selectedVariants: [], prices: {} };
+    return { id: ++groupCounter, syllabusId: "", classId: "", variants: [], selected: [], selectedVariants: [], prices: {}, slotTimes: {} };
   }
 
   const addGroup = () => setSubjectGroups((prev) => [...prev, makeEmptyGroup()]);
@@ -295,6 +340,24 @@ export default function FacultyModal({
     field: "syllabusId" | "classId",
     value: string
   ) => {
+    const group = subjectGroups.find((g) => g.id === id)!;
+    const newSyllabusId = field === "syllabusId" ? value : group.syllabusId;
+    const newClassId = field === "classId" ? value : group.classId;
+
+    // Block picking a syllabus + class combination that another group already uses
+    if (newSyllabusId && newClassId) {
+      const duplicate = subjectGroups.some(
+        (g) =>
+          g.id !== id &&
+          g.syllabusId === newSyllabusId &&
+          g.classId === newClassId
+      );
+      if (duplicate) {
+        toast.error("This syllabus & class combination is already added in another group");
+        return;
+      }
+    }
+
     setSubjectGroups((prev) =>
       prev.map((g) =>
         g.id === id
@@ -312,9 +375,6 @@ export default function FacultyModal({
       )
     );
 
-    const group = subjectGroups.find((g) => g.id === id)!;
-    const newSyllabusId = field === "syllabusId" ? value : group.syllabusId;
-    const newClassId = field === "classId" ? value : group.classId;
     if (newSyllabusId && newClassId) {
       try {
         const raw = await getSubjectVariants({
@@ -384,27 +444,87 @@ export default function FacultyModal({
   const toHHMM = (raw: string): string => {
     const d = new Date(raw);
     if (!isNaN(d.getTime())) {
-      return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+      // Slot times are stored as UTC digits representing the intended
+      // IST wall-clock time, so read them back via UTC getters
+      return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
     }
     // Already "HH:MM" or similar â€" return as-is
     return raw;
   };
 
+  /* ================================================================ */
+  /* CREATE-MODE time row handlers                                     */
+  /* ================================================================ */
+
+  const handleAddTimeRow = () => {
+    if (!newRowTime) { setSlotError("Pick a time first"); return; }
+    if (timeRows.some((r) => r.time === newRowTime)) {
+      setSlotError("This time is already in the list"); return;
+    }
+    const mins = toMinutes(newRowTime);
+    const overlap = timeRows.find((r) => Math.abs(toMinutes(r.time) - mins) < 60);
+    if (overlap) {
+      setSlotError(`Overlaps with ${formatTimeAMPM(overlap.time)} — slots must be 1 hr apart`);
+      return;
+    }
+    setSlotError("");
+    setTimeRows((prev) =>
+      [...prev, { time: newRowTime, variantIds: [] }].sort(
+        (a, b) => toMinutes(a.time) - toMinutes(b.time)
+      )
+    );
+    setNewRowTime("");
+    setNewRowTimeKey((k) => k + 1);
+  };
+
+  const handleRemoveTimeRow = (time: string) => {
+    setTimeRows((prev) => prev.filter((r) => r.time !== time));
+  };
+
+  const handleToggleVariantInRow = (time: string, variantId: string) => {
+    setTimeRows((prev) =>
+      prev.map((r) => {
+        if (r.time !== time) return r;
+        const has = r.variantIds.includes(variantId);
+        return {
+          ...r,
+          variantIds: has
+            ? r.variantIds.filter((v) => v !== variantId)
+            : [...r.variantIds, variantId],
+        };
+      })
+    );
+  };
+
+  const handleSetAllRowsVariants = (variantIds: string[]) => {
+    setTimeRows((prev) => prev.map((r) => ({ ...r, variantIds: [...variantIds] })));
+  };
+
+  /* ================================================================ */
+  /* EDIT-MODE add-slot handler                                        */
+  /* ================================================================ */
+
   const handleAddTimeSlot = async () => {
+    if (!newSlotVariantId) {
+      setSlotError("Select a subject variant first");
+      return;
+    }
     if (!newTime) {
-      setSlotError("Pick a time first");
+      setSlotError("Pick a time");
       return;
     }
-    if (timeSlots.some((s) => s.time === newTime)) {
-      setSlotError("This slot is already added");
+    // Duplicate: same variant + same time
+    if (timeSlots.some((s) => s.variantId === newSlotVariantId && s.time === newTime)) {
+      setSlotError("This slot already exists for the selected subject");
       return;
     }
+    // 1-hour gap check within the same variant
     const mins = toMinutes(newTime);
     const overlap = timeSlots.find(
-      (s) => Math.abs(toMinutes(s.time) - mins) < 60
+      (s) => s.variantId === newSlotVariantId && Math.abs(toMinutes(s.time) - mins) < 60
     );
     if (overlap) {
-      setSlotError(`Overlaps with ${formatTimeAMPM(overlap.time)} — slots must be at least 1 hour apart`);
+      setSlotError(`Overlaps with ${formatTimeAMPM(overlap.time)} for this subject — slots must be 1 hr apart`);
       return;
     }
     setSlotError("");
@@ -412,11 +532,13 @@ export default function FacultyModal({
     if (mode === "edit" && facultyId) {
       try {
         setSlotWorking(true);
-await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns no slot ID â€" re-fetch to get fresh slots with real IDs
+        await addFacultySlotIST(facultyId, { time: newTime, variantId: newSlotVariantId });
+        // Re-fetch to get the new slot's real _id from the DB
         const updated = await getFacultyById(facultyId) as FacultyData;
         setTimeSlots(
           (updated.slots ?? []).map((s) => ({
             id: s.id,
+            variantId: s.variantId,
             time: toHHMM(s.time),
             pool: s.pool ?? [],
             isAvailable: s.isAvailable !== false,
@@ -431,7 +553,7 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
       }
     } else {
       setTimeSlots((prev) =>
-        [...prev, { time: newTime, isAvailable: true }].sort(
+        [...prev, { variantId: newSlotVariantId, time: newTime, isAvailable: true }].sort(
           (a, b) => toMinutes(a.time) - toMinutes(b.time)
         )
       );
@@ -600,8 +722,19 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
       );
       if (missingPrice) e.subjects = "Enter a price > 0 for every selected subject";
     }
-    if (mode === "create" && timeSlots.length === 0)
-      e.slots = "Add at least one time slot";
+    if (mode === "create") {
+      const allVariants = subjectGroups.flatMap((g) => g.selected);
+      if (timeRows.length === 0) {
+        e.slots = "Add at least one time slot";
+      } else if (allVariants.length > 0) {
+        // Every selected variant must appear in at least one row
+        const covered = new Set(timeRows.flatMap((r) => r.variantIds));
+        const missing = allVariants.filter((v) => !covered.has(v));
+        if (missing.length > 0) {
+          e.slots = "Assign each subject to at least one time slot";
+        }
+      }
+    }
     // if (mode === "create" && chapterSlots.length === 0)
     //   e.chapters = "Add at least one chapter";
     return e;
@@ -634,8 +767,6 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
         setUploading(false);
       }
 
-      const slotsPayload = timeSlots.map(({ time }) => timeStringToISOSlot(time));
-
       const payload: FacultySubmitPayload = {
         name: name.trim(),
         qualifications: qualifications
@@ -644,6 +775,7 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
           .filter(Boolean),
         description: description.trim(),
         demoClass: demoClass.trim(),
+        isFeatured,
         subjects: subjectGroups.flatMap((g) =>
           g.selected.map((variantId) => ({
             variantId,
@@ -653,15 +785,27 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
       };
 
       // Only include image when the user actually picked a new file.
-      // imagePayload is already set from initialData in edit mode (for display),
-      // so finalImage alone is always truthy â€" imageFile is the real new-image signal.
       if (imageFile && finalImage) {
         payload.image = finalImage;
       }
 
-      // Slots/chapters only bundled in CREATE â€" edit handles them via immediate APIs
+      // Slots/chapters only bundled in CREATE — edit handles them via immediate APIs
       if (mode === "create") {
-        payload.slots = slotsPayload;
+        /*
+         * Transform timeRows → subjectSlots[]:
+         *   Input:  [{ time:"15:00", variantIds:["english","physics"] }, ...]
+         *   Output: [{ variantId:"english", times:[{time:ISO},...] }, ...]
+         */
+        const slotsByVariant = new Map<string, { time: string }[]>();
+        for (const row of timeRows) {
+          for (const vid of row.variantIds) {
+            if (!slotsByVariant.has(vid)) slotsByVariant.set(vid, []);
+            slotsByVariant.get(vid)!.push(timeStringToISOSlot(row.time));
+          }
+        }
+        payload.subjectSlots = Array.from(slotsByVariant.entries()).map(
+          ([variantId, times]) => ({ variantId, times })
+        );
         payload.chapterSlots = chapterSlots.map((c) => ({ chapter: c.chapter }));
       }
 
@@ -672,6 +816,9 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
   };
 
   const isLoading = saving || uploading || slotWorking || chapterWorking;
+
+  // Variants already picked in ANY group â€" backend rejects duplicate variantIds
+  const allSelectedVariantIds = new Set(subjectGroups.flatMap((g) => g.selected));
 
   /* ================================================================ */
   /* RENDER                                                             */
@@ -685,7 +832,7 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
           onClick={!isLoading ? onClose : undefined}
         />
 
-        <div className="relative w-full max-w-xl bg-white rounded-xl shadow-xl flex flex-col max-h-[90vh]">
+        <div className="relative w-full max-w-xl mx-4 bg-white rounded-xl shadow-xl flex flex-col max-h-[90vh]">
           {/* Header */}
           <div className="border-b px-6 py-4">
             <h2 className="text-base font-semibold text-gray-900">
@@ -743,6 +890,22 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
                   placeholder="https://youtu.be/..."
                   className={inp(!!errors.demoClass)}
                 />
+              </Field>
+              <Field
+                label="Featured Faculty"
+                hint="Shown in the landing page's featured section — max 8 faculty can be featured at a time"
+              >
+                <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={isFeatured}
+                    onChange={(e) => setIsFeatured(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-[#DB313E] focus:ring-[#DB313E]/30"
+                  />
+                  <span className="text-sm text-gray-700">
+                    Mark this faculty as featured
+                  </span>
+                </label>
               </Field>
             </Section>
 
@@ -803,7 +966,7 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
                   // selectedVariants always holds full objects â€" no dependency on variants loading
                   const selected = group.selectedVariants;
                   const available = group.variants.filter(
-                    (v) => !group.selected.includes(v._id)
+                    (v) => !allSelectedVariantIds.has(v._id)
                   );
 
                   return (
@@ -930,91 +1093,248 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
               </button>
             </Section>
 
-            {/* â"€â"€ Time Slots â"€â"€ */}
+            {/* ── Time Slots ── */}
             <Section title="Time Slots">
               {errors.slots && (
                 <p className="text-xs text-red-500 mb-2">{errors.slots}</p>
               )}
 
-              <div className="flex gap-2">
-                <select
-                  value={newTime}
-                  onChange={(e) => { setNewTime(e.target.value); setSlotError(""); }}
-                  className={inp(!!slotError) + " flex-1 text-sm"}
-                >
-                  <option value="">Pick a time…</option>
-                  {TIME_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={handleAddTimeSlot}
-                  disabled={slotWorking}
-                  className="px-3 py-1.5 text-sm bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 disabled:opacity-50"
-                >
-                  {slotWorking ? "" : "+ Add"}
-                </button>
-              </div>
-              {slotError && (
-                <p className="text-xs text-red-500 mt-0.5">{slotError}</p>
-              )}
-
-              {/* Active */}
-              {timeSlots.some((s) => s.isAvailable) && (
-                <div className="mt-3">
-                  <p className="text-xs font-medium text-gray-500 mb-1">Active</p>
-                  <div className="flex flex-wrap gap-2">
-                    {timeSlots
-                      .filter((s) => s.isAvailable)
-                      .map((s) => (
-                        <span
-                          key={s.id ?? s.time}
-                          className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-50 border border-blue-200 rounded-full text-blue-700"
+              {mode === "create" ? (
+                /* ── CREATE MODE: time-first table ── */
+                (() => {
+                  const allVariants = subjectGroups.flatMap((g) => {
+                    const syllabusName = syllabuses.find((s) => s._id === g.syllabusId)?.name ?? "";
+                    const className    = classes.find((c) => c._id === g.classId)?.name ?? "";
+                    return g.selectedVariants.map((v) => ({
+                      variantId: v._id,
+                      label: [v.subjectName, className, syllabusName].filter(Boolean).join(" · "),
+                    }));
+                  });
+                  return (
+                    <div className="space-y-3">
+                      {/* Add-time row */}
+                      <div className="flex gap-2">
+                        <TimeInput
+                          key={newRowTimeKey}
+                          value={newRowTime}
+                          onChange={(v) => { setNewRowTime(v); setSlotError(""); }}
+                          hasError={!!slotError}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddTimeRow}
+                          disabled={!newRowTime}
+                          className="px-3 py-1.5 text-sm bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 disabled:opacity-50"
                         >
-                          {formatTimeAMPM(s.time)}
-                          {(!s.pool || s.pool.length === 0) && (
-                            <button
-                              type="button"
-                              onClick={() => handleBlockTimeSlot(s)}
-                              disabled={slotWorking}
-                              title="Block slot"
-                              className="ml-1 text-blue-400 hover:text-red-500 disabled:opacity-50"
+                          + Add
+                        </button>
+                      </div>
+                      {slotError && <p className="text-xs text-red-500">{slotError}</p>}
+
+                      {/* Time rows table */}
+                      {timeRows.length > 0 && (
+                        <div className="border border-gray-200 rounded-lg overflow-hidden">
+                          {/* Header */}
+                          <div className="grid bg-gray-50 px-3 py-2 border-b border-gray-200"
+                            style={{ gridTemplateColumns: "90px 1fr 28px" }}>
+                            <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Time</span>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                                {allVariants.length === 0 ? "Subjects (select subjects above)" : "Subjects"}
+                              </span>
+                              {allVariants.length > 1 && (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSetAllRowsVariants(allVariants.map((v) => v.variantId))}
+                                    className="text-xs text-[#DB313E] hover:underline"
+                                  >
+                                    Select all
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSetAllRowsVariants([])}
+                                    className="text-xs text-gray-400 hover:underline"
+                                  >
+                                    Clear all
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            <span />
+                          </div>
+
+                          {/* Rows */}
+                          {timeRows.map((row) => (
+                            <div
+                              key={row.time}
+                              className="grid items-center px-3 py-2 border-b border-gray-100 last:border-0 hover:bg-gray-50/50"
+                              style={{ gridTemplateColumns: "90px 1fr 28px" }}
                             >
-                              X
-                            </button>
-                          )}
-                        </span>
-                      ))}
-                  </div>
-                </div>
-              )}
+                              {/* Time label */}
+                              <span className="text-sm font-semibold text-gray-800">
+                                {formatTimeAMPM(row.time)}
+                              </span>
 
-              {/* Blocked */}
-              {timeSlots.some((s) => !s.isAvailable) && (
-                <div className="mt-3">
-                  <p className="text-xs font-medium text-gray-500 mb-1">Blocked</p>
-                  <div className="flex flex-wrap gap-2">
-                    {timeSlots
-                      .filter((s) => !s.isAvailable)
-                      .map((s) => (
-                        <span
-                          key={s.id ?? s.time}
-                          className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-50 border border-gray-300 rounded-full text-gray-400"
+                              {/* Variant toggle pills */}
+                              <div className="flex flex-wrap items-center gap-1.5 py-0.5">
+                                {allVariants.length === 0 && (
+                                  <span className="text-xs text-gray-400 italic">—</span>
+                                )}
+                                {allVariants.map((v) => {
+                                  const checked = row.variantIds.includes(v.variantId);
+                                  return (
+                                    <button
+                                      key={v.variantId}
+                                      type="button"
+                                      onClick={() => handleToggleVariantInRow(row.time, v.variantId)}
+                                      className={`px-2.5 py-0.5 text-xs rounded-full border font-medium transition-colors ${
+                                        checked
+                                          ? "bg-[#DB313E] border-[#DB313E] text-white"
+                                          : "bg-white border-gray-300 text-gray-500 hover:border-[#DB313E] hover:text-[#DB313E]"
+                                      }`}
+                                    >
+                                      {checked ? "✓ " : ""}{v.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Remove row */}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveTimeRow(row.time)}
+                                className="text-gray-300 hover:text-red-500 text-base leading-none transition-colors justify-self-end"
+                                title="Remove this time"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {timeRows.length === 0 && (
+                        <p className="text-xs text-gray-400 text-center py-2">
+                          No time slots yet — add one above.
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()
+              ) : (
+                /* ── EDIT MODE: variant-first add + grouped list ── */
+                (() => {
+                  const allVariants = subjectGroups.flatMap((g) => {
+                    const syllabusName = syllabuses.find((s) => s._id === g.syllabusId)?.name ?? "";
+                    const className    = classes.find((c) => c._id === g.classId)?.name ?? "";
+                    return g.selectedVariants.map((v) => ({
+                      variantId: v._id,
+                      label: [v.subjectName, className, syllabusName].filter(Boolean).join(" · "),
+                    }));
+                  });
+                  const nameMap = new Map(allVariants.map((v) => [v.variantId, v.label]));
+                  const variantIds = [...new Set(timeSlots.map((s) => s.variantId).filter(Boolean))];
+
+                  return (
+                    <div className="space-y-3">
+                      {/* Add slot row */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <select
+                          value={newSlotVariantId}
+                          onChange={(e) => { setNewSlotVariantId(e.target.value); setSlotError(""); }}
+                          className={inp(!!slotError) + " text-sm"}
+                          disabled={allVariants.length === 0}
                         >
-                          {formatTimeAMPM(s.time)}
+                          <option value="">
+                            {allVariants.length === 0 ? "No subjects yet" : "Subject…"}
+                          </option>
+                          {allVariants.map((v) => (
+                            <option key={v.variantId} value={v.variantId}>{v.label}</option>
+                          ))}
+                        </select>
+                        <div className="flex gap-2">
+                          <select
+                            value={newTime}
+                            onChange={(e) => { setNewTime(e.target.value); setSlotError(""); }}
+                            className={inp(!!slotError) + " flex-1 text-sm"}
+                            disabled={!newSlotVariantId}
+                          >
+                            <option value="">Time…</option>
+                            {TIME_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                          </select>
                           <button
                             type="button"
-                            onClick={() => handleUnblockTimeSlot(s)}
-                            disabled={slotWorking}
-                            className="ml-1 text-xs text-green-600 hover:text-green-700 font-medium disabled:opacity-50"
+                            onClick={handleAddTimeSlot}
+                            disabled={slotWorking || !newSlotVariantId || !newTime}
+                            className="px-3 py-1.5 text-sm bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 disabled:opacity-50 whitespace-nowrap"
                           >
-                            Unblock
+                            {slotWorking ? "…" : "+ Add"}
                           </button>
-                        </span>
-                      ))}
-                  </div>
-                </div>
+                        </div>
+                      </div>
+                      {slotError && <p className="text-xs text-red-500">{slotError}</p>}
+
+                      {/* Existing slots grouped by variant */}
+                      {variantIds.length > 0 && (
+                        <div className="space-y-2 mt-1">
+                          {variantIds.map((vid) => {
+                            const label = nameMap.get(vid!) ?? vid;
+                            const active  = timeSlots.filter((s) => s.variantId === vid &&  s.isAvailable);
+                            const blocked = timeSlots.filter((s) => s.variantId === vid && !s.isAvailable);
+                            return (
+                              <div key={vid} className="border border-gray-100 rounded-lg p-2 bg-gray-50">
+                                <p className="text-[11px] font-semibold text-[#DB313E] uppercase tracking-wide mb-1.5">
+                                  {label}
+                                </p>
+                                {active.length > 0 && (
+                                  <div className="mb-1">
+                                    <p className="text-[10px] text-gray-400 mb-1">Active</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {active.map((s) => (
+                                        <span key={s.id ?? `${vid}-${s.time}`}
+                                          className="flex items-center gap-1 px-2 py-0.5 text-xs bg-blue-50 border border-blue-200 rounded-full text-blue-700">
+                                          {formatTimeAMPM(s.time)}
+                                          {(!s.pool || s.pool.length === 0) && (
+                                            <button type="button" onClick={() => handleBlockTimeSlot(s)}
+                                              disabled={slotWorking} title="Block"
+                                              className="ml-0.5 text-blue-400 hover:text-red-500 disabled:opacity-50 leading-none">
+                                              ×
+                                            </button>
+                                          )}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {blocked.length > 0 && (
+                                  <div>
+                                    <p className="text-[10px] text-gray-400 mb-1">Blocked</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {blocked.map((s) => (
+                                        <span key={s.id ?? `${vid}-${s.time}`}
+                                          className="flex items-center gap-1 px-2 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded-full text-gray-400">
+                                          {formatTimeAMPM(s.time)}
+                                          <button type="button" onClick={() => handleUnblockTimeSlot(s)}
+                                            disabled={slotWorking}
+                                            className="ml-0.5 text-xs text-green-600 hover:text-green-700 font-medium disabled:opacity-50">
+                                            Unblock
+                                          </button>
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()
               )}
             </Section>
 
@@ -1030,6 +1350,7 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
                   onChange={(v) => {
                     setChapterSyllabusId(v);
                     setChapterClassId("");
+                    setChapterError("");
                   }}
                   options={syllabuses.map((s) => ({ value: s._id, label: s.name }))}
                   placeholder="Syllabus"
@@ -1037,15 +1358,21 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
 
                 <SearchableSelect
                   value={chapterClassId}
-                  onChange={setChapterClassId}
+                  onChange={(v) => { setChapterClassId(v); setChapterError(""); }}
                   options={classes.map((c) => ({ value: c._id, label: c.name }))}
                   placeholder={chapterSyllabusId ? "Class" : "Select syllabus first"}
                   disabled={!chapterSyllabusId}
                 />
               </div>
 
+              {chapterSyllabusId && chapterClassId && chapterOptionsLoaded && chapterOptions.length === 0 && (
+                <p ref={chapterNoResultsRef} className="text-xs text-gray-400 mt-2">
+                  No chapters found for this syllabus & class combination.
+                </p>
+              )}
+
               {chapterOptions.length > 0 && (
-                <div className="flex gap-2 mt-2">
+                <div ref={chapterDropdownRef} className="flex gap-2 mt-2">
                   <SearchableSelect
                     value={chapterId}
                     onChange={(v) => { setChapterId(v); setChapterError(""); }}
@@ -1085,10 +1412,10 @@ await addFacultySlotIST(facultyId, { time: newTime });        // Backend returns
                               type="button"
                               onClick={() => handleBlockChapterSlot(cs)}
                               disabled={chapterWorking}
-                              title="Block chapter slot"
-                              className="ml-1 text-green-400 hover:text-red-500 disabled:opacity-50"
+                              title="Remove chapter"
+                              className="ml-1 text-green-400 hover:text-red-500 disabled:opacity-50 leading-none"
                             >
-                              
+                              {String.fromCharCode(215)}
                             </button>
                           )}
                         </span>

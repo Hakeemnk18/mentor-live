@@ -6,6 +6,11 @@ export const getTestimonials = async (): Promise<Testimonial[]> => {
   return res.data.data ?? [];
 };
 
+export const getTestimonialsForUser = async (): Promise<Testimonial[]> => {
+  const res = await axiosInstance.get("/testimonials/list");
+  return res.data.data ?? [];
+}
+
 export const createTestimonial = async (
   payload: TestimonialPayload
 ): Promise<void> => {

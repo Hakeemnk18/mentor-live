@@ -28,7 +28,7 @@ export  const validateTime = (prev: number | null, curr: number) => {
 };
 
 export  const validateOnCreate = (slots: ISlots[]) => {
-  
+
   const minutes = slots.map((s) => toMinutes(s.time)).sort((a, b) => a - b);
 
   for (let i = 0; i < minutes.length; i++) {
@@ -42,3 +42,23 @@ export  const validateOnCreate = (slots: ISlots[]) => {
   }
   return true;
 }
+
+/**
+ * Ensures every new slot keeps a 1-hr gap from each other slot already
+ * stored for the same faculty + variant.
+ */
+export const validateAgainstExisting = (
+  newSlots: ISlots[],
+  existingTimes: Date[],
+) => {
+  const ONE_HOUR = 60;
+  const existingMinutes = existingTimes.map((t) => toMinutes(t));
+
+  for (const slot of newSlots) {
+    const curr = toMinutes(slot.time);
+    if (existingMinutes.some((m) => Math.abs(m - curr) < ONE_HOUR)) {
+      return false;
+    }
+  }
+  return true;
+};

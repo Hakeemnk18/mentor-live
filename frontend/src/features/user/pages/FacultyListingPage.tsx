@@ -203,6 +203,7 @@ const FacultyListingPage: React.FC = () => {
                   image={f.image}
                   syllabusId={syllabusId}
                   classId={classId}
+                  variantId={subjectId}   // subjectId pill value IS the SubjectVariant _id
                 />
               ))}
             </div>

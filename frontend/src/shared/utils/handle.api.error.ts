@@ -1,13 +1,19 @@
 import toast from "react-hot-toast";
 
 
-export function handleApiError(error: any) {
+type ApiError = {
+  response?: { data?: { message?: string; errors?: Record<string, string> } };
+  message?: string;
+};
+
+export function handleApiError(error: unknown) {
+  const e = error as ApiError;
   const message =
-    error?.response?.data?.message ||
-    error?.message ||
+    e?.response?.data?.message ||
+    e?.message ||
     "Something went wrong";
 
-  const validationErrors = error?.response?.data?.errors;
+  const validationErrors = e?.response?.data?.errors;
 
   toast.error(message);
 

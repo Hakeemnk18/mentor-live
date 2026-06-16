@@ -13,26 +13,49 @@ const bookingController = container.resolve(BookingController);
 router.post("/", (req, res) => bookingController.createBooking(req, res));
 
 // get all one to one booking for admin
-router.get("/one-to-one", 
+router.get("/one-to-one",
   authenticate.authenticate,
   authorizeRoles("admin", "salesPerson"),
   (req, res) =>
     bookingController.getAllOneToOneBooking(req, res),
 );
 
+// export one to one bookings (respects current filters)
+router.get("/one-to-one/export",
+  authenticate.authenticate,
+  authorizeRoles("admin", "salesPerson"),
+  (req, res) =>
+    bookingController.exportOneToOneBookings(req, res),
+);
+
 // get all booking
-router.get("/", 
+router.get("/",
   authenticate.authenticate,
   authorizeRoles("admin", "salesPerson"),
   (req, res) => bookingController.getAllBookings(req, res)
 );
 
+// export all bookings (respects current filters)
+router.get("/export",
+  authenticate.authenticate,
+  authorizeRoles("admin", "salesPerson"),
+  (req, res) => bookingController.exportAllBookings(req, res)
+);
+
 // get all pooling booking
-router.get("/pooling", 
+router.get("/pooling",
   authenticate.authenticate,
   authorizeRoles("admin", "salesPerson"),
   (req, res) =>
     bookingController.getAllPoolingBooking(req, res),
+);
+
+// export pooling bookings (respects current filters)
+router.get("/pooling/export",
+  authenticate.authenticate,
+  authorizeRoles("admin", "salesPerson"),
+  (req, res) =>
+    bookingController.exportPoolingBookings(req, res),
 );
 
 // get pooling students
@@ -52,11 +75,19 @@ router.patch("/one-to-one/slot/:bookingId/confirm",
 );
 
 // confirm chapter one to one booking
-router.patch("/one-to-one/chapter/:bookingId/confirm", 
+router.patch("/one-to-one/chapter/:bookingId/confirm",
   authenticate.authenticate,
   authorizeRoles("admin"),
   (req, res) =>
   bookingController.confirmChapterOneToOneBooking(req, res),
+);
+
+// mark a booking as contacted
+router.patch("/one-to-one/:bookingId/contact",
+  authenticate.authenticate,
+  authorizeRoles("admin", "salesPerson"),
+  (req, res) =>
+  bookingController.markBookingContacted(req, res),
 );
 
 // confirm pooling booking

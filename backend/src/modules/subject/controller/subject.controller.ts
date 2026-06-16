@@ -20,6 +20,7 @@ import { parseReq } from "../../../core/utils/parse.query.helper.js";
 import type { IGetSubjectsForAdminUseCase } from "../use-cases/interfaces/get.all.subject.for.admin.use-case.interface.js";
 import type { IGetSubjectDetailsUseCase } from "../use-cases/interfaces/get.subject.details.use-case.interface.js";
 import type { IGetAllSubjectForUserUseCase } from "../use-cases/interfaces/get.all.subject.for.user.use-case.interface.js";
+import { GetSubjectForUserQuerySchema } from "../dtos/get.subject.for.user.dto.js";
 
 @injectable()
 export class SubjectController implements ISubjectController {
@@ -111,7 +112,12 @@ export class SubjectController implements ISubjectController {
 
   async getAllSubjectForUser(req: Request, res: Response): Promise<void> {
     try {
-      const data = await this._getAllSubjectForUserUseCase.execute();
+      const dto = GetSubjectForUserQuerySchema.parse({
+        syllabusId: req.query.syllabusId || undefined,
+        classId: req.query.classId || undefined,
+      });
+
+      const data = await this._getAllSubjectForUserUseCase.execute(dto);
       res.status(HttpStatusCode.OK).json({
         success: true,
         message: ResponseMessages.SUCCESS,

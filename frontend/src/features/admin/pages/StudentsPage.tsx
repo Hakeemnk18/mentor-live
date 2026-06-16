@@ -192,13 +192,14 @@ export default function StudentsPage() {
       setStudents(res.data);
       setTotalPages(res.totalPages);
       setTotal(res.total);
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     } finally {
       setLoading(false);
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchStudents();
   }, [page, search, classId, syllabusId, statusFilter]);
@@ -214,7 +215,7 @@ export default function StudentsPage() {
         toast.success(`${s.name} blocked`);
       }
       fetchStudents();
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleApiError(err);
     }
   };
@@ -275,7 +276,7 @@ export default function StudentsPage() {
           <label className="text-xs font-medium text-gray-600">Status</label>
           <select
             value={statusFilter}
-            onChange={(e) => { setPage(1); setStatusFilter(e.target.value as any); }}
+            onChange={(e) => { setPage(1); setStatusFilter(e.target.value as "" | "active" | "blocked"); }}
             className={sel}
           >
             <option value="">All</option>

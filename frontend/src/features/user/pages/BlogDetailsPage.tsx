@@ -1,10 +1,11 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { getBlogById } from "../../../api/blog.api";
 
-import type { Blog } from "../../../shared/types/blog.types";
 const BlogDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [imgError, setImgError] = useState(false);
 
   const {
     data: blog,
@@ -91,19 +92,29 @@ const BlogDetailsPage: React.FC = () => {
         </div>
 
         {/* Hero Image Block */}
-        <div className="w-full max-h-[460px] bg-slate-800 rounded-sm mb-12 flex items-center justify-center overflow-hidden">
-          {/* Since we don't have an image returned from the API right now, using this clean placeholder */}
-          <svg className="w-20 h-20 text-slate-600" fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 48 48">
-            <rect x="6" y="8" width="36" height="32" rx="4" />
-            <circle cx="18" cy="20" r="4" />
-            <path d="M6 34l10-8 6 5 10-10 10 8" strokeLinejoin="round" />
-          </svg>
+        <div className="w-full aspect-[16/9] md:aspect-[2/1] bg-slate-800 rounded-sm mb-12 flex items-center justify-center overflow-hidden">
+          {blog.image?.url && !imgError ? (
+            <img
+              src={blog.image.url}
+              alt={blog.heading}
+              onError={() => setImgError(true)}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            /* Placeholder shown when the blog has no image or it fails to load */
+            <svg className="w-20 h-20 text-slate-600" fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 48 48">
+              <rect x="6" y="8" width="36" height="32" rx="4" />
+              <circle cx="18" cy="20" r="4" />
+              <path d="M6 34l10-8 6 5 10-10 10 8" strokeLinejoin="round" />
+            </svg>
+          )}
         </div>
 
         {/* Content Body */}
         <article className="prose prose-lg md:prose-xl max-w-none text-gray-700 leading-relaxed font-serif">
-          {/* Fallback to description if content is missing for any reason */}
-          <p>{blog.content || blog.description}</p>
+          {/* Fallback to description if content is missing for any reason.
+              whitespace-pre-wrap preserves the admin's line breaks and spacing. */}
+          <p className="whitespace-pre-wrap">{blog.content || blog.description}</p>
         </article>
 
       </main>

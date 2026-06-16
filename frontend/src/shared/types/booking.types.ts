@@ -8,46 +8,71 @@ export interface CreateBookingUserPayload {
 }
 
 export interface CreateBookingPayload {
+  /** Existing registered user */
   userId?: string;
+  /** Guest user details (legacy key) */
   newUser?: CreateBookingUserPayload;
-  facultyId: string;
-  bookingType: "one-on-one" | "pool";
-  mode: "slot" | "chapter";
+  /** Guest user details (used by BookingModal) */
+  user?: CreateBookingUserPayload;
+  facultyId?: string;
+  bookingType?: "one-on-one" | "pool";
+  mode?: "slot" | "chapter";
   slotId?: string;
   chapterId?: string;
   time?: string;
-  price: number;
-  status: "pending" | "confirmed" | "cancelled";
+  price?: number;
+  status?: "pending" | "confirmed" | "cancelled";
+  /** Booking details wrapper used by BookingModal */
+  booking?: {
+    facultyId: string;
+    type: string;
+    mode: "slot" | "chapter";
+    slotId?: string[];
+    /**
+     * Required for slot-mode bookings.
+     * Identifies which subject variant the student is booking.
+     */
+    subjectVariantId?: string;
+    chapterId?: string;
+  };
 }
 
 export interface BookingFilters {
   page?: number;
   limit?: number;
-  type?: "one-on-one" | "pool";
+  search?: string;
+  mode?: "chapter" | "slot";
+  chapterId?: string;
+  slotId?: string;
+  faculty?: string;
+  classId?: string;
+  syllabusId?: string;
+  isContacted?: boolean;
+  /** "All Bookings" tab only — filter by booking type */
+  type?: "oneToOne" | "pooling";
+  /** "All Bookings" tab only — filter by booking status */
+  status?: "interested" | "confirmed" | "cancelled" | "expired";
 }
 
+/** Shape exactly matching what the backend AdminBookingView mapper returns */
 export interface OneOnOneBooking {
-  _id: string;
-  bookingType: "one-on-one";
-  user: {
-    _id: string;
+  id: string;
+  student: {
+    id: string;
     name: string;
-    phoneNumber: string;
-    class: { name: string };
-    syllabus: { name: string };
+    phone: string;
   };
-  faculty: {
-    _id: string;
-    name: string;
-  };
-  status: "pending" | "confirmed" | "cancelled" | "completed";
-  paymentStatus: "pending" | "paid" | "failed";
-  createdAt: string;
-  price: number;
-  contactStatus: "pending_contact" | "contacted" | "enrolled" | "not_interested";
+  faculty: { id: string; name: string };
+  class: { id: string; name: string };
+  syllabus: { id: string; name: string };
+  isContacted: boolean;
   mode: "slot" | "chapter";
-  slot?: { time: string };
-  chapter?: { name: string };
+  /** Backend statuses: "interested" | "confirmed" | "cancelled" | "expired" */
+  status: string;
+  createdAt: string;
+  subject?: { id: string; name: string };
+  slot?: { id: string; time: string };
+  chapter?: { id: string; name: string };
 }
 
 export interface PoolBooking {
@@ -57,25 +82,29 @@ export interface PoolBooking {
   facultyId?: string;
   facultyName?: string;
   mode: "slot" | "chapter";
+  subject?: { id: string; name: string };
   slot?: { id: string; time: string };
   chapter?: { id: string; name: string };
   class: { id: string; name: string };
   syllabus: { id: string; name: string };
+  /** Omitted for "live" pool views where the backend should use the current cycle */
+  poolCycle?: number;
   totalStudents: number;
   createdAt: string;
   hasPendingContact: boolean;
 }
 
+/** Matches AdminPoolingStudentRaw.students[] returned by the backend */
 export interface PoolStudent {
-  bookingId: string;
-  studentId: string;
+  id: string;
   name: string;
-  phoneNumber: string;
-  contactStatus: "pending_contact" | "contacted" | "enrolled" | "not_interested";
-  poolStatus: "waiting" | "pooled" | "discarded";
+  phone: string;
+  isContacted: boolean;
 }
 
 export interface PoolStudentsResponse {
+  /** Backend statuses: "interested" | "confirmed" | "cancelled" | "expired" */
+  status: string;
   students: PoolStudent[];
 }
 
@@ -84,4 +113,26 @@ export interface AvailableSlot {
   time: string;
 }
 
-export type BookingType = "one-on-one" | "pool";
+/** Row shape returned by GET /bookings — every booking, regardless of type */
+export interface AllBooking {
+  id: string;
+  type: "oneToOne" | "pooling";
+  student: {
+    id: string;
+    name: string;
+    phone: string;
+  };
+  faculty: { id: string; name: string };
+  class: { id: string; name: string };
+  syllabus: { id: string; name: string };
+  isContacted: boolean;
+  mode: "slot" | "chapter";
+  /** Backend statuses: "interested" | "confirmed" | "cancelled" | "expired" */
+  status: string;
+  createdAt: string;
+  subject?: { id: string; name: string };
+  slot?: { id: string; time: string };
+  chapter?: { id: string; name: string };
+}
+
+export type BookingType = "one-on-one" | "pool" | "all";

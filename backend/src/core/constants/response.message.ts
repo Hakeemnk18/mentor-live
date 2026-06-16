@@ -120,6 +120,9 @@ export const ResponseMessages = {
   FACULTY_ALREADY_DELETED: "Faculty is already deleted",
   FACULTY_NOT_DELETED: "Faculty is not deleted",
 
+  FACULTY_FEATURED_LIMIT_REACHED:
+    "Only 8 faculty can be marked as featured at the same time. Please unfeature another faculty first.",
+
   FACULTY_NAME_INVALID: "Faculty name must be between 2 and 100 characters",
   FACULTY_PRICE_INVALID: "Faculty price must be a non-negative number",
   FACULTY_DESCRIPTION_INVALID: "Faculty description is invalid",
@@ -142,7 +145,12 @@ export const ResponseMessages = {
   SLOT_POOL_NOT_EMPTY:
     "Cannot block slot as there are students in the pooling list",
 
+  VARIANT_HAS_ACTIVE_BOOKINGS:
+    "Cannot remove this subject variant — one or more slots still have active student bookings. Please resolve all bookings first.",
+
   SLOT_TIME_NOT_VALID: "Slot times are not valid",
+  SLOT_UNBLOCK_TIME_CONFLICT:
+    "Cannot unblock — this slot must be at least 1 hr apart from other active slots for this subject",
   SLOT_ADDED_SUCCESS: "Slot added successfully",
   CHAPTER_SLOT_ADDED_SUCCESS: "Chapter slot added successfully",
   CHAPTER_SLOT_ALREADY_EXIST: "Chapter slot already exist",
@@ -194,6 +202,7 @@ export const ResponseMessages = {
 
   BOOKING_STATUS_CHANGED: "Booking status updated successfully",
   BOOKING_CONTACT_STATUS_UPDATED: "Booking contact status updated successfully",
+  BOOKING_ALREADY_CONTACTED: "Booking is already marked as contacted",
   INVALID_BOOKING_TYPE: "Invalid booking type for this action",
   INVALID_BOOKING_STATE: "Booking is not in a confirmable state",
 
@@ -229,6 +238,7 @@ export const ResponseMessages = {
   STUDENT_UNBLOCK_FAILED: "Failed to unblock student",
   STUDENT_UNBLOCKED: "Student successfully unblocked",
   STUDENT_BLOCKED: "Student successfully blocked",
+  STUDENT_BLOCKED_CANNOT_BOOK: "This phone number has been blocked and cannot make bookings",
 
   BANNER_NOT_FOUND: "Banner not found",
   BANNER_IMAGE_INVALID: "Banner image URL is invalid",

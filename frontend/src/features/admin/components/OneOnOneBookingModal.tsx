@@ -4,12 +4,22 @@ import { formatTimeAMPM } from "../../../shared/utils/time.utils";
 import {
   confirmChapterBooking,
   confirmSlotBooking,
+  markBookingContacted,
 } from "../../../api/booking.api";
 import { getFacultyAvailableSlots } from "../../../api/faculty.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
+import ConfirmModal from "./ConfirmModal";
 
-import type { OneOnOneBooking, AvailableSlot } from "../../../shared/types/booking.types";
+import type { OneOnOneBooking } from "../../../shared/types/booking.types";
 /* ───── helpers ─────────────────────────────────────────── */
+
+/** A group of FacultySlot ids that share the same displayed time
+ *  (e.g. two subject variants both have a 4:00 PM slot). */
+interface GroupedSlot {
+  time: string;
+  ids: string[];
+}
+
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleString("en-IN", {
     day: "2-digit",
@@ -38,29 +48,35 @@ interface Props {
 
 /* ───── component ───────────────────────────────────────── */
 export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, readOnly = false }: Props) {
-  const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
-  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [availableSlots, setAvailableSlots] = useState<GroupedSlot[]>([]);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [markingContacted, setMarkingContacted] = useState(false);
+  const [showContactConfirm, setShowContactConfirm] = useState(false);
 
-  /* fetch faculty slots when chapter booking opens */
+  /* fetch all available faculty slots when a chapter booking opens
+     (chapter bookings don't scope to a variant, so we show all slots) */
   useEffect(() => {
     if (!booking || booking.mode !== "chapter") return;
-    setSelectedSlotId(null);
+    setSelectedTime(null);
     setLoadingSlots(true);
-    getFacultyAvailableSlots(booking.faculty._id)
+    // no variantId → returns all available slots across all variants
+    getFacultyAvailableSlots(booking.faculty.id)
       .then((raw) => {
-        setAvailableSlots(
-          raw.map((s) => {
-            const d = new Date(s.time);
-            return {
-              id: s.id,
-              time: !isNaN(d.getTime())
-                ? d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })
-                : s.time,
-            };
-          })
-        );
+        // Group slots by displayed time so identical times across
+        // different subject variants render as a single option.
+        const groups = new Map<string, string[]>();
+        raw.forEach((s) => {
+          const d = new Date(s.time);
+          const time = !isNaN(d.getTime())
+            ? d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "UTC" })
+            : String(s.time);
+          const ids = groups.get(time);
+          if (ids) ids.push(s.id);
+          else groups.set(time, [s.id]);
+        });
+        setAvailableSlots(Array.from(groups, ([time, ids]) => ({ time, ids })));
       })
       .catch(handleApiError)
       .finally(() => setLoadingSlots(false));
@@ -71,21 +87,22 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
   const isConfirmed = booking.status === "confirmed";
 
   /* toggle slot selection */
-  const toggleSlot = (id: string) =>
-    setSelectedSlotId((prev) => (prev === id ? null : id));
+  const toggleSlot = (time: string) =>
+    setSelectedTime((prev) => (prev === time ? null : time));
 
   /* confirm handler */
   const handleConfirm = async () => {
-    if (booking.mode === "chapter" && !selectedSlotId) {
+    if (booking.mode === "chapter" && !selectedTime) {
       toast.error("Please select a time slot");
       return;
     }
     try {
       setConfirming(true);
       if (booking.mode === "chapter") {
-        await confirmChapterBooking(booking._id, [selectedSlotId!]);
+        const slotIds = availableSlots.find((s) => s.time === selectedTime)?.ids ?? [];
+        await confirmChapterBooking(booking.id, slotIds);
       } else {
-        await confirmSlotBooking(booking._id);
+        await confirmSlotBooking(booking.id);
       }
       toast.success("Booking confirmed");
       onConfirmed();
@@ -97,13 +114,29 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
     }
   };
 
+  /* mark booking as contacted */
+  const handleMarkContacted = async () => {
+    try {
+      setMarkingContacted(true);
+      await markBookingContacted(booking.id);
+      toast.success("Booking marked as contacted");
+      setShowContactConfirm(false);
+      onConfirmed();
+      onClose();
+    } catch (err: unknown) {
+      handleApiError(err);
+    } finally {
+      setMarkingContacted(false);
+    }
+  };
+
   /* contact via phone */
   const handleContact = () => {
-    window.open(`tel:${booking.user.phoneNumber}`, "_self");
+    window.open(`tel:${booking.student.phone}`, "_self");
   };
 
   const copyPhone = () => {
-    navigator.clipboard.writeText(booking.user.phoneNumber).then(() =>
+    navigator.clipboard.writeText(booking.student.phone).then(() =>
       toast.success("Phone number copied")
     );
   };
@@ -112,16 +145,16 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[1000] flex items-center justify-center"
+        className="fixed inset-0 z-1000 flex items-center justify-center"
         onClick={onClose}
       >
         <div className="absolute inset-0 bg-black/40" />
       </div>
 
       {/* Panel */}
-      <div className="fixed inset-0 z-[1001] flex items-center justify-center pointer-events-none">
+      <div className="fixed inset-0 z-1001 flex items-center justify-center pointer-events-none">
         <div
-          className="pointer-events-auto relative w-full max-w-lg bg-white rounded-xl shadow-xl flex flex-col max-h-[90vh]"
+          className="pointer-events-auto relative w-full max-w-lg mx-4 bg-white rounded-xl shadow-xl flex flex-col max-h-[90vh]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -151,33 +184,35 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
                 className={`px-3 py-1 rounded-full text-xs font-semibold ${
                   booking.status === "confirmed"
                     ? "bg-green-100 text-green-700"
-                    : booking.status === "pending"
+                    : booking.status === "interested"
                     ? "bg-blue-100 text-blue-700"
                     : "bg-gray-100 text-gray-500"
                 }`}
               >
-                {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                {booking.status === "interested"
+                  ? "Pending"
+                  : booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
               </span>
               <span
                 className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  booking.contactStatus !== "pending_contact"
+                  booking.isContacted
                     ? "bg-green-100 text-green-700"
                     : "bg-yellow-100 text-yellow-700"
                 }`}
               >
-                {booking.contactStatus !== "pending_contact" ? "Contacted" : "Not Contacted"}
+                {booking.isContacted ? "Contacted" : "Not Contacted"}
               </span>
-        </div>
+            </div>
 
-        {/* Student section */}
+            {/* Student section */}
             <div className="rounded-lg border border-gray-200 p-4 space-y-3">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 Student
               </p>
               <div className="flex items-center justify-between gap-4">
                 <div className="space-y-1">
-                  <Detail label="Name" value={booking.user.name} />
-                  <Detail label="Phone" value={booking.user.phoneNumber} />
+                  <Detail label="Name" value={booking.student.name} />
+                  <Detail label="Phone" value={booking.student.phone} />
                 </div>
                 {/* Contact buttons */}
                 <div className="flex flex-col gap-2 shrink-0">
@@ -200,8 +235,8 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
             {/* Booking info */}
             <div className="grid grid-cols-2 gap-4">
               <Detail label="Faculty" value={booking.faculty.name} />
-              <Detail label="Class" value={booking.user.class.name} />
-              <Detail label="Syllabus" value={booking.user.syllabus.name} />
+              <Detail label="Class" value={booking.class.name} />
+              <Detail label="Syllabus" value={booking.syllabus.name} />
               <Detail label="Mode" value={booking.mode} />
               {booking.chapter && (
                 <Detail label="Chapter" value={booking.chapter.name} />
@@ -227,12 +262,12 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {availableSlots.map((s) => {
-                      const selected = selectedSlotId === s.id;
+                      const selected = selectedTime === s.time;
                       return (
                         <button
-                          key={s.id}
+                          key={s.time}
                           type="button"
-                          onClick={() => toggleSlot(s.id)}
+                          onClick={() => toggleSlot(s.time)}
                           className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                             selected
                               ? "bg-[#DB313E] border-[#DB313E] text-white"
@@ -257,12 +292,21 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
             >
               Close
             </button>
+            {!booking.isContacted && (
+              <button
+                onClick={() => setShowContactConfirm(true)}
+                disabled={markingContacted}
+                className="px-4 py-2 text-sm font-medium border border-[#DB313E] text-[#DB313E] rounded-md hover:bg-red-50 disabled:opacity-50 transition-colors"
+              >
+                {markingContacted ? "Marking…" : "Mark as Contacted"}
+              </button>
+            )}
             {!isConfirmed && !readOnly && (
               <button
                 onClick={handleConfirm}
                 disabled={
                   confirming ||
-                  (booking.mode === "chapter" && !selectedSlotId)
+                  (booking.mode === "chapter" && !selectedTime)
                 }
                 className="px-4 py-2 text-sm font-medium bg-[#DB313E] text-white rounded-md hover:bg-[#c02535] disabled:opacity-50 transition-colors"
               >
@@ -272,6 +316,18 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
           </div>
         </div>
       </div>
+
+      {/* Confirm mark-as-contacted */}
+      <ConfirmModal
+        open={showContactConfirm}
+        title="Mark as Contacted"
+        message="Mark this booking as contacted? This action cannot be undone."
+        confirmLabel="Mark as Contacted"
+        confirmVariant="warning"
+        loading={markingContacted}
+        onConfirm={handleMarkContacted}
+        onClose={() => setShowContactConfirm(false)}
+      />
     </>
   );
 }

@@ -5,7 +5,6 @@ import type { ImageValue } from "../../../core/shared/type/image.type.js";
 import type {
   ChapterSlotProps,
   FacultyProps,
-  SlotProps,
   SubjectOfferingItem,
 } from "../types/faculty.type.js";
 
@@ -17,9 +16,9 @@ export class Faculty {
   public readonly demoClass: string;
   public readonly image: ImageValue;
   public readonly subjectOffering: SubjectOfferingItem[];
-  public readonly slots: SlotProps[];
   public readonly chapterSlots: ChapterSlotProps[];
   public readonly isDeleted: boolean;
+  public readonly isFeatured: boolean;
 
   constructor(props: FacultyProps) {
     this.id = props.id;
@@ -29,9 +28,9 @@ export class Faculty {
     this.demoClass = props.demoClass;
     this.image = props.image;
     this.subjectOffering = props.subjectOffering;
-    this.slots = props.slots;
     this.chapterSlots = props.chapterSlots;
     this.isDeleted = props.isDeleted;
+    this.isFeatured = props.isFeatured;
   }
 
   /* ---------- Status ---------- */
@@ -41,32 +40,20 @@ export class Faculty {
   }
 
   markAsDeleted(): Faculty {
-    return {
-      ...this,
-      isDeleted: true,
-    };
+    return { ...this, isDeleted: true };
   }
 
   markAsUnblocked(): Faculty {
-    return {
-      ...this,
-      isDeleted: false,
-    };
+    return { ...this, isDeleted: false };
   }
 
-  /* ---------- Slots ---------- */
+  /* ---------- Subject offering helpers ---------- */
 
-  getAvailableSlots(): SlotProps[] {
-    return this.slots.filter((slot) => slot.isAvailable);
+  teachesVariant(variantId: string): boolean {
+    return this.subjectOffering.some((s) => s.variantId === variantId);
   }
 
-  getAvailableChapterSlots(): ChapterSlotProps[] {
-    return this.chapterSlots.filter((slot) => slot.isAvailable);
-  }
-
-  isSlotFull(slot: SlotProps): boolean {
-    return slot.pool.length >= slot.poolLimit;
-  }
+  /* ---------- Profile update ---------- */
 
   updateProfile(props: {
     name: string;
@@ -75,6 +62,7 @@ export class Faculty {
     demoClass: string;
     image: ImageValue;
     subjectOffering: SubjectOfferingItem[];
+    isFeatured: boolean;
   }): Faculty {
     return {
       ...this,
@@ -84,39 +72,16 @@ export class Faculty {
       demoClass: props.demoClass,
       image: props.image,
       subjectOffering: props.subjectOffering,
+      isFeatured: props.isFeatured,
     };
   }
 
-  /* ---------- add slot ---------- */
-  addSlots(newSlots: { time: Date }[]): Faculty {
-    const existingTimes = new Set(this.slots.map((s) => s.time.getTime()));
+  /* ---------- Chapter slots ---------- */
 
-    const slotsToAdd = newSlots.map((slot) => {
-      const t = slot.time.getTime();
-      if (existingTimes.has(t)) {
-        throw new CustomError(
-          ResponseMessages.SLOT_ALREADY_EXIST,
-          HttpStatusCode.BAD_REQUEST,
-        );
-      }
-
-      existingTimes.add(t);
-
-      return {
-        time: slot.time,
-        isAvailable: true,
-        pool: [],
-        poolLimit: 5,
-      };
-    });
-
-    return {
-      ...this,
-      slots: [...this.slots, ...slotsToAdd],
-    };
+  getAvailableChapterSlots(): ChapterSlotProps[] {
+    return this.chapterSlots.filter((slot) => slot.isAvailable);
   }
 
-  /* ---------- add chapter slot ---------- */
   addChapterSlots(newChapterSlots: { chapter: string }[]): Faculty {
     const existingChapters = new Set(this.chapterSlots.map((s) => s.chapterId));
 

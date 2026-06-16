@@ -36,13 +36,22 @@ export class BookingMapper {
       isDeleted: bookingModelData.isDeleted,
     };
 
-    // exactOptionalPropertyTypes-safe assignments
     if (bookingModelData.slotId !== undefined) {
-      props.slotId = bookingModelData.slotId;
+      props.slotId = (bookingModelData.slotId as any[]).map((id: any) =>
+        id.toString(),
+      );
+    }
+
+    if (bookingModelData.subjectVariantId !== undefined) {
+      props.subjectVariantId = bookingModelData.subjectVariantId.toString();
     }
 
     if (bookingModelData.chapterId !== undefined) {
-      props.chapterId = bookingModelData.chapterId;
+      props.chapterId = bookingModelData.chapterId.toString();
+    }
+
+    if (bookingModelData.poolCycle !== undefined) {
+      props.poolCycle = bookingModelData.poolCycle;
     }
 
     return new Booking(props);
@@ -61,13 +70,20 @@ export class BookingMapper {
       syllabus: bookingEntity.syllabus,
     };
 
-    // exactOptionalPropertyTypes-safe assignments
     if (bookingEntity.slotId !== undefined) {
       persistenceData.slotId = bookingEntity.slotId;
     }
 
+    if (bookingEntity.subjectVariantId !== undefined) {
+      persistenceData.subjectVariantId = bookingEntity.subjectVariantId;
+    }
+
     if (bookingEntity.chapterId !== undefined) {
       persistenceData.chapterId = bookingEntity.chapterId;
+    }
+
+    if (bookingEntity.poolCycle !== undefined) {
+      persistenceData.poolCycle = bookingEntity.poolCycle;
     }
 
     return persistenceData;
@@ -91,6 +107,9 @@ export class BookingMapper {
       class: raw.class,
       syllabus: raw.syllabus,
       isContacted: raw.isContacted,
+      subject: raw.subject
+        ? { id: String(raw.subject.id), name: raw.subject.name }
+        : undefined,
       slot: raw.mode === "slot" ? raw.slot : undefined,
 
       chapter:
@@ -113,6 +132,9 @@ export class BookingMapper {
       mode: raw.mode,
       class: raw.class,
       syllabus: raw.syllabus,
+      subject: raw.subject
+        ? { id: String(raw.subject.id), name: raw.subject.name }
+        : undefined,
       slot: raw.mode === "slot" ? raw.slot : undefined,
       chapter:
         raw.mode === "chapter" && raw.chapter
@@ -121,6 +143,7 @@ export class BookingMapper {
               name: raw.chapter.name,
             }
           : undefined,
+      poolCycle: raw.poolCycle,
       totalStudents: raw.totalStudents,
       hasPendingContact: raw.hasPendingContact,
       createdAt: raw.createdAt.toISOString(),
@@ -135,6 +158,9 @@ export class BookingMapper {
       mode: raw.mode,
       class: raw.class,
       syllabus: raw.syllabus,
+      subject: raw.subject
+        ? { id: String(raw.subject.id), name: raw.subject.name }
+        : undefined,
       slot: raw.mode === "slot" ? raw.slot : undefined,
       chapter:
         raw.mode === "chapter" && raw.chapter
@@ -143,7 +169,8 @@ export class BookingMapper {
               name: raw.chapter.name,
             }
           : undefined,
-      student: raw.student,
+      status: raw.status,
+      students: raw.students,
     };
   }
 

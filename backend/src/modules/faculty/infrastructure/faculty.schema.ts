@@ -13,19 +13,15 @@ export interface IFaculty extends Document {
     variantId: Types.ObjectId;
     price: number;
   }[];
-  slots: {
-    time: Date;
-    isAvailable: boolean;
-    pool: Types.ObjectId[];
-    poolLimit: number;
-  }[];
   chapterSlots: {
     chapter: Types.ObjectId;
     isAvailable: boolean;
     pool: Types.ObjectId[];
     poolLimit: number;
+    poolCycle: number;
   }[];
   isDeleted: boolean;
+  isFeatured: boolean;
 }
 
 const facultySchema = new Schema<IFaculty>(
@@ -80,31 +76,6 @@ const facultySchema = new Schema<IFaculty>(
       },
     ],
 
-    /* ---------- Normal Slots (Embedded) ---------- */
-    slots: [
-      {
-        time: {
-          type: Date,
-          required: true,
-        },
-        isAvailable: {
-          type: Boolean,
-          default: true,
-        },
-        pool: [
-          {
-            type: Schema.Types.ObjectId,
-            ref: "Student",
-          },
-        ],
-        poolLimit: {
-          type: Number,
-          default: 5,
-          min: 1,
-        },
-      },
-    ],
-
     /* ---------- Chapter Slots (Embedded) ---------- */
     chapterSlots: [
       {
@@ -128,12 +99,30 @@ const facultySchema = new Schema<IFaculty>(
           default: 5,
           min: 1,
         },
+
+        /**
+         * Incremented every time this chapter slot's pool is cleared and
+         * re-opened for a new pooling round (see consumeChapterSlot). Lets
+         * bookings be permanently tied to the round they were created in,
+         * even after `pool` is cleared and reused.
+         */
+        poolCycle: {
+          type: Number,
+          default: 1,
+          min: 1,
+        },
       },
     ],
 
     isDeleted: {
       type: Boolean,
       default: false,
+    },
+
+    isFeatured: {
+      type: Boolean,
+      default: false,
+      index: true,
     },
   },
   {
@@ -142,7 +131,6 @@ const facultySchema = new Schema<IFaculty>(
 );
 
 facultySchema.index({ isDeleted: 1 });
-facultySchema.index({ "slots.time": 1 });
 facultySchema.index({ "chapterSlots.chapter": 1 });
 facultySchema.index({ "subjectOffering.variantId": 1 });
 

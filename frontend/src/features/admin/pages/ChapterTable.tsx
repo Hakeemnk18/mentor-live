@@ -7,16 +7,18 @@ import TopLoader from "../../../shared/components/TopLoader";
 import type { Column } from "../components/AdminTable";
 import {
   createChapter,
-//   updateChapter,
   getChapters,
   updateChapter,
+  getChapterById,
 } from "../../../api/chapter.api";
 import { getClasses } from "../../../api/class.api";
 import { getSyllabus } from "../../../api/syllabus.api";
 import { getSubjects } from "../../../api/subject.api";
+import { getFacultiesByChapter } from "../../../api/faculty.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 import ChapterFormModal from "../components/ChapterFormModal";
-import type { ChapterRow } from "../../../shared/types/chapter.types";
+import type { ChapterRow, ChapterInitialData, CreateChapterPayload } from "../../../shared/types/chapter.types";
+import type { FacultyListItem } from "../../../shared/types/faculty.types";
 export default function ChapterPage() {
   const [chapters, setChapters] = useState<ChapterRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -35,7 +37,10 @@ export default function ChapterPage() {
   const [saving, setSaving] = useState(false);
 
   const [editingChapter, setEditingChapter] =
-    useState<any | undefined>();
+    useState<ChapterInitialData | undefined>();
+
+  const [chapterFaculties, setChapterFaculties] = useState<FacultyListItem[]>([]);
+  const [facultiesLoading, setFacultiesLoading] = useState(false);
 
   const [totalPages, setTotalPages] = useState(1);
   const [classesList, setClassesList] = useState<
@@ -96,9 +101,8 @@ export default function ChapterPage() {
     }
   };
 
-  useEffect(() => {
-    fetchChapters();
-  }, [page, limit, search, isDeleted, classId, syllabusId, subjectId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchChapters(); }, [page, limit, search, isDeleted, classId, syllabusId, subjectId]);
 
   useEffect(() => {
     Promise.all([
@@ -122,18 +126,35 @@ export default function ChapterPage() {
     setFormOpen(true);
   };
 
-  const openEdit = (row: ChapterRow) => {
+  const openEdit = async (row: ChapterRow) => {
     setFormMode("edit");
-    setEditingChapter(row);
+    setChapterFaculties([]);
     setFormOpen(true);
+
+    // fetch full chapter details and faculties in parallel
+    try {
+      setFacultiesLoading(true);
+
+      const [chapterData, facultiesRes] = await Promise.all([
+        getChapterById(row._id),
+        getFacultiesByChapter({ chapterId: row._id }),
+      ]);
+
+      setEditingChapter(chapterData);
+      setChapterFaculties(facultiesRes.data ?? []);
+    } catch (err) {
+      handleApiError(err);
+    } finally {
+      setFacultiesLoading(false);
+    }
   };
 
-  const handleCreate = async (data: any) => {
+  const handleCreate = async (data: CreateChapterPayload) => {
     try {
       setSaving(true);
       await createChapter(data);
       fetchChapters();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.log("error creating chapter ", err);
       handleApiError(err);
     } finally {
@@ -154,7 +175,7 @@ export default function ChapterPage() {
       setSaving(true);
       await updateChapter(id, data);
       fetchChapters();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.log("error updating chapter ", err);
       handleApiError(err);
     } finally {
@@ -288,6 +309,8 @@ export default function ChapterPage() {
         classes={classesList}
         onCreate={handleCreate}
         onUpdate={handleUpdate}
+        faculties={chapterFaculties}
+        facultiesLoading={facultiesLoading}
       />
     </AdminPageContainer>
   );
