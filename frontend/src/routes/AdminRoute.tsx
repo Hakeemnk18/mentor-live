@@ -1,3 +1,4 @@
+import { Navigate } from "react-router-dom"
 import AdminBootstrap from "../features/admin/components/AdminBootstrap"
 import LeadsPage from "../features/admin/pages/LeadsPage"
 import ChapterPage from "../features/admin/pages/ChapterTable"
@@ -17,6 +18,16 @@ import LoginPage from "../features/auth/pages/LoginPage"
 
 
 const adminRoutes = [
+    {
+        // "/admin" → login when logged out, dashboard when logged in
+        // (salesPerson is redirected to bookings by AdminBootstrap)
+        index: true,
+        element: (
+            <AdminBootstrap>
+                <Navigate to="/admin/dashboard" replace />
+            </AdminBootstrap>
+        )
+    },
    {
         path:"login",
         element:(
