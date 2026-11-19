@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getUserBanners } from "../../../api/banner.api";
 import type { UserBanner } from "../../../shared/types/banner.types";
 import LeadFormModal from "./LeadFormModal";
+import Reveal from "./ui/Reveal";
+import { ChevronLeft, ChevronRight } from "./ui/Icons";
 
 const AUTO_MS = 5000;
 
@@ -69,267 +71,166 @@ export default function BannerCarousel() {
   /* ── render guards ──────────────────────────────────────────────── */
   if (loading) {
     return (
-      <div className="w-full h-[220px] sm:h-[320px] md:h-[440px] bg-gray-100 animate-pulse" />
+      <section className="max-w-[1200px] mx-auto px-5 pt-[clamp(56px,7vw,96px)]">
+        <div className="w-full h-[260px] sm:h-[340px] md:h-[400px] rounded-[34px] bg-ml-lav animate-pulse" />
+      </section>
     );
   }
   if (count === 0) return null;
 
+  const arrowCls =
+    "w-11 h-11 rounded-full bg-white/92 text-ml-deep flex items-center justify-center cursor-pointer shadow-md transition hover:bg-white hover:scale-105 active:scale-95";
+
   /* ── render ─────────────────────────────────────────────────────── */
   return (
     <>
-    <section
-      className="relative w-full overflow-hidden select-none bg-black"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onPointerDown={onPointerDown}
-      onPointerUp={onPointerUp}
-      style={{ cursor: dragging ? "grabbing" : "grab" }}
-      aria-label="Banner carousel"
-      aria-roledescription="carousel"
-    >
-
-      {/* ── 1. TOP ATTENTION STRIP — animated gradient ─────────────── */}
-      <div className="absolute top-0 left-0 right-0 h-[4px] z-30">
-        <div className="h-full w-full banner-top-strip" />
-      </div>
-
-      {/* ── 2. SLIDES ──────────────────────────────────────────────── */}
-      <div
-        className="flex h-full"
-        style={{
-          transform: `translateX(-${current * 100}%)`,
-          transition: dragging
-            ? "none"
-            : "transform 700ms cubic-bezier(0.4, 0, 0.2, 1)",
-        }}
-      >
-        {banners.map((b, i) => (
+    <section className="max-w-[1200px] mx-auto px-5 pt-[clamp(56px,7vw,96px)]">
+      <Reveal>
+        <div
+          className="relative rounded-[34px] overflow-hidden select-none bg-ml-hero shadow-[0_30px_60px_-30px_rgba(42,22,80,.5)]"
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          onPointerDown={onPointerDown}
+          onPointerUp={onPointerUp}
+          style={{ cursor: dragging ? "grabbing" : "grab", touchAction: "pan-y" }}
+          aria-label="Banner carousel"
+          aria-roledescription="carousel"
+        >
+          {/* Slides */}
           <div
-            key={i}
-            className="relative w-full flex-shrink-0"
-            style={{ minWidth: "100%" }}
-            aria-hidden={i !== current}
+            className="flex"
+            style={{
+              transform: `translateX(-${current * 100}%)`,
+              transition: dragging
+                ? "none"
+                : "transform 800ms cubic-bezier(.7,0,.2,1)",
+            }}
           >
-            {/* Image wrapper — overflow:hidden clips Ken Burns */}
-            <div className="w-full h-[220px] sm:h-[320px] md:h-[440px] overflow-hidden">
-              <img
-                key={i === current ? `kb-${animKey}` : i}
-                src={b.image}
-                alt={b.description}
-                className={[
-                  "w-full h-full object-cover will-change-transform",
-                  i === current ? "banner-ken-burns" : "",
-                ].join(" ")}
-                draggable={false}
-              />
-            </div>
-
-            {/* Vignette radial + bottom gradient */}
-            <div className="absolute inset-0 pointer-events-none banner-vignette" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent pointer-events-none" />
-
-            {/* Caption — only for active slide, animates in */}
-            {i === current && (
+            {banners.map((b, i) => (
               <div
-                key={`cap-${animKey}`}
-                className="absolute bottom-0 left-0 right-0 px-6 sm:px-10 md:px-14 pb-10 sm:pb-12 banner-caption"
+                key={i}
+                className="relative w-full flex-shrink-0"
+                style={{ minWidth: "100%" }}
+                aria-hidden={i !== current}
               >
-                <div className="banner-accent-line mb-3" />
-                <p className="text-white text-sm sm:text-base md:text-xl font-semibold leading-snug max-w-2xl drop-shadow-lg line-clamp-2 sm:line-clamp-none">
-                  {b.description}
-                </p>
-                {b.isClickable && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setLeadBanner(b);
-                      setLeadOpen(true);
-                    }}
-                    className="mt-4 inline-flex items-center gap-2 bg-white text-[#DB313E] text-sm font-semibold px-5 py-2.5 rounded-full shadow-lg hover:bg-[#DB313E] hover:text-white transition-all duration-200 active:scale-95"
+                <div className="w-full h-[300px] sm:h-[340px] md:h-[400px] overflow-hidden">
+                  <img
+                    key={i === current ? `kb-${animKey}` : i}
+                    src={b.image}
+                    alt={b.description}
+                    loading={i === 0 ? "eager" : "lazy"}
+                    className={[
+                      "w-full h-full object-cover will-change-transform",
+                      i === current ? "banner-ken-burns" : "",
+                    ].join(" ")}
+                    draggable={false}
+                  />
+                </div>
+
+                {/* Purple wash so text stays readable on any image */}
+                <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[rgba(36,19,63,.92)] via-[rgba(36,19,63,.35)] to-transparent" />
+
+                {/* Caption — only for active slide, animates in */}
+                {i === current && (
+                  <div
+                    key={`cap-${animKey}`}
+                    className="absolute inset-x-0 bottom-0 px-[clamp(24px,4.5vw,56px)] pb-[clamp(84px,7vw,56px)] md:pr-[300px] flex flex-col items-start gap-3.5 banner-caption"
                   >
-                    {b.buttonText || "Get In Touch"}
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
+                    <span className="h-1 w-10 rounded-full bg-ml-coral" />
+                    <p className="m-0 text-white font-display font-extrabold text-[clamp(22px,3.2vw,40px)] leading-[1.05] tracking-[-0.03em] max-w-[20em] line-clamp-3 drop-shadow-sm">
+                      {b.description}
+                    </p>
+                    {b.isClickable && (
+                      <button
+                        type="button"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onPointerUp={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setLeadBanner(b);
+                          setLeadOpen(true);
+                        }}
+                        className="mt-1.5 h-12 px-[22px] rounded-full bg-white text-ml-deep font-extrabold text-[15px] inline-flex items-center gap-2 cursor-pointer transition-transform hover:-translate-y-0.5"
+                      >
+                        {b.buttonText || "Get In Touch"}
+                        <ChevronRight />
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
+            ))}
+          </div>
+
+          {/* Dots + arrows */}
+          {count > 1 && (
+            <div className="absolute right-[clamp(20px,3vw,32px)] bottom-[clamp(20px,3vw,32px)] flex items-center gap-2.5 z-10">
+              <div className="flex gap-1.5 mr-1.5">
+                {banners.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onPointerUp={(e) => e.stopPropagation()}
+                    onClick={(e) => { e.stopPropagation(); goTo(i); }}
+                    aria-label={`Go to slide ${i + 1}`}
+                    className="h-2 rounded-lg cursor-pointer transition-all duration-300"
+                    style={{
+                      width: i === current ? 26 : 8,
+                      background: i === current ? "#fff" : "rgba(255,255,255,.5)",
+                    }}
+                  />
+                ))}
+              </div>
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onPointerUp={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); goTo(currentRef.current - 1); }}
+                className={arrowCls}
+                aria-label="Previous banner"
+              >
+                <ChevronLeft className="w-[18px] h-[18px]" />
+              </button>
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onPointerUp={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); goTo(currentRef.current + 1); }}
+                className={arrowCls}
+                aria-label="Next banner"
+              >
+                <ChevronRight className="w-[18px] h-[18px]" />
+              </button>
+            </div>
+          )}
+
+          {/* Progress bar — bottom edge */}
+          <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/15">
+            {!hovered && !dragging && count > 1 && (
+              <div key={`pb-${animKey}`} className="h-full bg-ml-coral banner-progress" />
             )}
           </div>
-        ))}
-      </div>
-
-      {/* ── 3. LIVE BADGE — top-right ───────────────────────────────── */}
-      <div className="absolute top-4 right-4 z-30 flex items-center gap-1.5 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg">
-        <span className="w-2 h-2 rounded-full bg-[#DB313E] animate-pulse flex-shrink-0" />
-        <span className="text-white text-[11px] font-semibold tracking-widest uppercase leading-none">
-          Live
-        </span>
-      </div>
-
-      {/* ── 4. SLIDE COUNTER — top-left ─────────────────────────────── */}
-      {count > 1 && (
-        <div className="absolute top-4 left-4 z-30 bg-black/35 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg">
-          <span className="text-white text-[11px] font-semibold tabular-nums tracking-wider">
-            {String(current + 1).padStart(2, "0")}&nbsp;/&nbsp;{String(count).padStart(2, "0")}
-          </span>
         </div>
-      )}
+      </Reveal>
 
-      {/* ── 5. ARROWS ───────────────────────────────────────────────── */}
-      {count > 1 && (
-        <>
-          <button
-            onClick={(e) => { e.stopPropagation(); goTo(currentRef.current - 1); }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-xl transition-all duration-200 hover:bg-white/25 hover:scale-110 active:scale-95"
-            aria-label="Previous banner"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); goTo(currentRef.current + 1); }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-xl transition-all duration-200 hover:bg-white/25 hover:scale-110 active:scale-95"
-            aria-label="Next banner"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </>
-      )}
-
-      {/* ── 6. DOT INDICATORS ───────────────────────────────────────── */}
-      {count > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2">
-          {banners.map((_, i) => (
-            <button
-              key={i}
-              onClick={(e) => { e.stopPropagation(); goTo(i); }}
-              aria-label={`Go to slide ${i + 1}`}
-              className="relative rounded-full overflow-hidden transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-              style={{
-                width:  i === current ? 28 : 8,
-                height: 8,
-                background: i === current ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.35)",
-              }}
-            >
-              {i === current && (
-                <span
-                  key={`dot-${animKey}`}
-                  className="absolute inset-0 rounded-full bg-white banner-dot-fill"
-                />
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* ── 7. PROGRESS BAR — bottom edge ───────────────────────────── */}
-      <div className="absolute bottom-0 left-0 right-0 h-[3px] z-30 bg-white/15">
-        {!hovered && !dragging && count > 1 && (
-          <div
-            key={`pb-${animKey}`}
-            className="h-full bg-gradient-to-r from-[#DB313E] to-[#ff6b35] banner-progress"
-          />
-        )}
-      </div>
-
-      {/* ── 8. PAUSE PILL — visible on hover ────────────────────────── */}
-      {hovered && count > 1 && (
-        <div className="absolute bottom-4 right-5 z-30 flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
-          <span className="flex gap-[3px]">
-            <span className="block w-[3px] h-3 rounded-full bg-white/60" />
-            <span className="block w-[3px] h-3 rounded-full bg-white/60" />
-          </span>
-          <span className="text-white/60 text-[10px] font-medium tracking-wide">Paused</span>
-        </div>
-      )}
-
-      {/* ── KEYFRAMES & ANIMATIONS ──────────────────────────────────── */}
       <style>{`
-        /* Ken Burns — subtle zoom + slight drift */
         @keyframes kenBurns {
           0%   { transform: scale(1)    translate(0%, 0%);    }
           100% { transform: scale(1.07) translate(-0.8%, -0.5%); }
         }
-        .banner-ken-burns {
-          animation: kenBurns ${AUTO_MS}ms ease-out forwards;
-        }
-
-        /* Caption slides up + fades in */
+        .banner-ken-burns { animation: kenBurns ${AUTO_MS}ms ease-out forwards; }
         @keyframes captionReveal {
           from { opacity: 0; transform: translateY(22px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        .banner-caption {
-          animation: captionReveal 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-        }
-
-        /* Accent line draws from left */
-        @keyframes accentDraw {
-          from { width: 0; opacity: 0; }
-          to   { width: 32px; opacity: 1; }
-        }
-        .banner-accent-line {
-          height: 3px;
-          width: 0;
-          border-radius: 9999px;
-          background: #DB313E;
-          animation: accentDraw 0.45s ease-out 0.2s forwards;
-        }
-
-        /* Top strip — moving gradient sweep */
-        @keyframes stripMove {
-          0%   { background-position: 0% 50%;   }
-          50%  { background-position: 100% 50%;  }
-          100% { background-position: 0% 50%;   }
-        }
-        .banner-top-strip {
-          background: linear-gradient(90deg,
-            #DB313E 0%, #ff6b35 25%, #ffcc02 50%, #DB313E 75%, #c62368 100%
-          );
-          background-size: 300% 100%;
-          animation: stripMove 4s linear infinite;
-        }
-
-        /* Active dot fill — sweeps across left-to-right matching AUTO_MS */
-        @keyframes dotFill {
-          from { transform: scaleX(0); transform-origin: left; }
-          to   { transform: scaleX(1); transform-origin: left; }
-        }
-        .banner-dot-fill {
-          transform-origin: left;
-          animation: dotFill ${AUTO_MS}ms linear forwards;
-        }
-
-        /* Radial vignette on the image */
-        .banner-vignette {
-          background: radial-gradient(
-            ellipse at center,
-            transparent 50%,
-            rgba(0, 0, 0, 0.22) 100%
-          );
-        }
-
-        /* Progress bar */
-        @keyframes progressBar {
-          from { width: 0%; }
-          to   { width: 100%; }
-        }
-        .banner-progress {
-          animation: progressBar ${AUTO_MS}ms linear forwards;
-        }
-
-        /* Respect prefers-reduced-motion */
+        .banner-caption { animation: captionReveal 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        @keyframes progressBar { from { width: 0%; } to { width: 100%; } }
+        .banner-progress { animation: progressBar ${AUTO_MS}ms linear forwards; }
         @media (prefers-reduced-motion: reduce) {
-          .banner-ken-burns   { animation: none !important; }
-          .banner-caption     { animation: none !important; opacity: 1 !important; }
-          .banner-accent-line { animation: none !important; width: 32px !important; opacity: 1 !important; }
-          .banner-top-strip   { animation: none !important; background: #DB313E !important; }
-          .banner-dot-fill    { animation: none !important; transform: scaleX(1) !important; }
-          .banner-progress    { animation: none !important; width: 0 !important; }
+          .banner-ken-burns { animation: none !important; }
+          .banner-caption   { animation: none !important; opacity: 1 !important; }
+          .banner-progress  { animation: none !important; width: 0 !important; }
         }
       `}</style>
     </section>

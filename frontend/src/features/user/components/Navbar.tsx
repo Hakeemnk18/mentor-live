@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { Link, NavLink } from "react-router-dom";
-
-const LOGO_URL =
-  "https://res.cloudinary.com/do1vnusmw/image/upload/v1780401724/Screenshot_2026-06-02_173134_rr96r6.png";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import BrandMark from "./ui/BrandMark";
+import { ArrowRight } from "./ui/Icons";
 
 const navItems = [
   { label: "Home", path: "/" },
@@ -10,100 +9,101 @@ const navItems = [
   { label: "How it Works", path: "/#how-it-works" },
 ];
 
-const linkCls =
-  "text-[15px] text-gray-600 hover:text-[#DB313E] transition-colors duration-150 whitespace-nowrap";
-
 const UserNavbar: React.FC = () => {
   const [open, setOpen] = useState(false);
+  const { pathname, hash } = useLocation();
+
+  // NavLink can't tell "/" from "/#how-it-works", so work out the active item ourselves
+  const isActive = (path: string) => {
+    if (path === "/#how-it-works") return pathname === "/" && hash === "#how-it-works";
+    if (path === "/") return pathname === "/" && hash !== "#how-it-works";
+    return pathname === path || pathname.startsWith(path + "/");
+  };
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-sm border-b border-gray-100">
-        <div className="max-w-7xl mx-auto flex items-center justify-between h-[72px] px-5 md:px-8">
-
-          {/* Logo */}
-          <Link to="/" className="flex-shrink-0 hover:opacity-90 transition-opacity">
-            <img
-              src={LOGO_URL}
-              alt="Mentor Live"
-              className="h-9 sm:h-11 w-auto object-contain"
-            />
+      <header className="sticky top-0 z-50 w-full bg-[rgba(247,245,252,0.88)] backdrop-blur-[14px] border-b border-ml-plum/8">
+        <div className="max-w-[1200px] mx-auto px-5 h-[72px] flex items-center justify-between gap-4">
+          <Link to="/" className="flex-shrink-0 hover:opacity-90 transition-opacity" aria-label="Mentorlive home">
+            <BrandMark />
           </Link>
 
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.path === "/"}
-                className={linkCls}
-              >
-                {item.label}
-              </NavLink>
-            ))}
+          {/* Desktop nav */}
+          <nav className="hidden md:flex items-center gap-[30px] flex-shrink-0 whitespace-nowrap">
+            {navItems.map((item) => {
+              const active = isActive(item.path);
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={`relative py-1.5 text-[15px] transition-colors hover:text-ml-violet ${
+                    active ? "font-extrabold text-ml-deep" : "font-semibold text-ml-muted"
+                  }`}
+                >
+                  {item.label}
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-0 -bottom-0.5 h-[3px] rounded-[3px] bg-ml-coral transition-[width] duration-300"
+                    style={{ width: active ? "100%" : "0%" }}
+                  />
+                </NavLink>
+              );
+            })}
             <Link
               to="/book-tutor"
-              className="bg-[#DB313E] text-white text-sm font-semibold px-6 py-2.5 rounded-md hover:bg-[#c12a36] transition-colors shadow-sm"
+              className="h-11 px-[22px] rounded-full bg-ml-violet text-white font-bold text-[15px] inline-flex items-center gap-2 shadow-[0_8px_20px_-8px_rgba(109,53,217,.7)] transition-transform hover:-translate-y-0.5 hover:text-white"
             >
               Book Tutor
+              <ArrowRight strokeWidth={2.6} />
             </Link>
           </nav>
 
-          {/* Mobile Toggle */}
+          {/* Mobile toggle */}
           <button
-            className="md:hidden text-gray-700 p-1 -mr-1 cursor-pointer"
+            type="button"
+            className="md:hidden w-[46px] h-[46px] rounded-[14px] bg-ml-lav text-ml-plum flex items-center justify-center cursor-pointer"
             onClick={() => setOpen((v) => !v)}
             aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
           >
-            <svg
-              className="w-6 h-6 transition-transform duration-200"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d={open ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}
-              />
+            <svg className="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round">
+              <path d={open ? "M6 6l12 12M18 6L6 18" : "M4 7h16M4 12h16M4 17h16"} />
             </svg>
           </button>
         </div>
 
-        {/* Mobile Dropdown — absolute so it floats over page content */}
+        {/* Mobile dropdown — floats over page content */}
         <div
-          className={`md:hidden absolute left-0 right-0 top-full bg-white border-b border-gray-100 shadow-lg origin-top transition-all duration-200 ease-in-out ${
-            open
-              ? "opacity-100 scale-y-100 pointer-events-auto"
-              : "opacity-0 scale-y-95 pointer-events-none"
+          className={`md:hidden absolute left-3 right-3 top-[78px] bg-white rounded-3xl p-3 shadow-[0_24px_48px_-12px_rgba(42,22,80,.35)] flex flex-col gap-1 origin-top transition-all duration-200 ${
+            open ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"
           }`}
         >
-          <nav className="max-w-7xl mx-auto px-5 py-5 flex flex-col gap-4">
-            {navItems.map((item) => (
+          {navItems.map((item) => {
+            const active = isActive(item.path);
+            return (
               <NavLink
                 key={item.path}
                 to={item.path}
-                end={item.path === "/"}
                 onClick={() => setOpen(false)}
-                className="text-[15px] text-gray-600 hover:text-[#DB313E] transition-colors duration-150"
+                className={`px-4 py-3.5 rounded-[14px] font-bold text-base ${
+                  active ? "text-ml-deep bg-ml-lav" : "text-ml-muted"
+                }`}
               >
                 {item.label}
               </NavLink>
-            ))}
-            <Link
-              to="/book-tutor"
-              onClick={() => setOpen(false)}
-              className="text-center bg-[#DB313E] text-white text-sm font-semibold px-6 py-2.5 rounded-md hover:bg-[#c12a36] transition-colors mt-1"
-            >
-              Book Tutor
-            </Link>
-          </nav>
+            );
+          })}
+          <Link
+            to="/book-tutor"
+            onClick={() => setOpen(false)}
+            className="mt-1.5 h-[52px] rounded-2xl bg-ml-violet text-white font-extrabold text-base flex items-center justify-center hover:text-white"
+          >
+            Book Tutor
+          </Link>
         </div>
       </header>
 
-      {/* Backdrop — sits above page but below the floating dropdown, closes menu on outside click */}
+      {/* Backdrop — closes the mobile menu on outside tap */}
       <div
         className={`fixed inset-0 z-40 md:hidden transition-opacity duration-200 ${
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"

@@ -1,19 +1,12 @@
+import { TINTS, initials } from "./ui/tints";
+
 type TestimonialCardProps = {
   author: string;
   designation: string;
   comment: string;
-  /** Index used to pick a deterministic placeholder avatar */
+  /** Index used to pick a deterministic avatar colour */
   index?: number;
 };
-
-const PLACEHOLDER_COLORS = [
-  "from-blue-400 to-blue-600",
-  "from-rose-400 to-rose-600",
-  "from-emerald-400 to-emerald-600",
-  "from-amber-400 to-amber-600",
-  "from-purple-400 to-purple-600",
-  "from-cyan-400 to-cyan-600",
-];
 
 const TestimonialCard: React.FC<TestimonialCardProps> = ({
   author,
@@ -21,45 +14,27 @@ const TestimonialCard: React.FC<TestimonialCardProps> = ({
   comment,
   index = 0,
 }) => {
-  const initials = author
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-
-  const colorClass = PLACEHOLDER_COLORS[index % PLACEHOLDER_COLORS.length];
+  const tint = TINTS[index % TINTS.length];
 
   return (
-    <div className="bg-white rounded-md shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col">
-      {/* Placeholder image area */}
-      <div className={`h-52 bg-gradient-to-br ${colorClass} flex items-center justify-center`}>
-        <span className="text-white text-5xl font-bold tracking-wider opacity-90">
-          {initials}
-        </span>
+    <div className="h-full bg-white rounded-[28px] p-7 flex flex-col gap-[18px] shadow-[0_18px_40px_-26px_rgba(42,22,80,.45)] transition-transform duration-300 hover:-rotate-[1.2deg] hover:-translate-y-1">
+      <div className="flex justify-between items-center">
+        <span aria-hidden="true" className="font-display font-extrabold text-[64px] leading-[0.6] h-[30px] text-ml-coral">“</span>
+        <span className="text-ml-star text-lg tracking-[2px]" aria-label="5 out of 5 stars">★★★★★</span>
       </div>
 
-      {/* Content */}
-      <div className="px-5 py-5 flex flex-col flex-1">
-        {/* Quote icon */}
-        <span className="text-[#DB313E] text-3xl font-serif leading-none mb-2">"</span>
+      <p className="m-0 text-[17px] leading-relaxed text-ml-ink font-medium text-pretty">{comment}</p>
 
-        <p className="text-gray-600 text-[13px] leading-relaxed flex-1 mb-4">
-          "{comment}"
-        </p>
-
-        <div>
-          <p className="text-[#DB313E] font-bold text-[15px]">{author}</p>
-          <p className="text-gray-400 text-xs">{designation}</p>
+      <div className="mt-auto flex items-center gap-3 pt-4 border-t-2 border-dashed border-ml-lilac">
+        <div
+          className="w-[46px] h-[46px] rounded-full flex items-center justify-center font-extrabold text-base flex-shrink-0"
+          style={{ background: tint.bg, color: tint.ink }}
+        >
+          {initials(author)}
         </div>
-
-        {/* Stars */}
-        <div className="flex gap-0.5 mt-2">
-          {[...Array(5)].map((_, i) => (
-            <svg key={i} className="w-4 h-4 text-[#DB313E]" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 00-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.957z" />
-            </svg>
-          ))}
+        <div className="min-w-0">
+          <p className="m-0 font-extrabold text-[15px] text-ml-ink truncate">{author}</p>
+          <p className="m-0 text-[13px] text-ml-muted mt-0.5 truncate">{designation}</p>
         </div>
       </div>
     </div>

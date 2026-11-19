@@ -2,6 +2,10 @@ import { useState } from "react";
 import { createLead } from "../../../api/lead.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 import type { CreateLeadPayload, LeadType } from "../../../shared/types/lead.types";
+import ModalShell from "./ui/ModalShell";
+import { errorTextCls, fieldCls, labelCls } from "./ui/formStyles";
+import Bear from "./ui/Bear";
+import { Spinner } from "./ui/Icons";
 
 interface Props {
   open: boolean;
@@ -106,149 +110,122 @@ export default function LeadFormModal({
   const setMessage = (e: React.ChangeEvent<HTMLTextAreaElement>) =>
     setForm((prev) => ({ ...prev, message: e.target.value }));
 
-  const inp = (err?: string) =>
-    `w-full px-4 py-3 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30 transition-colors ${
-      err ? "border-red-400 bg-red-50" : "border-gray-300 focus:border-[#DB313E]"
-    }`;
-
   const title = type === "inquiry" ? "Get In Touch" : "Request a Faculty";
   const subtitle =
     type === "inquiry"
       ? "Fill in your details and we'll reach out to you soon."
       : `No tutor found for ${className ?? "this class"}${syllabusName ? ` (${syllabusName})` : ""}. Leave your details and we'll arrange one for you.`;
 
+  const errorText = (msg?: string) => (msg ? <p className={errorTextCls}>{msg}</p> : null);
+
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center px-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={!submitting ? onClose : undefined}
-      />
-
-      {/* Modal */}
-      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
-        {/* Top accent */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-[#DB313E] to-[#ff6b35]" />
-
-        <div className="px-6 py-6">
-          {submitted ? (
-            /* ── Success state ── */
-            <div className="text-center py-4">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">We've Got Your Request!</h3>
-              <p className="text-sm text-gray-500 mb-6">
-                Our team will get in touch with you shortly.
-              </p>
-              <button
-                onClick={onClose}
-                className="w-full py-3 rounded-lg bg-[#DB313E] text-white text-sm font-semibold hover:bg-[#c12a36] transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          ) : (
-            /* ── Form ── */
-            <>
-              {/* Header */}
-              <div className="flex items-start justify-between mb-5">
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900">{title}</h2>
-                  <p className="text-xs text-gray-500 mt-1 leading-relaxed max-w-xs">{subtitle}</p>
-                </div>
-                <button
-                  onClick={onClose}
-                  className="text-gray-400 hover:text-gray-600 text-xl leading-none ml-3 flex-shrink-0"
-                >
-                  ×
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Name */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
-                    Full Name *
-                  </label>
-                  <input
-                    value={form.name}
-                    onChange={set("name")}
-                    placeholder="e.g. Arjun Kumar"
-                    maxLength={100}
-                    className={inp(form.errors.name)}
-                  />
-                  {form.errors.name && <p className="text-xs text-red-500 mt-1">{form.errors.name}</p>}
-                </div>
-
-                {/* Phone */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
-                    Phone Number *
-                  </label>
-                  <input
-                    value={form.phone}
-                    onChange={set("phone")}
-                    placeholder="+91 98765 43210"
-                    type="tel"
-                    maxLength={15}
-                    className={inp(form.errors.phone)}
-                  />
-                  {form.errors.phone && <p className="text-xs text-red-500 mt-1">{form.errors.phone}</p>}
-                </div>
-
-                {/* Email */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
-                    Email <span className="text-gray-400 normal-case font-normal">(optional)</span>
-                  </label>
-                  <input
-                    value={form.email}
-                    onChange={set("email")}
-                    placeholder="you@example.com"
-                    type="email"
-                    className={inp(form.errors.email)}
-                  />
-                  {form.errors.email && <p className="text-xs text-red-500 mt-1">{form.errors.email}</p>}
-                </div>
-
-                {/* Message */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
-                    Message <span className="text-gray-400 normal-case font-normal">(optional)</span>
-                  </label>
-                  <textarea
-                    value={form.message}
-                    onChange={setMessage}
-                    placeholder="Any specific requirements, preferred timings, or additional details…"
-                    rows={3}
-                    maxLength={500}
-                    className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30 focus:border-[#DB313E] resize-none transition-colors"
-                  />
-                  <p className={`text-right text-[11px] mt-0.5 ${form.message.length > 460 ? "text-amber-500" : "text-gray-400"}`}>
-                    {form.message.length}/500
-                  </p>
-                </div>
-
-                {/* Submit */}
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full py-3 rounded-lg bg-[#DB313E] text-white text-sm font-semibold hover:bg-[#c12a36] transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-                >
-                  {submitting ? "Submitting…" : "Submit Request"}
-                </button>
-
-                <p className="text-center text-[11px] text-gray-400 mt-1">
-                  We'll contact you within 24 hours
-                </p>
-              </form>
-            </>
-          )}
+    <ModalShell onClose={onClose} locked={submitting}>
+      {submitted ? (
+        /* ── Success state ── */
+        <div className="px-[26px] pt-[34px] pb-7 flex flex-col items-center text-center gap-3">
+          <div className="w-[120px] animate-ml-bob" style={{ animationDuration: "2.4s" }}>
+            <Bear pose="phone" eager />
+          </div>
+          <h3 className="m-0 font-display font-extrabold text-[30px] text-ml-deep tracking-[-0.03em]">
+            We've Got Your Request!
+          </h3>
+          <p className="m-0 text-[15px] leading-relaxed text-ml-muted max-w-[22em]">
+            Our team will get in touch with you shortly.
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="self-stretch mt-2 h-[54px] rounded-[18px] bg-ml-coral text-ml-deep font-extrabold text-base cursor-pointer hover:brightness-105 transition"
+          >
+            Close
+          </button>
         </div>
-      </div>
-    </div>
+      ) : (
+        /* ── Form ── */
+        <>
+          <div className="bg-ml-coral text-ml-deep px-[26px] pt-[26px] pb-[22px] pr-16 flex flex-col gap-2">
+            <span className="text-xs font-extrabold tracking-[0.16em] uppercase">{title}</span>
+            <h2 className="m-0 font-display font-extrabold text-[26px] leading-tight tracking-[-0.03em]">
+              {type === "inquiry" ? "Tell us what you need. We'll call you back." : "We'll find the right teacher for you."}
+            </h2>
+            <p className="m-0 text-sm font-semibold leading-snug text-ml-deep/80">{subtitle}</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="px-[26px] pt-[22px] pb-[26px] flex flex-col gap-3.5" noValidate>
+            {/* Name */}
+            <label className="flex flex-col gap-1.5">
+              <span className={labelCls}>Full Name *</span>
+              <input
+                value={form.name}
+                onChange={set("name")}
+                placeholder="e.g. Arjun Kumar"
+                maxLength={100}
+                className={fieldCls(form.errors.name)}
+              />
+              {errorText(form.errors.name)}
+            </label>
+
+            {/* Phone */}
+            <label className="flex flex-col gap-1.5">
+              <span className={labelCls}>Phone Number *</span>
+              <input
+                value={form.phone}
+                onChange={set("phone")}
+                placeholder="+91 98765 43210"
+                type="tel"
+                inputMode="tel"
+                maxLength={15}
+                className={fieldCls(form.errors.phone)}
+              />
+              {errorText(form.errors.phone)}
+            </label>
+
+            {/* Email */}
+            <label className="flex flex-col gap-1.5">
+              <span className={labelCls}>
+                Email <span className="font-semibold tracking-normal normal-case text-ml-muted">(optional)</span>
+              </span>
+              <input
+                value={form.email}
+                onChange={set("email")}
+                placeholder="you@example.com"
+                type="email"
+                className={fieldCls(form.errors.email)}
+              />
+              {errorText(form.errors.email)}
+            </label>
+
+            {/* Message */}
+            <label className="flex flex-col gap-1.5">
+              <span className={labelCls}>
+                Message <span className="font-semibold tracking-normal normal-case text-ml-muted">(optional)</span>
+              </span>
+              <textarea
+                value={form.message}
+                onChange={setMessage}
+                placeholder="Any specific requirements, preferred timings, or additional details…"
+                rows={3}
+                maxLength={500}
+                className="w-full rounded-2xl border-2 border-ml-line focus:border-ml-violet px-4 py-3 text-[15px] text-ml-ink outline-none resize-none transition-colors placeholder:text-[#A39CB5]"
+              />
+              <span className={`text-right text-[11px] font-semibold ${form.message.length > 460 ? "text-amber-600" : "text-ml-muted"}`}>
+                {form.message.length}/500
+              </span>
+            </label>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={submitting}
+              className="h-14 rounded-[18px] bg-ml-violet text-white font-extrabold text-base cursor-pointer inline-flex items-center justify-center gap-2 transition hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {submitting ? (<><Spinner /> Submitting…</>) : "Submit Request"}
+            </button>
+
+            <p className="m-0 text-center text-xs font-semibold text-ml-muted">We'll contact you within 24 hours</p>
+          </form>
+        </>
+      )}
+    </ModalShell>
   );
 }
