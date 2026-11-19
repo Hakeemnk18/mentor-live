@@ -129,10 +129,11 @@ const HomeHero: React.FC<HomeHeroProps> = ({ onHowItWorks }) => {
 
         {/* Bear on an ice floe */}
         <div className="flex-[1_1_340px] min-w-0 flex justify-center animate-ml-pop" style={{ animationDelay: "160ms" }}>
-          <div className="relative w-[min(100%,420px)] aspect-[1/1.02]">
+          {/* Phones: taller box + smaller bear so the speech bubble sits clear above its head */}
+          <div className="relative w-[min(100%,420px)] aspect-[1/1.14] sm:aspect-[1/1.02]">
             <div
               aria-live="polite"
-              className="absolute left-0 top-[2%] max-w-[250px] bg-white text-ml-deep rounded-[22px_22px_22px_6px] px-[18px] py-3.5 font-bold text-[15px] leading-snug shadow-[0_18px_40px_-14px_rgba(20,8,50,.6)] z-[3]"
+              className="absolute left-0 top-[2%] max-w-[min(250px,68%)] bg-white text-ml-deep rounded-[22px_22px_22px_6px] px-4 py-3 sm:px-[18px] sm:py-3.5 font-bold text-sm sm:text-[15px] leading-snug shadow-[0_18px_40px_-14px_rgba(20,8,50,.6)] z-[3]"
             >
               {BUBBLES[Math.min(pops, BUBBLES.length - 1)]}
             </div>
@@ -141,15 +142,15 @@ const HomeHero: React.FC<HomeHeroProps> = ({ onHowItWorks }) => {
               className="absolute left-[8%] right-[8%] bottom-[4%] h-[22%] rounded-[50%] shadow-[inset_0_6px_0_rgba(255,255,255,.9),0_30px_50px_-20px_rgba(10,0,40,.6)]"
               style={{ background: "linear-gradient(180deg,#F1F7FF 0%,#CFE3FF 55%,#A9CBF5 100%)" }}
             />
-            <div className="absolute left-1/2 bottom-[9%] w-[60%] -translate-x-1/2 z-[2]">
+            <div className="absolute left-1/2 bottom-[9%] w-[50%] sm:w-[60%] -translate-x-1/2 z-[2]">
               <div ref={bearRef}>
                 <div className="animate-ml-bob">
                   <Bear pose="wave" eager />
                 </div>
               </div>
             </div>
-            <div className="absolute -right-[2%] top-[30%] flex flex-col items-end gap-1.5 z-[3] rotate-6">
-              <span className="font-hand font-bold text-[26px] leading-none text-ml-sun">tap the snow!</span>
+            <div className="absolute right-0 top-[25%] sm:-right-[2%] sm:top-[30%] flex flex-col items-end gap-1.5 z-[3] rotate-6">
+              <span className="font-hand font-bold text-[22px] sm:text-[26px] leading-none text-ml-sun">tap the snow!</span>
               <span className="px-[11px] py-[5px] rounded-full bg-white/14 border border-white/28 text-xs font-bold whitespace-nowrap">
                 {pops ? `${pops} snow burst${pops > 1 ? "s" : ""}` : "psst… click me"}
               </span>
