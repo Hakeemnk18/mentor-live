@@ -129,11 +129,13 @@ const HomeHero: React.FC<HomeHeroProps> = ({ onHowItWorks }) => {
 
         {/* Bear on an ice floe */}
         <div className="flex-[1_1_340px] min-w-0 flex justify-center animate-ml-pop" style={{ animationDelay: "160ms" }}>
-          {/* Phones: taller box + smaller bear so the speech bubble sits clear above its head */}
-          <div className="relative w-[min(100%,420px)] aspect-[1/1.14] sm:aspect-[1/1.02]">
+          <div className="relative w-[min(100%,420px)] aspect-[1/1.02]">
+            {/* Phones: the bubble is anchored just above the bear's head (bear top = 9% floe offset +
+                bear height 50%×1.25 of the width ≈ 70.3% of this box's height), so the gap stays ~16px
+                at every width. From sm up it returns to the design's top-left position. */}
             <div
               aria-live="polite"
-              className="absolute left-0 top-[2%] max-w-[min(250px,68%)] bg-white text-ml-deep rounded-[22px_22px_22px_6px] px-4 py-3 sm:px-[18px] sm:py-3.5 font-bold text-sm sm:text-[15px] leading-snug shadow-[0_18px_40px_-14px_rgba(20,8,50,.6)] z-[3]"
+              className="absolute left-0 bottom-[calc(70.3%+16px)] sm:bottom-auto sm:top-[2%] max-w-[min(250px,62%)] sm:max-w-[250px] bg-white text-ml-deep rounded-[22px_22px_22px_6px] px-4 py-3 sm:px-[18px] sm:py-3.5 font-bold text-sm sm:text-[15px] leading-snug shadow-[0_18px_40px_-14px_rgba(20,8,50,.6)] z-[3]"
             >
               {BUBBLES[Math.min(pops, BUBBLES.length - 1)]}
             </div>
@@ -149,7 +151,7 @@ const HomeHero: React.FC<HomeHeroProps> = ({ onHowItWorks }) => {
                 </div>
               </div>
             </div>
-            <div className="absolute right-0 top-[25%] sm:-right-[2%] sm:top-[30%] flex flex-col items-end gap-1.5 z-[3] rotate-6">
+            <div className="absolute right-0 bottom-[calc(70.3%+16px)] sm:bottom-auto sm:-right-[2%] sm:top-[30%] flex flex-col items-end gap-1.5 z-[3] rotate-6">
               <span className="font-hand font-bold text-[22px] sm:text-[26px] leading-none text-ml-sun">tap the snow!</span>
               <span className="px-[11px] py-[5px] rounded-full bg-white/14 border border-white/28 text-xs font-bold whitespace-nowrap">
                 {pops ? `${pops} snow burst${pops > 1 ? "s" : ""}` : "psst… click me"}
