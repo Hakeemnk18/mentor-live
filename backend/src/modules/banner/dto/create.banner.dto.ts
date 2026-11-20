@@ -7,6 +7,11 @@ export const CreateBannerSchema = z
       publicId: z.string().trim().min(1, "Banner image publicId is required"),
     }),
 
+    mobileImage: z.object({
+      url: z.string().trim().min(1, "Mobile banner image URL is required"),
+      publicId: z.string().trim().min(1, "Mobile banner image publicId is required"),
+    }),
+
     description: z.string().trim().min(5).max(200),
 
     isShow: z.boolean().default(false),

@@ -4,6 +4,7 @@ export interface BannerProps {
     url: string;
     publicId: string;
   };
+  mobileImage?: { url: string; publicId: string } | null;
   description: string;
   priority: number | null;
   isShow?: boolean;
@@ -15,6 +16,7 @@ export interface BannerProps {
 export class Banner {
   public readonly id: string | null;
   public readonly image: { url: string; publicId: string };
+  public readonly mobileImage: { url: string; publicId: string } | null;
   public readonly description: string;
   public readonly priority: number | null;
   public readonly isShow: boolean;
@@ -25,6 +27,7 @@ export class Banner {
   constructor(props: BannerProps) {
     this.id = props.id;
     this.image = props.image;
+    this.mobileImage = props.mobileImage ?? null;
     this.description = props.description;
     this.priority = props.priority ?? null;
     this.isShow = props.isShow ?? false;

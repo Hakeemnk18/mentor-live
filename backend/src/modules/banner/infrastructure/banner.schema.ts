@@ -5,6 +5,11 @@ export interface IBanner extends Document {
     url: string;
     publicId: string;
   };
+  /** Square image for phones (null for banners created before it existed). */
+  mobileImage?: {
+    url: string;
+    publicId: string;
+  } | null;
   description: string;
   priority: number | null;
   isShow: boolean;
@@ -25,6 +30,17 @@ const bannerSchema = new Schema<IBanner>(
         type: String,
         required: true,
       },
+    },
+
+    mobileImage: {
+      type: new Schema(
+        {
+          url: { type: String, required: true, trim: true },
+          publicId: { type: String, required: true },
+        },
+        { _id: false },
+      ),
+      default: null,
     },
 
     description: {

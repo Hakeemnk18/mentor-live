@@ -72,14 +72,14 @@ export default function BannerCarousel() {
   if (loading) {
     return (
       <section className="max-w-[1200px] mx-auto px-5 pt-[clamp(56px,7vw,96px)]">
-        <div className="w-full h-[260px] sm:h-[340px] md:h-[400px] rounded-[34px] bg-ml-lav animate-pulse" />
+        <div className="w-full aspect-square sm:aspect-[2/1] rounded-[20px] sm:rounded-[28px] md:rounded-[34px] bg-ml-lav animate-pulse" />
       </section>
     );
   }
   if (count === 0) return null;
 
   const arrowCls =
-    "w-11 h-11 rounded-full bg-white/92 text-ml-deep flex items-center justify-center cursor-pointer shadow-md transition hover:bg-white hover:scale-105 active:scale-95";
+    "hidden sm:flex w-10 h-10 md:w-11 md:h-11 rounded-full bg-white/92 text-ml-deep flex items-center justify-center cursor-pointer shadow-md transition hover:bg-white hover:scale-105 active:scale-95";
 
   /* ── render ─────────────────────────────────────────────────────── */
   return (
@@ -87,7 +87,7 @@ export default function BannerCarousel() {
     <section className="max-w-[1200px] mx-auto px-5 pt-[clamp(56px,7vw,96px)]">
       <Reveal>
         <div
-          className="relative rounded-[34px] overflow-hidden select-none bg-ml-hero shadow-[0_30px_60px_-30px_rgba(42,22,80,.5)]"
+          className="relative rounded-[20px] sm:rounded-[28px] md:rounded-[34px] overflow-hidden select-none bg-ml-hero shadow-[0_30px_60px_-30px_rgba(42,22,80,.5)]"
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
           onPointerDown={onPointerDown}
@@ -113,49 +113,46 @@ export default function BannerCarousel() {
                 style={{ minWidth: "100%" }}
                 aria-hidden={i !== current}
               >
-                <div className="w-full h-[300px] sm:h-[340px] md:h-[400px] overflow-hidden">
-                  <img
-                    key={i === current ? `kb-${animKey}` : i}
-                    src={b.image}
-                    alt={b.description}
-                    loading={i === 0 ? "eager" : "lazy"}
-                    className={[
-                      "w-full h-full object-cover will-change-transform",
-                      i === current ? "banner-ken-burns" : "",
-                    ].join(" ")}
-                    draggable={false}
-                  />
+                {/* Same shapes the admin crops to (1:1 phones, 2:1 from 640px), so the full image is
+                    always shown. <picture> makes each device download only its own image. */}
+                <div className="w-full aspect-square sm:aspect-[2/1] overflow-hidden">
+                  <picture>
+                    <source media="(max-width: 639px)" srcSet={b.mobileImage || b.image} />
+                    <img
+                      src={b.image}
+                      alt={b.description}
+                      loading={i === 0 ? "eager" : "lazy"}
+                      className="w-full h-full object-cover"
+                      draggable={false}
+                    />
+                  </picture>
                 </div>
 
-                {/* Purple wash so text stays readable on any image */}
-                <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[rgba(36,19,63,.92)] via-[rgba(36,19,63,.35)] to-transparent" />
+                {/* Faint bottom shade so the dots stay visible on light images */}
+                {count > 1 && (
+                  <div className="absolute inset-x-0 bottom-0 h-1/4 pointer-events-none bg-gradient-to-t from-black/25 to-transparent" />
+                )}
 
-                {/* Caption — only for active slide, animates in */}
-                {i === current && (
+                {/* Button — only for active slide, animates in */}
+                {i === current && b.isClickable && (
                   <div
                     key={`cap-${animKey}`}
-                    className="absolute inset-x-0 bottom-0 px-[clamp(24px,4.5vw,56px)] pb-[clamp(84px,7vw,56px)] md:pr-[300px] flex flex-col items-start gap-3.5 banner-caption"
+                    className="absolute left-[clamp(12px,3vw,40px)] bottom-[clamp(12px,3vw,40px)] banner-caption"
                   >
-                    <span className="h-1 w-10 rounded-full bg-ml-coral" />
-                    <p className="m-0 text-white font-display font-extrabold text-[clamp(22px,3.2vw,40px)] leading-[1.05] tracking-[-0.03em] max-w-[20em] line-clamp-3 drop-shadow-sm">
-                      {b.description}
-                    </p>
-                    {b.isClickable && (
-                      <button
-                        type="button"
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onPointerUp={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setLeadBanner(b);
-                          setLeadOpen(true);
-                        }}
-                        className="mt-1.5 h-12 px-[22px] rounded-full bg-white text-ml-deep font-extrabold text-[15px] inline-flex items-center gap-2 cursor-pointer transition-transform hover:-translate-y-0.5"
-                      >
-                        {b.buttonText || "Get In Touch"}
-                        <ChevronRight />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onPointerUp={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setLeadBanner(b);
+                        setLeadOpen(true);
+                      }}
+                      className="h-10 sm:h-11 md:h-12 px-4 sm:px-5 md:px-[22px] rounded-full bg-white text-ml-deep font-extrabold text-sm md:text-[15px] inline-flex items-center gap-1.5 sm:gap-2 cursor-pointer shadow-[0_10px_24px_-10px_rgba(36,19,63,.55)] transition-transform hover:-translate-y-0.5"
+                    >
+                      {b.buttonText || "Get In Touch"}
+                      <ChevronRight className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                    </button>
                   </div>
                 )}
               </div>
@@ -164,8 +161,8 @@ export default function BannerCarousel() {
 
           {/* Dots + arrows */}
           {count > 1 && (
-            <div className="absolute right-[clamp(20px,3vw,32px)] bottom-[clamp(20px,3vw,32px)] flex items-center gap-2.5 z-10">
-              <div className="flex gap-1.5 mr-1.5">
+            <div className="absolute right-[clamp(12px,3vw,40px)] bottom-[clamp(12px,3vw,40px)] h-10 sm:h-11 md:h-12 flex items-center gap-2.5 z-10">
+              <div className="flex gap-1.5 sm:mr-1.5">
                 {banners.map((_, i) => (
                   <button
                     key={i}
@@ -215,20 +212,14 @@ export default function BannerCarousel() {
       </Reveal>
 
       <style>{`
-        @keyframes kenBurns {
-          0%   { transform: scale(1)    translate(0%, 0%);    }
-          100% { transform: scale(1.07) translate(-0.8%, -0.5%); }
-        }
-        .banner-ken-burns { animation: kenBurns ${AUTO_MS}ms ease-out forwards; }
         @keyframes captionReveal {
-          from { opacity: 0; transform: translateY(22px); }
+          from { opacity: 0; transform: translateY(14px); }
           to   { opacity: 1; transform: translateY(0); }
         }
         .banner-caption { animation: captionReveal 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
         @keyframes progressBar { from { width: 0%; } to { width: 100%; } }
         .banner-progress { animation: progressBar ${AUTO_MS}ms linear forwards; }
         @media (prefers-reduced-motion: reduce) {
-          .banner-ken-burns { animation: none !important; }
           .banner-caption   { animation: none !important; opacity: 1 !important; }
           .banner-progress  { animation: none !important; width: 0 !important; }
         }

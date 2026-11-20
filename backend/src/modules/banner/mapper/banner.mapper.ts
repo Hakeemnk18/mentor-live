@@ -18,6 +18,9 @@ export class BannerMapper {
         url: bannerModelData.image?.url,
         publicId: bannerModelData.image?.publicId,
       },
+      mobileImage: bannerModelData.mobileImage?.url
+        ? { url: bannerModelData.mobileImage.url, publicId: bannerModelData.mobileImage.publicId }
+        : null,
       description: bannerModelData.description,
       priority: bannerModelData.priority ?? null,
       isShow: bannerModelData.isShow ?? false,
@@ -33,6 +36,9 @@ export class BannerMapper {
         url: bannerEntity.image.url,
         publicId: bannerEntity.image.publicId,
       },
+      mobileImage: bannerEntity.mobileImage
+        ? { url: bannerEntity.mobileImage.url, publicId: bannerEntity.mobileImage.publicId }
+        : null,
       description: bannerEntity.description,
       priority: bannerEntity.priority,
       isShow: bannerEntity.isShow,

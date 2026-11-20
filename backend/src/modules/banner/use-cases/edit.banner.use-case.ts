@@ -42,6 +42,7 @@ export class EditBannerUseCase implements IEditBannerUseCase {
     const updated = new Banner({
       id: existing.id,
       image: dto.image,
+      mobileImage: dto.mobileImage,
       description: dto.description,
       priority: dto.priority ?? existing.priority,
       isShow: dto.isShow ?? existing.isShow,
