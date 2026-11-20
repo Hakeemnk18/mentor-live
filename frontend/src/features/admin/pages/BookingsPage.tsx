@@ -35,7 +35,7 @@ const fmtDate = (iso: string) =>
   });
 
 const sel =
-  "w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30";
+  "w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30";
 
 /* ─── columns ─────────────────────────────────────────── */
 const oneOnOneColumns: Column<OneOnOneBooking>[] = [
@@ -360,7 +360,7 @@ export default function BookingsPage() {
           onClick={() => switchType("one-on-one")}
           className={`px-5 py-2 text-sm font-medium rounded-md transition-all ${
             bookingType === "one-on-one"
-              ? "bg-white text-[#DB313E] shadow-sm"
+              ? "bg-white text-[#6D35D9] shadow-sm"
               : "text-gray-500 hover:text-gray-700"
           }`}
         >
@@ -370,7 +370,7 @@ export default function BookingsPage() {
           onClick={() => switchType("pool")}
           className={`px-5 py-2 text-sm font-medium rounded-md transition-all ${
             bookingType === "pool"
-              ? "bg-white text-[#DB313E] shadow-sm"
+              ? "bg-white text-[#6D35D9] shadow-sm"
               : "text-gray-500 hover:text-gray-700"
           }`}
         >
@@ -380,7 +380,7 @@ export default function BookingsPage() {
           onClick={() => switchType("all")}
           className={`px-5 py-2 text-sm font-medium rounded-md transition-all ${
             bookingType === "all"
-              ? "bg-white text-[#DB313E] shadow-sm"
+              ? "bg-white text-[#6D35D9] shadow-sm"
               : "text-gray-500 hover:text-gray-700"
           }`}
         >
@@ -389,7 +389,7 @@ export default function BookingsPage() {
       </div>
 
       {/* ── Filters ────────────────────────────────────── */}
-      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 mb-4">
+      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-[#E4DDF2] bg-[#FAF8FE] p-4 mb-4">
         {/* Search */}
         <div className="flex flex-col gap-1 min-w-[180px]">
           <label className="text-xs font-medium text-gray-600">Search</label>

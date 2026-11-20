@@ -4,7 +4,7 @@ export default function TopLoader({ loading }: { loading: boolean }) {
   return (
     <div className="fixed top-0 left-0 right-0 z-[9999] h-[3px] overflow-hidden bg-transparent">
       <div
-        className="h-full bg-[#DB313E]"
+        className="h-full bg-gradient-to-r from-[#6D35D9] to-[#FF6B5E]"
         style={{
           animation: "loadingBar 1.2s ease-in-out infinite",
         }}

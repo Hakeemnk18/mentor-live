@@ -346,7 +346,7 @@ export default function FacultyDetailPage() {
           <p className="text-gray-500 text-lg">Faculty not found</p>
           <button
             onClick={() => navigate("/admin/faculty")}
-            className="mt-4 text-sm text-[#DB313E] hover:underline"
+            className="mt-4 text-sm text-[#6D35D9] hover:underline"
           >
              Back to Faculty List
           </button>
@@ -391,7 +391,7 @@ export default function FacultyDetailPage() {
           <h2 className="text-base font-semibold text-gray-800">Basic Information</h2>
           <button
             onClick={() => setEditOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#DB313E] rounded-lg hover:bg-[#c22935] transition-colors shadow-sm"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#6D35D9] rounded-lg hover:bg-[#5B2BC0] transition-colors shadow-sm"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -441,7 +441,7 @@ export default function FacultyDetailPage() {
                     />
                     {/* Play button overlay */}
                     <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-                      <div className="w-12 h-12 rounded-full bg-[#DB313E] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                      <div className="w-12 h-12 rounded-full bg-[#6D35D9] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                         <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M8 5v14l11-7z" />
                         </svg>
@@ -453,7 +453,7 @@ export default function FacultyDetailPage() {
                     href={faculty.demoClass}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-[#DB313E] hover:underline"
+                    className="text-sm text-[#6D35D9] hover:underline"
                   >
                     {faculty.demoClass}
                   </a>
@@ -472,12 +472,12 @@ export default function FacultyDetailPage() {
                 {faculty.subjectOffering.map((so) => (
                   <span
                     key={so.id}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-[#DB313E]/8 text-[#DB313E] border border-[#DB313E]/15"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-[#6D35D9]/8 text-[#6D35D9] border border-[#6D35D9]/15"
                   >
                     {so.subject.name}
                     <span className="text-gray-500">{so.class.name}</span>
                     <span className="text-gray-500">{so.syllabus.name}</span>
-                    <span className="ml-1 px-1.5 py-0.5 rounded bg-white border border-[#DB313E]/20 text-gray-700 font-semibold">
+                    <span className="ml-1 px-1.5 py-0.5 rounded bg-white border border-[#6D35D9]/20 text-gray-700 font-semibold">
                       {String.fromCharCode(8377)}{so.price}
                     </span>
                   </span>
@@ -520,7 +520,7 @@ export default function FacultyDetailPage() {
                       }}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                         isSelected
-                          ? "bg-[#DB313E] text-white border-[#DB313E]"
+                          ? "bg-[#6D35D9] text-white border-[#6D35D9]"
                           : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
                       }`}
                     >
@@ -551,7 +551,7 @@ export default function FacultyDetailPage() {
                   <button
                     onClick={handleAddTimeSlot}
                     disabled={!newTime || !selectedSlotVariantId || slotWorking}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#DB313E] rounded-lg hover:bg-[#c22935] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#6D35D9] rounded-lg hover:bg-[#5B2BC0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {slotWorking ? "Adding…" : "+ Add Slot"}
                   </button>
@@ -727,7 +727,7 @@ export default function FacultyDetailPage() {
             <button
               onClick={handleAddChapterSlot}
               disabled={!chapterId || chapterWorking}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#DB313E] rounded-lg hover:bg-[#c22935] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#6D35D9] rounded-lg hover:bg-[#5B2BC0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {chapterWorking ? "Adding" : "+ Add Chapter"}
             </button>

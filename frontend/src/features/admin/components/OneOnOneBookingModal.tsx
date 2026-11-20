@@ -218,7 +218,7 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
                 <div className="flex flex-col gap-2 shrink-0">
                   <button
                     onClick={handleContact}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#DB313E] text-white rounded-md hover:bg-[#c02535] transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#6D35D9] text-white rounded-md hover:bg-[#5B2BC0] transition-colors"
                   >
                     📞 Call
                   </button>
@@ -270,8 +270,8 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
                           onClick={() => toggleSlot(s.time)}
                           className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                             selected
-                              ? "bg-[#DB313E] border-[#DB313E] text-white"
-                              : "border-gray-300 text-gray-700 hover:border-[#DB313E] hover:text-[#DB313E]"
+                              ? "bg-[#6D35D9] border-[#6D35D9] text-white"
+                              : "border-gray-300 text-gray-700 hover:border-[#6D35D9] hover:text-[#6D35D9]"
                           }`}
                         >
                           {s.time}
@@ -296,7 +296,7 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
               <button
                 onClick={() => setShowContactConfirm(true)}
                 disabled={markingContacted}
-                className="px-4 py-2 text-sm font-medium border border-[#DB313E] text-[#DB313E] rounded-md hover:bg-red-50 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 text-sm font-medium border border-[#6D35D9] text-[#6D35D9] rounded-md hover:bg-red-50 disabled:opacity-50 transition-colors"
               >
                 {markingContacted ? "Marking…" : "Mark as Contacted"}
               </button>
@@ -308,7 +308,7 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
                   confirming ||
                   (booking.mode === "chapter" && !selectedTime)
                 }
-                className="px-4 py-2 text-sm font-medium bg-[#DB313E] text-white rounded-md hover:bg-[#c02535] disabled:opacity-50 transition-colors"
+                className="px-4 py-2 text-sm font-medium bg-[#6D35D9] text-white rounded-md hover:bg-[#5B2BC0] disabled:opacity-50 transition-colors"
               >
                 {confirming ? "Confirming…" : "Confirm Booking"}
               </button>

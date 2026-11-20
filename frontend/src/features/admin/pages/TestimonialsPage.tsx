@@ -149,7 +149,7 @@ export default function TestimonialsPage() {
   };
 
   const sel =
-    "px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30";
+    "px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30";
 
   return (
     <AdminPageContainer>
@@ -159,7 +159,7 @@ export default function TestimonialsPage() {
       />
 
       {/* ── Filters ── */}
-      <div className="flex flex-col md:flex-row md:items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+      <div className="flex flex-col md:flex-row md:items-center gap-3 rounded-2xl border border-[#E4DDF2] bg-[#FAF8FE] p-4 mb-4">
         <div className="flex flex-col gap-1 flex-1">
           <label className="text-xs font-medium text-gray-600">Search</label>
           <input
@@ -167,7 +167,7 @@ export default function TestimonialsPage() {
             placeholder="Search by author, designation, comment…"
             value={search}
             onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30"
           />
         </div>
         <div className="flex flex-col gap-1">

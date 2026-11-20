@@ -900,7 +900,7 @@ export default function FacultyModal({
                     type="checkbox"
                     checked={isFeatured}
                     onChange={(e) => setIsFeatured(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-[#DB313E] focus:ring-[#DB313E]/30"
+                    className="w-4 h-4 rounded border-gray-300 text-[#6D35D9] focus:ring-[#6D35D9]/30"
                   />
                   <span className="text-sm text-gray-700">
                     Mark this faculty as featured
@@ -1016,7 +1016,7 @@ export default function FacultyModal({
                                 key={v._id}
                                 className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg border border-red-200 bg-red-50"
                               >
-                                <span className="flex-1 font-medium text-[#DB313E] truncate">
+                                <span className="flex-1 font-medium text-[#6D35D9] truncate">
                                   {v.subjectName}
                                 </span>
                                 <div className="flex items-center gap-1 shrink-0">
@@ -1034,7 +1034,7 @@ export default function FacultyModal({
                                       clearFieldError(`subjects`);
                                     }}
                                     placeholder="Price"
-                                    className="w-20 px-1.5 py-0.5 border border-gray-300 rounded text-gray-800 text-xs focus:outline-none focus:border-[#DB313E]"
+                                    className="w-20 px-1.5 py-0.5 border border-gray-300 rounded text-gray-800 text-xs focus:outline-none focus:border-[#6D35D9]"
                                   />
                                 </div>
                                 <button
@@ -1063,7 +1063,7 @@ export default function FacultyModal({
                                 key={v._id}
                                 type="button"
                                 onClick={() => toggleVariant(group.id, v._id)}
-                                className="px-3 py-1 text-xs rounded-full border border-gray-300 bg-white text-gray-700 hover:border-[#DB313E] hover:text-[#DB313E] transition-colors"
+                                className="px-3 py-1 text-xs rounded-full border border-gray-300 bg-white text-gray-700 hover:border-[#6D35D9] hover:text-[#6D35D9] transition-colors"
                               >
                                 + {v.subjectName}
                               </button>
@@ -1087,7 +1087,7 @@ export default function FacultyModal({
               <button
                 type="button"
                 onClick={addGroup}
-                className="mt-3 text-sm text-[#DB313E] hover:underline"
+                className="mt-3 text-sm text-[#6D35D9] hover:underline"
               >
                 + Add another syllabus / class
               </button>
@@ -1147,7 +1147,7 @@ export default function FacultyModal({
                                   <button
                                     type="button"
                                     onClick={() => handleSetAllRowsVariants(allVariants.map((v) => v.variantId))}
-                                    className="text-xs text-[#DB313E] hover:underline"
+                                    className="text-xs text-[#6D35D9] hover:underline"
                                   >
                                     Select all
                                   </button>
@@ -1190,8 +1190,8 @@ export default function FacultyModal({
                                       onClick={() => handleToggleVariantInRow(row.time, v.variantId)}
                                       className={`px-2.5 py-0.5 text-xs rounded-full border font-medium transition-colors ${
                                         checked
-                                          ? "bg-[#DB313E] border-[#DB313E] text-white"
-                                          : "bg-white border-gray-300 text-gray-500 hover:border-[#DB313E] hover:text-[#DB313E]"
+                                          ? "bg-[#6D35D9] border-[#6D35D9] text-white"
+                                          : "bg-white border-gray-300 text-gray-500 hover:border-[#6D35D9] hover:text-[#6D35D9]"
                                       }`}
                                     >
                                       {checked ? "✓ " : ""}{v.label}
@@ -1286,7 +1286,7 @@ export default function FacultyModal({
                             const blocked = timeSlots.filter((s) => s.variantId === vid && !s.isAvailable);
                             return (
                               <div key={vid} className="border border-gray-100 rounded-lg p-2 bg-gray-50">
-                                <p className="text-[11px] font-semibold text-[#DB313E] uppercase tracking-wide mb-1.5">
+                                <p className="text-[11px] font-semibold text-[#6D35D9] uppercase tracking-wide mb-1.5">
                                   {label}
                                 </p>
                                 {active.length > 0 && (
@@ -1465,7 +1465,7 @@ export default function FacultyModal({
             <button
               onClick={handleSubmit}
               disabled={isLoading}
-              className="px-4 py-2 text-sm bg-[#DB313E] text-white rounded hover:bg-[#c02b37] disabled:opacity-50"
+              className="px-4 py-2 text-sm bg-[#6D35D9] text-white rounded hover:bg-[#5B2BC0] disabled:opacity-50"
             >
               {uploading
                 ? "Uploading"
@@ -1537,7 +1537,7 @@ function Field({
 }
 
 const inp = (hasError: boolean) =>
-  `w-full px-3 py-2 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30 ${
+  `w-full px-3 py-2 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30 ${
     hasError ? "border-red-400" : "border-gray-300"
   }`;
 

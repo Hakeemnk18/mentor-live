@@ -215,7 +215,7 @@ export default function SubjectPage() {
       />
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row md:items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+      <div className="flex flex-col md:flex-row md:items-center gap-3 rounded-2xl border border-[#E4DDF2] bg-[#FAF8FE] p-4 mb-4">
         {/* Search */}
         <div className="flex flex-col gap-1 w-full md:w-auto">
           <label className="text-xs font-medium text-gray-600">Search</label>
@@ -228,7 +228,7 @@ export default function SubjectPage() {
               setSearch(e.target.value);
             }}
             className="w-full md:w-64 px-3 py-2 text-sm border border-gray-300 rounded
-              focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
+              focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30"
           />
         </div>
 
@@ -245,7 +245,7 @@ export default function SubjectPage() {
               else setIsDeleted(e.target.value === "deleted");
             }}
             className="w-full md:w-40 px-3 py-2 text-sm border border-gray-300 rounded
-              focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
+              focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30"
           >
             <option value="">All</option>
             <option value="active">Active</option>
@@ -265,7 +265,7 @@ export default function SubjectPage() {
               setLimit(Number(e.target.value));
             }}
             className="w-full md:w-32 px-3 py-2 text-sm border border-gray-300 rounded
-              focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
+              focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30"
           >
             <option value={5}>5</option>
             <option value={10}>10</option>

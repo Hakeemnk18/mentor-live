@@ -98,7 +98,7 @@ export default function NameFormModal({
               className={`w-full rounded border px-3 py-2 text-sm focus:outline-none disabled:bg-gray-100 ${
                 error
                   ? "border-red-400 focus:border-red-400"
-                  : "border-gray-300 focus:border-[#DB313E]"
+                  : "border-gray-300 focus:border-[#6D35D9]"
               }`}
             />
             {error && (
@@ -129,9 +129,9 @@ export default function NameFormModal({
             onClick={handleSubmit}
             disabled={loading}
             className="px-4 py-2 text-sm rounded
-               bg-[#DB313E] text-white
+               bg-[#6D35D9] text-white
                cursor-pointer transition-colors
-               hover:bg-[#c72b36]
+               hover:bg-[#5B2BC0]
                disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading

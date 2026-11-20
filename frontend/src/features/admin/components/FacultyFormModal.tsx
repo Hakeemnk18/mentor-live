@@ -489,7 +489,7 @@ export default function FacultyFormModal({
                 onChange={(e) => setName(e.target.value)}
                 className={`
         w-full mt-1 px-3 py-2 text-sm border rounded
-        focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30
+        focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30
         ${
           submitAttempted && !name.trim() ? "border-red-400" : "border-gray-300"
         }
@@ -522,7 +522,7 @@ export default function FacultyFormModal({
                       placeholder="e.g. MSc Physics"
                       className={`
             flex-1 px-3 py-2 text-sm border rounded
-            focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30
+            focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30
             ${
               submitAttempted && !q.trim()
                 ? "border-red-400"
@@ -551,7 +551,7 @@ export default function FacultyFormModal({
               <button
                 type="button"
                 onClick={() => setQualifications((prev) => [...prev, ""])}
-                className="mt-2 text-sm text-[#DB313E] hover:underline"
+                className="mt-2 text-sm text-[#6D35D9] hover:underline"
               >
                 + Add qualification
               </button>
@@ -576,7 +576,7 @@ export default function FacultyFormModal({
                 placeholder="Brief teaching experience, syllabus handled, etc."
                 className={`
       w-full mt-1 px-3 py-2 text-sm border rounded resize-none
-      focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30
+      focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30
       ${
         submitAttempted && description.trim().length < 10
           ? "border-red-400"
@@ -612,7 +612,7 @@ export default function FacultyFormModal({
                   onChange={(e) => setDemoClass(e.target.value)}
                   className={`
       w-full mt-1 px-3 py-2 text-sm border rounded
-      focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30
+      focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30
       ${
         submitAttempted &&
         (!demoClass.trim() || !isValidDemoClassLink(demoClass))
@@ -650,7 +650,7 @@ export default function FacultyFormModal({
                   onChange={(e) => setPrice(Number(e.target.value))}
                   className={`
           w-full mt-1 px-3 py-2 text-sm border rounded
-          focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30
+          focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30
           ${
             submitAttempted && price <= 0 ? "border-red-400" : "border-gray-300"
           }
@@ -707,7 +707,7 @@ export default function FacultyFormModal({
               }
               className={`
     w-full h-32 px-3 py-2 text-sm border rounded
-    focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30
+    focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30
     ${!subjectSyllabusId || !subjectClassId ? "bg-gray-100" : ""}
   `}
             >
@@ -751,7 +751,7 @@ export default function FacultyFormModal({
                   return (
                     <span
                       key={id}
-                      className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-[#DB313E]/10 text-[#DB313E]"
+                      className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-[#6D35D9]/10 text-[#6D35D9]"
                     >
                       {subject?.name ?? "Unknown"}
 
@@ -762,7 +762,7 @@ export default function FacultyFormModal({
                             prev.filter((x) => x !== id),
                           )
                         }
-                        className="text-[#DB313E] hover:text-red-600"
+                        className="text-[#6D35D9] hover:text-red-600"
                       >
                         
                       </button>
@@ -1000,7 +1000,7 @@ export default function FacultyFormModal({
               type="button" // … THIS IS THE FIX
               disabled={uploading || isSubmitting}
               onClick={handleSubmit}
-              className={`px-4 py-2 rounded text-white bg-[#DB313E]
+              className={`px-4 py-2 rounded text-white bg-[#6D35D9]
     ${(uploading || isSubmitting) && "opacity-50 cursor-not-allowed"}`}
             >
               {isSubmitting

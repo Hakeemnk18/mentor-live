@@ -291,8 +291,8 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
                           onClick={() => toggleSlot(s.time)}
                           className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                             selected
-                              ? "bg-[#DB313E] border-[#DB313E] text-white"
-                              : "border-gray-300 text-gray-700 hover:border-[#DB313E] hover:text-[#DB313E]"
+                              ? "bg-[#6D35D9] border-[#6D35D9] text-white"
+                              : "border-gray-300 text-gray-700 hover:border-[#6D35D9] hover:text-[#6D35D9]"
                           }`}
                         >
                           {s.time}
@@ -320,7 +320,7 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
                   confirming ||
                   (booking.mode === "chapter" && selectedTimes.length === 0)
                 }
-                className="px-4 py-2 text-sm font-medium bg-[#DB313E] text-white rounded-md hover:bg-[#c02535] disabled:opacity-50 transition-colors"
+                className="px-4 py-2 text-sm font-medium bg-[#6D35D9] text-white rounded-md hover:bg-[#5B2BC0] disabled:opacity-50 transition-colors"
               >
                 {confirming ? "Confirming…" : "Confirm Booking"}
               </button>

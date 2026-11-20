@@ -62,7 +62,7 @@ export default function TimeInput({ value, onChange, className = "", hasError = 
     update(hour, String(m).padStart(2, "0"), period);
   };
 
-  const inputCls = `w-12 px-2 py-2 text-sm text-center border rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30 ${
+  const inputCls = `w-12 px-2 py-2 text-sm text-center border rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30 ${
     hasError ? "border-red-400" : "border-gray-300"
   } ${disabled ? "bg-gray-100 text-gray-400" : "bg-white"}`;
 
@@ -95,7 +95,7 @@ export default function TimeInput({ value, onChange, className = "", hasError = 
           disabled={disabled}
           onClick={() => update(hour, minute, "AM")}
           className={`px-2 py-2 text-xs font-medium transition-colors ${
-            period === "AM" ? "bg-[#DB313E] text-white" : "bg-white text-gray-500 hover:bg-gray-50"
+            period === "AM" ? "bg-[#6D35D9] text-white" : "bg-white text-gray-500 hover:bg-gray-50"
           }`}
         >
           AM
@@ -105,7 +105,7 @@ export default function TimeInput({ value, onChange, className = "", hasError = 
           disabled={disabled}
           onClick={() => update(hour, minute, "PM")}
           className={`px-2 py-2 text-xs font-medium border-l border-gray-300 transition-colors ${
-            period === "PM" ? "bg-[#DB313E] text-white" : "bg-white text-gray-500 hover:bg-gray-50"
+            period === "PM" ? "bg-[#6D35D9] text-white" : "bg-white text-gray-500 hover:bg-gray-50"
           }`}
         >
           PM

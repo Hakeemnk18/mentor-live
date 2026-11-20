@@ -185,7 +185,7 @@ export default function SubjectFormModal({
               onChange={(e) => setName(e.target.value)}
               disabled={!!loading}
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm
-                focus:border-[#DB313E] focus:outline-none disabled:bg-gray-100"
+                focus:border-[#6D35D9] focus:outline-none disabled:bg-gray-100"
             />
           </div>
 
@@ -301,7 +301,7 @@ export default function SubjectFormModal({
                                 type="button"
                                 onClick={() => selectAll(idx, availableClasses)}
                                 disabled={!!loading}
-                                className="text-xs text-[#DB313E] hover:underline disabled:opacity-40"
+                                className="text-xs text-[#6D35D9] hover:underline disabled:opacity-40"
                               >
                                 Select all
                               </button>
@@ -328,7 +328,7 @@ export default function SubjectFormModal({
                                 key={cls._id}
                                 className={`flex items-center gap-2 px-2.5 py-1.5 rounded border text-sm cursor-pointer select-none transition-colors ${
                                   checked
-                                    ? "border-[#DB313E]/40 bg-[#DB313E]/5 text-[#DB313E] font-medium"
+                                    ? "border-[#6D35D9]/40 bg-[#6D35D9]/5 text-[#6D35D9] font-medium"
                                     : "border-gray-200 hover:bg-gray-50 text-gray-700"
                                 } ${loading ? "opacity-50 pointer-events-none" : ""}`}
                               >
@@ -336,7 +336,7 @@ export default function SubjectFormModal({
                                   type="checkbox"
                                   checked={checked}
                                   onChange={() => toggleClass(idx, cls._id)}
-                                  className="accent-[#DB313E] shrink-0"
+                                  className="accent-[#6D35D9] shrink-0"
                                   disabled={!!loading}
                                 />
                                 <span className="truncate">{cls.name}</span>
@@ -354,7 +354,7 @@ export default function SubjectFormModal({
                 type="button"
                 onClick={addGroup}
                 disabled={!!loading}
-                className="text-sm text-[#DB313E] font-medium hover:underline disabled:opacity-40"
+                className="text-sm text-[#6D35D9] font-medium hover:underline disabled:opacity-40"
               >
                 + Add another syllabus
               </button>
@@ -376,8 +376,8 @@ export default function SubjectFormModal({
             <button
               disabled={!canCreate || !!loading}
               onClick={() => onCreate(buildCreatePayload())}
-              className="px-4 py-2 text-sm rounded bg-[#DB313E] text-white
-                hover:bg-[#c72b36] disabled:opacity-50"
+              className="px-4 py-2 text-sm rounded bg-[#6D35D9] text-white
+                hover:bg-[#5B2BC0] disabled:opacity-50"
             >
               {loading ? "Creating…" : "Create Subject"}
             </button>
@@ -402,8 +402,8 @@ export default function SubjectFormModal({
                     variants: buildFlatVariants(),
                   })
                 }
-                className="px-4 py-2 text-sm rounded bg-[#DB313E] text-white
-                  hover:bg-[#c72b36] disabled:opacity-50"
+                className="px-4 py-2 text-sm rounded bg-[#6D35D9] text-white
+                  hover:bg-[#5B2BC0] disabled:opacity-50"
               >
                 {loading ? "Saving…" : "Add Variants"}
               </button>

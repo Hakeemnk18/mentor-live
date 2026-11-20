@@ -130,7 +130,7 @@ export default function UserFormModal({
     `w-full rounded border px-3 py-2 text-sm focus:outline-none disabled:bg-gray-100 ${
       errors[field]
         ? "border-red-400 focus:border-red-400"
-        : "border-gray-300 focus:border-[#DB313E]"
+        : "border-gray-300 focus:border-[#6D35D9]"
     }`;
 
   return (
@@ -206,7 +206,7 @@ export default function UserFormModal({
               value={form.role}
               onChange={set("role")}
               disabled={loading}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#DB313E] disabled:bg-gray-100"
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#6D35D9] disabled:bg-gray-100"
             >
               {ROLES.map((r) => (
                 <option key={r.value} value={r.value}>
@@ -228,7 +228,7 @@ export default function UserFormModal({
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="px-4 py-2 text-sm rounded bg-[#DB313E] text-white cursor-pointer hover:bg-[#c72b36] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm rounded bg-[#6D35D9] text-white cursor-pointer hover:bg-[#5B2BC0] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading
               ? mode === "create" ? "Creating..." : "Updating..."

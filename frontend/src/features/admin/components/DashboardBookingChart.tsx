@@ -71,7 +71,7 @@ export default function DashboardBookingChart() {
                 onClick={() => setRange(r)}
                 className={`text-[9px] px-1.5 py-0.5 rounded font-medium transition-colors ${
                   range === r
-                    ? "bg-[#DB313E] text-white shadow-sm"
+                    ? "bg-[#6D35D9] text-white shadow-sm"
                     : "text-gray-400 hover:text-gray-600"
                 }`}
               >
@@ -84,7 +84,7 @@ export default function DashboardBookingChart() {
         {/* Legend */}
         <div className="flex gap-3 mb-3">
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-sm bg-[#DB313E]" />
+            <div className="w-2 h-2 rounded-sm bg-[#6D35D9]" />
             <span className="text-[9px] text-gray-500 font-medium">One-to-One</span>
           </div>
           <div className="flex items-center gap-1">
@@ -122,7 +122,7 @@ export default function DashboardBookingChart() {
                 return (
                   <div key={cat} className="flex items-end gap-0.5 flex-1 min-w-0">
                     <div
-                      className="flex-1 bg-[#DB313E] rounded-t-sm transition-all duration-500"
+                      className="flex-1 bg-[#6D35D9] rounded-t-sm transition-all duration-500"
                       style={{
                         height: h1,
                         minHeight: v1 > 0 ? 1 : 0,

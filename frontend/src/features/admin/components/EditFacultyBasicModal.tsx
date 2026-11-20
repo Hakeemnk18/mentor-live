@@ -36,7 +36,7 @@ type Props = {
 /* ================================================================== */
 
 const inp = (hasError = false) =>
-  `w-full px-3 py-2 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30 ${
+  `w-full px-3 py-2 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30 ${
     hasError ? "border-red-400" : "border-gray-300"
   }`;
 
@@ -337,7 +337,7 @@ export default function EditFacultyBasicModal({
                   type="checkbox"
                   checked={isFeatured}
                   onChange={(e) => setIsFeatured(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-[#DB313E] focus:ring-[#DB313E]/30"
+                  className="w-4 h-4 rounded border-gray-300 text-[#6D35D9] focus:ring-[#6D35D9]/30"
                 />
                 <span className="text-sm text-gray-700">
                   Mark this faculty as featured
@@ -426,7 +426,7 @@ export default function EditFacultyBasicModal({
                           clearFieldError(`subjects`);
                         }}
                         placeholder="Price"
-                        className="w-20 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:border-[#DB313E]"
+                        className="w-20 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:border-[#6D35D9]"
                       />
                     </div>
                     <button
@@ -495,7 +495,7 @@ export default function EditFacultyBasicModal({
                         setNewSubjectPrice(e.target.value === '' ? '' : Number(e.target.value))
                       }
                       placeholder="e.g. 1500"
-                      className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-[#DB313E]"
+                      className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-[#6D35D9]"
                     />
                   </div>
                 )}
@@ -504,7 +504,7 @@ export default function EditFacultyBasicModal({
                   <button
                     onClick={addSubjectOffering}
                     disabled={!subjectVariantId || !newSubjectPrice}
-                    className="px-3 py-1.5 text-sm font-medium text-white bg-[#DB313E] rounded hover:bg-[#c22935] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-3 py-1.5 text-sm font-medium text-white bg-[#6D35D9] rounded hover:bg-[#5B2BC0] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Add
                   </button>
@@ -525,7 +525,7 @@ export default function EditFacultyBasicModal({
             ) : (
               <button
                 onClick={() => setAddingSubject(true)}
-                className="text-sm font-medium text-[#DB313E] hover:text-[#c22935]"
+                className="text-sm font-medium text-[#6D35D9] hover:text-[#5B2BC0]"
               >
                 + Add Subject
               </button>
@@ -545,7 +545,7 @@ export default function EditFacultyBasicModal({
           <button
             onClick={save}
             disabled={isLoading}
-            className="px-4 py-2 text-sm font-medium text-white bg-[#DB313E] rounded hover:bg-[#c22935] disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-white bg-[#6D35D9] rounded hover:bg-[#5B2BC0] disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save Changes"}
           </button>

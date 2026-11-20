@@ -14,7 +14,7 @@ export default function DashboardMotivationCard({ data }: Props) {
     <div className="h-full bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[220px]">
       {/* Background glowing blobs */}
       <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-white opacity-5 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-0 left-20 -mb-10 w-32 h-32 bg-[#DB313E] opacity-20 rounded-full blur-2xl"></div>
+      <div className="absolute bottom-0 left-20 -mb-10 w-32 h-32 bg-[#6D35D9] opacity-20 rounded-full blur-2xl"></div>
       
       <div className="relative z-10 w-3/4">
         <h3 className="text-xl font-bold mb-1">{data.title}</h3>
@@ -27,7 +27,7 @@ export default function DashboardMotivationCard({ data }: Props) {
             {data.metric.formatted}
           </p>
           {data.target && (
-            <p className="text-xs text-[#DB313E] mt-1 font-bold tracking-wide">
+            <p className="text-xs text-[#6D35D9] mt-1 font-bold tracking-wide">
               {data.target.progressPercentage}% of target achieved
             </p>
           )}
@@ -36,7 +36,7 @@ export default function DashboardMotivationCard({ data }: Props) {
         {data.cta && (
           <button 
             onClick={() => navigate(data.cta!.path)}
-            className="mt-6 bg-[#DB313E] hover:bg-[#b82732] text-white text-sm font-bold py-2.5 px-6 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5"
+            className="mt-6 bg-[#6D35D9] hover:bg-[#5B2BC0] text-white text-sm font-bold py-2.5 px-6 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5"
           >
             {data.cta.label}
           </button>

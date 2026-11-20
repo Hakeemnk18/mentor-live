@@ -86,7 +86,7 @@ export default function FacultyPage() {
             href={f.demoClass}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-[#DB313E] hover:underline text-xs font-medium"
+            className="inline-flex items-center gap-1 text-[#6D35D9] hover:underline text-xs font-medium"
             onClick={(e) => e.stopPropagation()}
           >
             <svg
@@ -198,7 +198,7 @@ export default function FacultyPage() {
       />
 
       {/* FILTER BAR */}
-      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 mb-4">
+      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-[#E4DDF2] bg-[#FAF8FE] p-4 mb-4">
         {/* Search */}
         <div className="flex flex-col gap-1 flex-1 min-w-45">
           <label className="text-xs font-medium text-gray-600">Search</label>
@@ -210,7 +210,7 @@ export default function FacultyPage() {
               setPage(1);
               setSearch(e.target.value);
             }}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30"
           />
         </div>
 
@@ -220,7 +220,7 @@ export default function FacultyPage() {
           <select
             value={syllabusId ?? ""}
             onChange={(e) => { setPage(1); setSyllabusId(e.target.value || undefined); }}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30"
           >
             <option value="">All</option>
             {syllabusList.map((s) => (
@@ -235,7 +235,7 @@ export default function FacultyPage() {
           <select
             value={classId ?? ""}
             onChange={(e) => { setPage(1); setClassId(e.target.value || undefined); }}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30"
           >
             <option value="">All</option>
             {classesList.map((c) => (
@@ -250,7 +250,7 @@ export default function FacultyPage() {
           <select
             value={subjectId ?? ""}
             onChange={(e) => { setPage(1); setSubjectId(e.target.value || undefined); }}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30"
           >
             <option value="">All</option>
             {subjectList.map((s) => (
@@ -269,7 +269,7 @@ export default function FacultyPage() {
               if (e.target.value === "") setIsDeleted(undefined);
               else setIsDeleted(e.target.value === "deleted");
             }}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30"
           >
             <option value="">All</option>
             <option value="active">Active</option>
@@ -283,7 +283,7 @@ export default function FacultyPage() {
           <select
             value={limit}
             onChange={(e) => { setPage(1); setLimit(Number(e.target.value)); }}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30"
           >
             <option value={5}>5</option>
             <option value={10}>10</option>

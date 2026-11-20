@@ -36,11 +36,11 @@ export default function AdminPageHeader({
                 key={action.label}
                 onClick={action.onClick}
                 className={`px-4 py-2 text-sm rounded-md font-medium transition
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DB313E]/40
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D35D9]/40
                   ${
                     action.variant === "secondary"
                       ? "border border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer"
-                      : "bg-[#DB313E] text-white hover:opacity-90 cursor-pointer"
+                      : "bg-[#6D35D9] text-white hover:opacity-90 cursor-pointer"
                   }`}
               >
                 {action.label}

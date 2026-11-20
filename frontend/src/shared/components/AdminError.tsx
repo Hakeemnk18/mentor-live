@@ -40,7 +40,7 @@ export default function AdminError() {
 
           <a
             href="/admin"
-            className="w-full inline-flex justify-center items-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#DB313E] hover:bg-[#c42c37] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#DB313E] transition-colors"
+            className="w-full inline-flex justify-center items-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#6D35D9] hover:bg-[#5B2BC0] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#6D35D9] transition-colors"
           >
             Return to Dashboard
           </a>
