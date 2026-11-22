@@ -54,7 +54,7 @@ const HowItWorks = forwardRef<HTMLElement>(function HowItWorks(_props, sectionRe
   return (
     <section ref={sectionRef} id="how-it-works" className="relative overflow-hidden bg-white scroll-mt-[72px]">
       <div ref={innerRef} className="max-w-[1200px] mx-auto px-5 py-[clamp(72px,9vw,120px)]">
-        <Reveal className="text-center max-w-[640px] mx-auto mb-[clamp(36px,5vw,56px)] flex flex-col gap-3.5 items-center">
+        <Reveal stagger className="text-center max-w-[640px] mx-auto mb-[clamp(36px,5vw,56px)] flex flex-col gap-3.5 items-center">
           <span className="text-[13px] font-extrabold tracking-[0.16em] text-ml-rust whitespace-nowrap">4 SIMPLE STEPS</span>
           <h2 className="m-0 font-display font-extrabold text-[clamp(36px,5vw,60px)] leading-none tracking-[-0.04em] text-ml-deep">
             How Learning Works
@@ -86,7 +86,7 @@ const HowItWorks = forwardRef<HTMLElement>(function HowItWorks(_props, sectionRe
           {STEPS.map((s, i) => {
             const t = TINTS[i % TINTS.length];
             return (
-              <Reveal key={s.title} delay={i * 100}>
+              <Reveal key={s.title} variant="zoom" delay={i * 110}>
                 <div
                   className="h-full rounded-[28px] px-6 pt-[26px] pb-7 flex flex-col gap-3 transition-transform duration-300 hover:-translate-y-1.5 hover:-rotate-1"
                   style={{ background: t.bg }}

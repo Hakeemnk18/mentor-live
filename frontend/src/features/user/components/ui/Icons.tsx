@@ -44,3 +44,17 @@ export const Spinner = ({ className = "w-4 h-4" }: IconProps) => (
     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
   </svg>
 );
+
+/* Feature icons (outline, 24px grid) */
+export const Group = base(
+  "M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M2.5 20a6.5 6.5 0 0 1 13 0 M16 4.3a3.5 3.5 0 0 1 0 6.4 M18 14.2a6.5 6.5 0 0 1 3.5 5.8",
+  2,
+);
+export const RupeeCoin = base(
+  "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M8.5 7.5h7 M8.5 10.5h7 M11 7.5c2.2 0 3 1.1 3 1.5s-.8 1.5-3 1.5H9.5l4.5 6",
+  2,
+);
+export const Award = base(
+  "M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12z M8.5 13.9 7 21l5-3 5 3-1.5-7.1 M9.6 9.1l1.6 1.6 3.2-3.2",
+  2,
+);

@@ -1,8 +1,8 @@
-import { useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getFeaturedFaculty } from "../../../../api/faculty.api";
 import FacultyCard from "../FacultyCard";
 import Reveal from "../ui/Reveal";
+import AutoScroller from "../ui/AutoScroller";
 import SectionHeader from "./SectionHeader";
 
 const FacultySection: React.FC = () => {
@@ -12,36 +12,16 @@ const FacultySection: React.FC = () => {
   });
 
   const faculties = data ?? [];
-  const scrollerRef = useRef<HTMLDivElement>(null);
-
-  const scrollByCard = (direction: "left" | "right") => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const amount = el.clientWidth * 0.85;
-    el.scrollBy({
-      left: direction === "left" ? -amount : amount,
-      behavior: "smooth",
-    });
-  };
-
-  const showArrows = faculties.length > 1;
+  const CARD = "basis-[clamp(250px,26vw,282px)]";
 
   return (
     <section className="max-w-[1200px] mx-auto px-5 pt-[clamp(72px,9vw,120px)]">
-      <SectionHeader
-        eyebrow="EXPERT TEACHERS"
-        title="Meet Our Top Faculty"
-        onPrev={showArrows ? () => scrollByCard("left") : undefined}
-        onNext={showArrows ? () => scrollByCard("right") : undefined}
-      />
+      <SectionHeader eyebrow="EXPERT TEACHERS" title="Meet Our Top Faculty" />
 
-      <div
-        ref={scrollerRef}
-        className="flex gap-[18px] overflow-x-auto snap-x snap-mandatory scroll-smooth pt-2 px-1 pb-7 -mx-1 no-scrollbar"
-      >
-        {isLoading ? (
-          [...Array(4)].map((_, i) => (
-            <div key={i} className="snap-start flex-[0_0_clamp(250px,26vw,282px)] bg-white rounded-[28px] overflow-hidden animate-pulse">
+      {isLoading ? (
+        <div className="flex gap-[18px] overflow-hidden pt-2 px-1 pb-7 -mx-1">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className={`shrink-0 ${CARD} bg-white rounded-[28px] overflow-hidden animate-pulse`}>
               <div className="h-[200px] bg-ml-lav" />
               <div className="p-5 space-y-3">
                 <div className="h-4 bg-ml-lav rounded w-3/4" />
@@ -49,12 +29,14 @@ const FacultySection: React.FC = () => {
                 <div className="h-3 bg-ml-lav rounded w-full" />
               </div>
             </div>
-          ))
-        ) : faculties.length === 0 ? (
-          <p className="text-sm text-ml-muted py-10 mx-auto">No featured faculty to show right now.</p>
-        ) : (
-          faculties.map((f, i) => (
-            <Reveal key={f.id} delay={(i % 4) * 90} className="snap-start flex-[0_0_clamp(250px,26vw,282px)]">
+          ))}
+        </div>
+      ) : faculties.length === 0 ? (
+        <p className="text-sm text-ml-muted py-10 text-center">No featured faculty to show right now.</p>
+      ) : (
+        <AutoScroller label="Top faculty" itemClassName={CARD} trackClassName="pt-2 px-1 pb-7 -mx-1">
+          {faculties.map((f, i) => (
+            <Reveal key={f.id} delay={(i % 4) * 90} className="h-full">
               <FacultyCard
                 id={f.id}
                 name={f.name}
@@ -63,9 +45,9 @@ const FacultySection: React.FC = () => {
                 image={f.image}
               />
             </Reveal>
-          ))
-        )}
-      </div>
+          ))}
+        </AutoScroller>
+      )}
     </section>
   );
 };

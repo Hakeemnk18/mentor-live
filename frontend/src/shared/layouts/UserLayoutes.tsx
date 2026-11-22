@@ -1,7 +1,7 @@
 import UserNavbar from "../../features/user/components/Navbar";
 import Footer from "../../features/user/components/Footer";
 import ScrollProgress from "../../features/user/components/ui/ScrollProgress";
-import { Outlet } from "react-router-dom";
+import { Outlet, ScrollRestoration } from "react-router-dom";
 
 const WA_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER ?? "917994285615";
 const WA_URL = `https://wa.me/${WA_NUMBER}`;
@@ -10,6 +10,8 @@ const UserLayout = () => {
   return (
     // .ml-site scopes the redesign's fonts/colours to the user side only
     <div className="ml-site min-h-dvh flex flex-col">
+      {/* New page → start at the top; browser Back → return to the previous position */}
+      <ScrollRestoration />
       <ScrollProgress />
       <UserNavbar />
 

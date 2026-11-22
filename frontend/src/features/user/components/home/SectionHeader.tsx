@@ -12,15 +12,15 @@ type SectionHeaderProps = {
 
 /** Eyebrow + big heading on the left, optional link + prev/next arrows on the right. */
 const SectionHeader: React.FC<SectionHeaderProps> = ({ eyebrow, title, aside, onPrev, onNext }) => (
-  <Reveal className="flex flex-wrap items-end justify-between gap-4 mb-7">
-    <div className="flex flex-col gap-3 max-w-[720px]">
+  <div className="flex flex-wrap items-end justify-between gap-4 mb-7">
+    <Reveal stagger className="flex flex-col gap-3 max-w-[720px]">
       <span className="text-[13px] font-extrabold tracking-[0.16em] text-ml-rust">{eyebrow}</span>
       <h2 className="m-0 font-display font-extrabold text-[clamp(34px,4.6vw,56px)] leading-[1.02] tracking-[-0.04em] text-ml-deep">
         {title}
       </h2>
-    </div>
+    </Reveal>
     {(aside || onPrev || onNext) && (
-      <div className="flex gap-2.5 items-center">
+      <Reveal variant="fade" delay={250} className="flex gap-2.5 items-center">
         {aside}
         {onPrev && (
           <button
@@ -42,9 +42,9 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({ eyebrow, title, aside, on
             <ChevronRight className="w-[18px] h-[18px]" />
           </button>
         )}
-      </div>
+      </Reveal>
     )}
-  </Reveal>
+  </div>
 );
 
 export default SectionHeader;

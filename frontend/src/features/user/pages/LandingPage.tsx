@@ -21,8 +21,6 @@ const LandingPage: React.FC = () => {
       if (element) {
         element.scrollIntoView({ behavior: "smooth" });
       }
-    } else {
-      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [hash]);
 

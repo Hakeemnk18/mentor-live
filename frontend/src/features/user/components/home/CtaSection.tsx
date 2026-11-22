@@ -4,14 +4,14 @@ import Bear from "../ui/Bear";
 
 const CtaSection: React.FC = () => (
   <section className="max-w-[1200px] mx-auto px-5 py-[clamp(72px,9vw,120px)]">
-    <Reveal>
+    <Reveal variant="zoom">
       <div className="relative rounded-[40px] bg-ml-plum text-white overflow-hidden p-[clamp(32px,5vw,64px)] flex flex-wrap gap-6 items-center">
         <div
           aria-hidden="true"
           className="absolute -right-[120px] -top-[120px] w-[420px] h-[420px] rounded-full"
           style={{ background: "radial-gradient(circle,rgba(146,98,245,.7),rgba(146,98,245,0) 65%)" }}
         />
-        <div className="relative flex-[1_1_420px] min-w-0 flex flex-col gap-5">
+        <Reveal stagger delay={200} className="relative flex-[1_1_420px] min-w-0 flex flex-col gap-5">
           <h2 className="m-0 font-display font-extrabold text-[clamp(38px,5.4vw,66px)] leading-none tracking-[-0.04em]">
             Ready to make
             <br />
@@ -32,7 +32,7 @@ const CtaSection: React.FC = () => (
               <span className="font-extrabold text-lg tracking-[0.01em]">+91 00000 00000</span>
             </div>
           </div>
-        </div>
+        </Reveal>
         <div className="relative flex-[0_1_280px] min-w-[200px] flex justify-center">
           <div className="w-full max-w-[220px] animate-ml-bob" style={{ animationDuration: "3.6s" }}>
             <Bear pose="study" />

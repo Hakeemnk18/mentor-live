@@ -85,7 +85,7 @@ export default function BannerCarousel() {
   return (
     <>
     <section className="max-w-[1200px] mx-auto px-5 pt-[clamp(56px,7vw,96px)]">
-      <Reveal>
+      <Reveal variant="zoom">
         <div
           className="relative rounded-[20px] sm:rounded-[28px] md:rounded-[34px] overflow-hidden select-none bg-ml-hero shadow-[0_30px_60px_-30px_rgba(42,22,80,.5)]"
           onMouseEnter={() => setHovered(true)}

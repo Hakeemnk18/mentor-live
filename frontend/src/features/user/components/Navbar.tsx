@@ -51,7 +51,7 @@ const UserNavbar: React.FC = () => {
             })}
             <Link
               to="/book-tutor"
-              className="h-11 px-[22px] rounded-full bg-ml-violet text-white font-bold text-[15px] inline-flex items-center gap-2 shadow-[0_8px_20px_-8px_rgba(109,53,217,.7)] transition-transform hover:-translate-y-0.5 hover:text-white"
+              className="h-11 px-[22px] rounded-full bg-ml-coral text-ml-deep font-extrabold text-[15px] inline-flex items-center gap-2 shadow-[0_8px_20px_-8px_rgba(255,107,94,.9)] transition-transform hover:-translate-y-0.5 hover:text-ml-deep"
             >
               Book Tutor
               <ArrowRight strokeWidth={2.6} />
@@ -96,7 +96,7 @@ const UserNavbar: React.FC = () => {
           <Link
             to="/book-tutor"
             onClick={() => setOpen(false)}
-            className="mt-1.5 h-[52px] rounded-2xl bg-ml-violet text-white font-extrabold text-base flex items-center justify-center hover:text-white"
+            className="mt-1.5 h-[52px] rounded-2xl bg-ml-coral text-ml-deep font-extrabold text-base flex items-center justify-center hover:text-ml-deep"
           >
             Book Tutor
           </Link>

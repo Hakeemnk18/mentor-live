@@ -116,18 +116,51 @@
   background: var(--color-ml-page);
 }
 
-/* Scroll-reveal: elements fade up once they enter the viewport (see Reveal.tsx) */
-.ml-reveal {
-  opacity: 0;
-  transform: translateY(28px);
-  transition: opacity 0.7s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.ml-reveal.ml-in {
-  opacity: 1;
-  transform: none;
+/* ── Scroll-reveal (see Reveal.tsx) ──────────────────────────────────────────
+   Hidden only by opacity until the element enters the viewport, then a one-shot
+   keyframe animation plays (transform/opacity only = GPU, no layout shift).
+   Keyframes have no "to" step, so they end on the element's own styles and never
+   fight hover transforms afterwards. Text stays in the HTML for SEO. */
+@keyframes mlRevealUp    { from { opacity: 0; transform: translate3d(0, 32px, 0); } }
+@keyframes mlRevealFade  { from { opacity: 0; } }
+@keyframes mlRevealZoom  { from { opacity: 0; transform: translate3d(0, 18px, 0) scale(0.94); } }
+@keyframes mlRevealLeft  { from { opacity: 0; transform: translate3d(-44px, 0, 0); } }
+@keyframes mlRevealRight { from { opacity: 0; transform: translate3d(44px, 0, 0); } }
+
+.ml-reveal { --ml-anim: mlRevealUp; }
+.ml-reveal[data-anim="fade"]  { --ml-anim: mlRevealFade; }
+.ml-reveal[data-anim="zoom"]  { --ml-anim: mlRevealZoom; }
+.ml-reveal[data-anim="left"]  { --ml-anim: mlRevealLeft; }
+.ml-reveal[data-anim="right"] { --ml-anim: mlRevealRight; }
+/* phones: no sideways motion (prevents horizontal scroll while animating) */
+@media (max-width: 767px) {
+  .ml-reveal[data-anim="left"], .ml-reveal[data-anim="right"] { --ml-anim: mlRevealUp; }
 }
 
+.ml-reveal:not(.ml-in) { opacity: 0; }
+.ml-reveal.ml-in {
+  animation: var(--ml-anim) 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) var(--ml-delay, 0ms) backwards;
+}
+
+/* stagger: the container stays visible, its direct children cascade in */
+.ml-reveal.ml-stagger:not(.ml-in) { opacity: 1; }
+.ml-reveal.ml-stagger.ml-in { animation: none; }
+.ml-stagger:not(.ml-in) > * { opacity: 0; }
+.ml-stagger.ml-in > * {
+  animation: var(--ml-anim) 0.75s cubic-bezier(0.2, 0.8, 0.2, 1)
+    calc(var(--ml-delay, 0ms) + var(--ml-i, 0) * 90ms) backwards;
+}
+.ml-stagger > :first-child { --ml-i: 0; }
+.ml-stagger > :nth-child(2) { --ml-i: 1; }
+.ml-stagger > :nth-child(3) { --ml-i: 2; }
+.ml-stagger > :nth-child(4) { --ml-i: 3; }
+.ml-stagger > :nth-child(5) { --ml-i: 4; }
+.ml-stagger > :nth-child(6) { --ml-i: 5; }
+.ml-stagger > :nth-child(7) { --ml-i: 6; }
+.ml-stagger > :nth-child(n + 8) { --ml-i: 7; }
+
 @media (prefers-reduced-motion: reduce) {
-  .ml-reveal { opacity: 1; transform: none; transition: none; }
+  .ml-reveal:not(.ml-in), .ml-stagger:not(.ml-in) > * { opacity: 1; }
+  .ml-reveal.ml-in, .ml-stagger.ml-in > * { animation: none; }
   .ml-site [class*="animate-ml-"] { animation: none !important; }
 }

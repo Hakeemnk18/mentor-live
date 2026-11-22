@@ -55,10 +55,10 @@ const CountUp: React.FC<{ value: string }> = ({ value }) => {
 
 const HomeStats: React.FC = () => (
   <section className="relative z-[2] max-w-[1200px] mx-auto -mt-[clamp(64px,7vw,96px)] px-5">
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-4 auto-rows-fr gap-3">
       {stats.map((s, i) => (
-        <Reveal key={s.label} delay={i * 90}>
-          <div className="relative overflow-hidden bg-white rounded-[26px] p-[clamp(18px,2.4vw,24px)] shadow-[0_1px_0_rgba(42,22,80,.04),0_18px_40px_-18px_rgba(42,22,80,.28)]">
+        <Reveal key={s.label} variant="zoom" delay={i * 90} className="h-full">
+          <div className="relative h-full overflow-hidden bg-white rounded-[26px] p-[clamp(18px,2.4vw,24px)] shadow-[0_1px_0_rgba(42,22,80,.04),0_18px_40px_-18px_rgba(42,22,80,.28)]">
             <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-ml-ice to-[#E4D8FF]" />
             <div className="font-display font-extrabold text-[clamp(30px,4vw,48px)] leading-none text-ml-plum tracking-[-0.035em] whitespace-nowrap">
               <CountUp value={s.value} />

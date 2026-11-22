@@ -41,7 +41,7 @@ const ClassSizeSection: React.FC = () => {
         style={{ background: "radial-gradient(circle,rgba(146,98,245,.45),rgba(146,98,245,0) 65%)" }}
       />
       <div className="relative max-w-[1200px] mx-auto px-5 py-[clamp(72px,9vw,120px)]">
-        <Reveal className="flex flex-col gap-3.5 max-w-[720px] mb-[clamp(28px,4vw,44px)]">
+        <Reveal stagger className="flex flex-col gap-3.5 max-w-[720px] mb-[clamp(28px,4vw,44px)]">
           <span className="text-[13px] font-extrabold tracking-[0.16em] text-ml-peach">WHY SMALL CLASSES</span>
           <h2 className="m-0 font-display font-extrabold text-[clamp(36px,5vw,60px)] leading-none tracking-[-0.04em]">
             Smaller class.
@@ -53,11 +53,11 @@ const ClassSizeSection: React.FC = () => {
           </p>
         </Reveal>
 
-        <Reveal>
+        <Reveal variant="fade" delay={200}>
           <div
             role="tablist"
             aria-label="Class size"
-            className="flex gap-2 p-1.5 rounded-full bg-white/8 border border-white/14 w-max max-w-full overflow-x-auto no-scrollbar mb-[22px]"
+            className="grid grid-cols-3 sm:flex gap-1 sm:gap-2 p-1.5 rounded-full bg-white/8 border border-white/14 w-full sm:w-max max-w-full mb-3 md:mb-[22px]"
           >
             {MODES.map((x, i) => (
               <button
@@ -66,7 +66,7 @@ const ClassSizeSection: React.FC = () => {
                 role="tab"
                 aria-selected={i === size}
                 onClick={() => setSize(i)}
-                className={`flex-shrink-0 h-[46px] px-5 rounded-full font-extrabold text-[15px] whitespace-nowrap cursor-pointer transition-all duration-[250ms] ${
+                className={`min-w-0 sm:flex-shrink-0 h-11 sm:h-[46px] px-2 sm:px-5 rounded-full font-extrabold text-[13px] min-[380px]:text-sm sm:text-[15px] whitespace-nowrap cursor-pointer transition-all duration-[250ms] ${
                   i === size ? "bg-white text-ml-deep" : "bg-transparent text-ml-soft hover:text-white"
                 }`}
               >
@@ -76,19 +76,47 @@ const ClassSizeSection: React.FC = () => {
           </div>
         </Reveal>
 
-        <div className="flex flex-wrap gap-5 items-stretch">
+        {/* Phones: the result sits right under the tabs, so a tap shows its effect without scrolling */}
+        <Reveal variant="fade" delay={250} className="md:hidden mb-3">
+          <div className="rounded-[22px] bg-white/6 border border-white/14 px-4 py-3.5" aria-live="polite">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs font-bold leading-snug text-ml-soft">
+                Teacher&apos;s time for you
+                <br />
+                in a 60-minute class
+              </span>
+              <div className="flex items-baseline gap-1 shrink-0">
+                <span
+                  className="font-display font-extrabold text-[44px] leading-none tracking-[-0.05em] transition-colors"
+                  style={{ color: m.c }}
+                >
+                  {m.min}
+                </span>
+                <span className="text-sm font-extrabold text-ml-soft">min</span>
+              </div>
+            </div>
+            <div className="mt-2.5 h-2.5 rounded-lg bg-white/12 overflow-hidden">
+              <div
+                className="h-full rounded-lg transition-[width] duration-700 [transition-timing-function:cubic-bezier(.3,1,.4,1)]"
+                style={{ width: m.bar, background: m.c }}
+              />
+            </div>
+          </div>
+        </Reveal>
+
+        <div className="flex flex-wrap gap-3 md:gap-5 items-stretch">
           {/* Classroom */}
-          <Reveal className="flex-[1.2_1_420px] min-w-0">
-            <div className="h-full relative rounded-[32px] bg-ml-page text-ml-ink p-[clamp(20px,3vw,32px)] flex flex-col items-center gap-[18px] overflow-hidden">
+          <Reveal variant="left" className="flex-[1.2_1_420px] min-w-0">
+            <div className="h-full relative rounded-[32px] bg-ml-page text-ml-ink p-[clamp(20px,3vw,32px)] flex flex-col items-center gap-3.5 md:gap-[18px] overflow-hidden">
               <div className="flex items-center gap-3 self-stretch justify-between">
-                <span className="text-xs font-extrabold tracking-[0.14em] text-ml-muted">{m.room}</span>
-                <span className="px-3 py-1.5 rounded-full text-xs font-extrabold" style={{ background: m.tagBg, color: m.tagFg }}>
+                <span className="min-w-0 text-[11px] sm:text-xs font-extrabold tracking-[0.14em] text-ml-muted">{m.room}</span>
+                <span className="shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-extrabold" style={{ background: m.tagBg, color: m.tagFg }}>
                   {m.tag}
                 </span>
               </div>
               <div className="flex flex-col items-center gap-1.5">
-                <div className="w-[84px]"><Bear pose="guide" /></div>
-                <div className="w-[120px] h-2.5 rounded-md bg-[#DCD3EE]" />
+                <div className="w-[64px] md:w-[84px]"><Bear pose="guide" /></div>
+                <div className="w-[96px] md:w-[120px] h-2 md:h-2.5 rounded-md bg-[#DCD3EE]" />
               </div>
               <div className="relative w-full max-w-[440px] grid grid-cols-10 gap-1.5" aria-hidden="true">
                 {Array.from({ length: 40 }, (_, i) => {
@@ -118,9 +146,9 @@ const ClassSizeSection: React.FC = () => {
           </Reveal>
 
           {/* Teacher time */}
-          <Reveal delay={120} className="flex-[1_1_340px] min-w-0">
+          <Reveal variant="right" delay={120} className="flex-[1_1_340px] min-w-0">
             <div className="h-full rounded-[32px] bg-white/6 border border-white/14 p-[clamp(22px,3vw,32px)] flex flex-col gap-[22px]">
-              <div className="flex flex-col gap-2.5">
+              <div className="hidden md:flex flex-col gap-2.5">
                 <span className="text-[13px] font-bold text-ml-soft">Teacher's time for you, in a 60-minute class</span>
                 <div className="flex items-baseline gap-2">
                   <span
@@ -138,7 +166,7 @@ const ClassSizeSection: React.FC = () => {
                   />
                 </div>
               </div>
-              <ul className="m-0 p-0 list-none flex flex-col gap-3 pt-[18px] border-t border-dashed border-white/20">
+              <ul className="m-0 p-0 list-none flex flex-col gap-3 md:pt-[18px] md:border-t md:border-dashed md:border-white/20">
                 {ROWS.map((t, i) => {
                   const yes = m.yes[i];
                   return (

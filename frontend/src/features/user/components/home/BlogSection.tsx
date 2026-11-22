@@ -1,13 +1,14 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getFeaturedBlogs } from "../../../../api/blog.api";
 import BlogCard from "../BlogCard";
 import Reveal from "../ui/Reveal";
+import AutoScroller from "../ui/AutoScroller";
 import { ChevronRight } from "../ui/Icons";
 import SectionHeader from "./SectionHeader";
 
-const BLOGS_PER_PAGE = 3;
+/* 1 card (+ a peek) on phones, 2 on tablets, 3 on laptops — 18px gaps */
+const CARD = "basis-[86%] sm:basis-[calc((100%-18px)/2)] lg:basis-[calc((100%-36px)/3)]";
 
 const BlogSection: React.FC = () => {
   const { data: featuredData, isLoading } = useQuery({
@@ -16,16 +17,6 @@ const BlogSection: React.FC = () => {
   });
 
   const blogs = featuredData ?? [];
-  const [page, setPage] = useState(0);
-  const totalPages = Math.max(1, Math.ceil(blogs.length / BLOGS_PER_PAGE));
-  const visible = blogs.slice(
-    page * BLOGS_PER_PAGE,
-    page * BLOGS_PER_PAGE + BLOGS_PER_PAGE
-  );
-
-  const prev = () => setPage((p) => (p > 0 ? p - 1 : totalPages - 1));
-  const next = () => setPage((p) => (p < totalPages - 1 ? p + 1 : 0));
-  const paged = blogs.length > BLOGS_PER_PAGE;
 
   return (
     <section className="max-w-[1200px] mx-auto px-5 pt-[clamp(72px,9vw,120px)]">
@@ -41,8 +32,6 @@ const BlogSection: React.FC = () => {
             <ChevronRight />
           </Link>
         }
-        onPrev={paged ? prev : undefined}
-        onNext={paged ? next : undefined}
       />
 
       {isLoading ? (
@@ -59,9 +48,9 @@ const BlogSection: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[18px]">
-          {visible.map((b, i) => (
-            <Reveal key={b.id} delay={i * 100}>
+        <AutoScroller label="Featured blog posts" itemClassName={CARD} trackClassName="pt-2 px-1 pb-7 -mx-1">
+          {blogs.map((b, i) => (
+            <Reveal key={b.id} delay={(i % 3) * 100} className="h-full">
               <BlogCard
                 id={b.id}
                 heading={b.heading}
@@ -72,23 +61,7 @@ const BlogSection: React.FC = () => {
               />
             </Reveal>
           ))}
-        </div>
-      )}
-
-      {/* Page dots */}
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-1.5 mt-8">
-          {[...Array(totalPages)].map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => setPage(i)}
-              aria-label={`Page ${i + 1}`}
-              className="h-2 rounded-lg cursor-pointer transition-all duration-300"
-              style={{ width: i === page ? 26 : 8, background: i === page ? "#6D35D9" : "#D9CFEE" }}
-            />
-          ))}
-        </div>
+        </AutoScroller>
       )}
     </section>
   );

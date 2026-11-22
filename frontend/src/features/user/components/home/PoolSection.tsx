@@ -1,15 +1,15 @@
 import { useState } from "react";
 import Reveal from "../ui/Reveal";
 import Bear from "../ui/Bear";
-import { ArrowRight, Check, Person } from "../ui/Icons";
+import { ArrowRight, Award, Group, Person, RupeeCoin } from "../ui/Icons";
 
 /** Illustrative hourly fee used only for this calculator (not a real price) */
 const SAMPLE_FEE = 1200;
 
 const POINTS = [
-  { title: "Flexible Group Size", desc: "Learn solo or with 2-5 students" },
-  { title: "Cost Sharing", desc: "Split faculty fees and reduce learning cost" },
-  { title: "Same faculty, Same Quality", desc: "No content compromise only smarter pricing" },
+  { title: "Flexible Group Size", desc: "Learn solo or with 2-5 students", Icon: Group, tint: "bg-ml-lav text-ml-violet" },
+  { title: "Cost Sharing", desc: "Split faculty fees and reduce learning cost", Icon: RupeeCoin, tint: "bg-ml-rose text-ml-rust" },
+  { title: "Same faculty, Same Quality", desc: "No content compromise only smarter pricing", Icon: Award, tint: "bg-ml-ice text-ml-plum" },
 ];
 
 const inr = (n: number) => "₹" + Math.round(n).toLocaleString("en-IN");
@@ -38,7 +38,7 @@ const PoolSection: React.FC = () => {
     <section className="max-w-[1200px] mx-auto px-5 py-[clamp(72px,9vw,128px)]">
       <div className="flex flex-wrap gap-[clamp(32px,5vw,72px)] items-center">
         {/* Copy */}
-        <Reveal className="flex-[1_1_400px] min-w-0 flex flex-col gap-[22px]">
+        <Reveal stagger className="flex-[1_1_400px] min-w-0 flex flex-col gap-[22px]">
           <span className="text-[13px] font-extrabold tracking-[0.16em] text-ml-rust">POOL LEARNING</span>
           <h2 className="m-0 font-display font-extrabold text-[clamp(36px,5vw,60px)] leading-none tracking-[-0.04em] text-ml-deep">
             Learn Together.
@@ -48,19 +48,21 @@ const PoolSection: React.FC = () => {
           <p className="m-0 text-[17px] leading-[1.65] text-ml-muted max-w-[30em]">
             Choose to study or share a faculty with up to 5 students and split the cost without compromising quality
           </p>
-          <div className="flex flex-col gap-4">
-            {POINTS.map((p) => (
-              <div key={p.title} className="flex gap-3.5 items-start">
-                <div className="flex-shrink-0 w-10 h-10 rounded-[14px] bg-ml-lav text-ml-plum flex items-center justify-center">
-                  <Check className="w-[18px] h-[18px]" />
+          <Reveal stagger delay={300} className="flex flex-col gap-4">
+            {POINTS.map(({ title, desc, Icon, tint }) => (
+              <div key={title} className="group flex gap-3.5 items-start">
+                <div
+                  className={`flex-shrink-0 w-11 h-11 rounded-[14px] flex items-center justify-center transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105 ${tint}`}
+                >
+                  <Icon className="w-[22px] h-[22px]" />
                 </div>
                 <div>
-                  <div className="font-extrabold text-base text-ml-ink">{p.title}</div>
-                  <div className="text-sm text-ml-muted mt-0.5">{p.desc}</div>
+                  <div className="font-extrabold text-base text-ml-ink">{title}</div>
+                  <div className="text-sm text-ml-muted mt-0.5">{desc}</div>
                 </div>
               </div>
             ))}
-          </div>
+          </Reveal>
           <a
             href="/pool-classes"
             className="self-start max-w-full h-[54px] px-[22px] rounded-full bg-ml-violet text-white font-extrabold text-[15px] inline-flex items-center gap-2.5 whitespace-nowrap shadow-[0_12px_26px_-12px_rgba(109,53,217,.8)] transition-transform hover:-translate-y-[3px] hover:text-white"
@@ -71,7 +73,7 @@ const PoolSection: React.FC = () => {
         </Reveal>
 
         {/* Calculator */}
-        <Reveal delay={140} className="flex-[1_1_420px] min-w-0 relative pt-[110px]">
+        <Reveal variant="right" delay={140} className="flex-[1_1_420px] min-w-0 relative pt-[110px]">
           <div className="absolute right-[clamp(8px,3vw,32px)] top-0 w-[clamp(110px,12vw,140px)] z-[3]">
             <div className="animate-ml-bob" style={{ animationDuration: "4.4s" }}>
               <Bear pose="group" />
