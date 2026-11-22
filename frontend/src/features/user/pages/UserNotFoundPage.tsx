@@ -1,79 +1,55 @@
 import { useNavigate } from "react-router-dom";
+import Bear from "../components/ui/Bear";
 
 export default function UserNotFoundPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-[80vh] bg-[#F5F5F5] flex flex-col items-center justify-center px-4">
-      <div className="w-full max-w-md text-center">
-        {/* Logo */}
-        <div className="flex justify-center mb-8">
-          <span className="text-2xl font-extrabold text-gray-900 tracking-tight">
-            ment
-            <span className="bg-[#DB313E] text-white text-sm px-1.5 py-0.5 rounded mx-0.5 align-middle">
-              Live
-            </span>
-            r
-          </span>
-        </div>
-
-        {/* Giant 404 */}
-        <div className="relative mb-6 select-none">
-          <p className="text-[9rem] font-extrabold leading-none text-gray-200 tracking-tight">
-            404
-          </p>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <svg
-              className="w-20 h-20 text-[#DB313E]/20"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                fillRule="evenodd"
-                d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z"
-                clipRule="evenodd"
-              />
-            </svg>
+    <section className="relative overflow-hidden bg-ml-hero text-white min-h-[640px] flex items-center">
+      <div
+        aria-hidden="true"
+        className="absolute w-[700px] h-[700px] left-1/2 -top-[360px] -ml-[350px] rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(circle,rgba(146,98,245,.6),rgba(146,98,245,0) 65%)" }}
+      />
+      <div className="relative max-w-[900px] mx-auto px-5 py-[clamp(40px,6vw,80px)] flex flex-col items-center text-center gap-[18px] w-full">
+        <div className="flex items-end justify-center gap-[clamp(4px,1.5vw,16px)] animate-ml-pop" aria-hidden="true">
+          <span className="font-display font-extrabold text-[clamp(120px,20vw,220px)] leading-[0.8] tracking-[-0.06em]">4</span>
+          <div className="relative w-[clamp(120px,17vw,180px)] pb-3">
+            <div
+              className="absolute -left-[10%] -right-[10%] bottom-0 h-[34%] rounded-[50%]"
+              style={{ background: "linear-gradient(180deg,#F1F7FF,#A9CBF5)" }}
+            />
+            <div className="relative animate-ml-bob" style={{ animationDuration: "3.8s" }}>
+              <Bear pose="lost" eager />
+            </div>
           </div>
+          <span className="font-display font-extrabold text-[clamp(120px,20vw,220px)] leading-[0.8] tracking-[-0.06em]">4</span>
         </div>
 
-        {/* Text */}
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Page not found
+        <h1 className="mt-3 mb-0 font-display font-extrabold text-[clamp(32px,4.6vw,52px)] leading-none tracking-[-0.04em]">
+          This page melted away
         </h1>
-        <p className="text-sm text-gray-500 mb-8 leading-relaxed">
-          The page you're looking for doesn't exist or has been moved.
-          <br />
-          Double-check the URL and try again.
+        <p className="m-0 text-[17px] leading-relaxed text-ml-soft max-w-[28em]">
+          The page you're looking for doesn't exist or has moved. Let's get you back on solid ice.
         </p>
 
-        {/* Actions */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <div className="flex flex-wrap gap-3 justify-center mt-2">
           <button
-            onClick={() => navigate(-1)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors cursor-pointer"
+            type="button"
+            onClick={() => navigate("/")}
+            className="h-[54px] px-[26px] rounded-full bg-ml-coral text-ml-deep font-extrabold text-base cursor-pointer transition-transform hover:-translate-y-0.5"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-            </svg>
+            Back to Home
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="h-[54px] px-6 rounded-full border-2 border-white/35 bg-transparent text-white font-bold text-base cursor-pointer transition-colors hover:bg-white/10"
+          >
             Go back
           </button>
-          <button
-            onClick={() => navigate("/")}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#DB313E] rounded-md hover:bg-[#c02535] transition-colors shadow-sm cursor-pointer"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-            </svg>
-            Go to Home
-          </button>
         </div>
-
-        {/* Footer hint */}
-        <p className="mt-10 text-xs text-gray-400">
-          Mentor Live · Customized Online Learning
-        </p>
       </div>
-    </div>
+    </section>
   );
 }

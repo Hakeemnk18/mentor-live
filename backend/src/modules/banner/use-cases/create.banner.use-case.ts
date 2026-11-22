@@ -30,6 +30,7 @@ export class CreateBannerUseCase implements ICreateBannerUseCase {
     const bannerEntity = new Banner({
       id: null,
       image: dto.image,
+      mobileImage: dto.mobileImage,
       description: dto.description,
       priority: dto.priority ?? null,
       isShow: dto.isShow ?? false,

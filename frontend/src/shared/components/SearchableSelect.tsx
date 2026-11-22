@@ -120,13 +120,13 @@ export default function SearchableSelect({
         type="button"
         onClick={handleToggle}
         disabled={disabled}
-        className={`w-full px-3 py-2 text-sm text-left border rounded flex items-center justify-between transition-colors focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30 ${
+        className={`w-full px-3 py-2 text-sm text-left border rounded flex items-center justify-between transition-colors focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30 ${
           disabled
             ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
             : hasError
             ? "border-red-400 bg-white"
             : open
-            ? "border-[#DB313E]/50 ring-1 ring-[#DB313E]/20 bg-white"
+            ? "border-[#6D35D9]/50 ring-1 ring-[#6D35D9]/20 bg-white"
             : "border-gray-300 bg-white hover:border-gray-400"
         }`}
       >
@@ -178,7 +178,7 @@ export default function SearchableSelect({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search..."
-              className="w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded outline-none focus:border-[#DB313E]/50 focus:ring-1 focus:ring-[#DB313E]/20"
+              className="w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded outline-none focus:border-[#6D35D9]/50 focus:ring-1 focus:ring-[#6D35D9]/20"
             />
           </div>
           <ul className="max-h-55 overflow-y-auto py-1">
@@ -193,14 +193,14 @@ export default function SearchableSelect({
                   onMouseDown={() => handleSelect(opt.value)}
                   className={`px-3 py-2 text-sm cursor-pointer flex items-center justify-between transition-colors ${
                     opt.value === value
-                      ? "bg-[#DB313E]/5 text-[#DB313E] font-medium"
+                      ? "bg-[#6D35D9]/5 text-[#6D35D9] font-medium"
                       : "text-gray-700 hover:bg-gray-50"
                   }`}
                 >
                   <span className="truncate">{opt.label}</span>
                   {opt.value === value && (
                     <svg
-                      className="w-3.5 h-3.5 text-[#DB313E] shrink-0 ml-2"
+                      className="w-3.5 h-3.5 text-[#6D35D9] shrink-0 ml-2"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >

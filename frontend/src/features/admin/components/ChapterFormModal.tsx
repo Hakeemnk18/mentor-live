@@ -390,7 +390,7 @@ export default function ChapterFormModal({
               <div className="text-xs">{uploadProgress}%</div>
               <div className="h-2 bg-gray-200 rounded">
                 <div
-                  className="h-full bg-[#DB313E]"
+                  className="h-full bg-[#6D35D9]"
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
@@ -430,7 +430,7 @@ export default function ChapterFormModal({
                           className="w-9 h-9 rounded-full object-cover shrink-0 border border-gray-200"
                         />
                       ) : (
-                        <div className="w-9 h-9 rounded-full bg-[#DB313E]/10 text-[#DB313E] flex items-center justify-center text-sm font-semibold shrink-0">
+                        <div className="w-9 h-9 rounded-full bg-[#6D35D9]/10 text-[#6D35D9] flex items-center justify-center text-sm font-semibold shrink-0">
                           {f.name.charAt(0).toUpperCase()}
                         </div>
                       )}
@@ -442,7 +442,7 @@ export default function ChapterFormModal({
                           </p>
                         )}
                       </div>
-                      <span className="text-sm font-semibold text-[#DB313E] shrink-0">
+                      <span className="text-sm font-semibold text-[#6D35D9] shrink-0">
                         ₹{f.price}
                       </span>
                     </div>
@@ -465,12 +465,12 @@ export default function ChapterFormModal({
               onClick={handleSubmit}
               className={`
     px-4 py-2 text-sm rounded text-white
-    bg-[#DB313E]
+    bg-[#6D35D9]
     transition
     ${
       uploading || isSubmitting
         ? "opacity-50 cursor-not-allowed"
-        : "hover:bg-[#c72b36]"
+        : "hover:bg-[#5B2BC0]"
     }
   `}
             >

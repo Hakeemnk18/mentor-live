@@ -77,7 +77,7 @@ const LoginPage = ({ role }: LoginPageProps) => {
       
       {/* Brand */}
       <div className="flex flex-col items-center mb-6">
-        <div className="h-12 w-12 rounded-xl bg-[#DB313E] text-white flex items-center justify-center font-bold text-lg">
+        <div className="h-12 w-12 rounded-xl bg-[#6D35D9] text-white flex items-center justify-center font-bold text-lg">
           ML
         </div>
         <h1 className="mt-4 text-xl font-semibold text-gray-900">
@@ -101,7 +101,7 @@ const LoginPage = ({ role }: LoginPageProps) => {
             className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
               errors.email
                 ? "border-red-500 focus:ring-red-200"
-                : "border-gray-300 focus:ring-[#DB313E]/30"
+                : "border-gray-300 focus:ring-[#6D35D9]/30"
             }`}
           />
           {errors.email && (
@@ -123,7 +123,7 @@ const LoginPage = ({ role }: LoginPageProps) => {
             className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
               errors.password
                 ? "border-red-500 focus:ring-red-200"
-                : "border-gray-300 focus:ring-[#DB313E]/30"
+                : "border-gray-300 focus:ring-[#6D35D9]/30"
             }`}
           />
           <button
@@ -145,7 +145,7 @@ const LoginPage = ({ role }: LoginPageProps) => {
           <div className="text-right">
             <button
               type="button"
-              className="text-xs text-[#DB313E] cursor-pointer hover:opacity-80"
+              className="text-xs text-[#6D35D9] cursor-pointer hover:opacity-80"
             >
               Forgot password?
             </button>
@@ -156,8 +156,8 @@ const LoginPage = ({ role }: LoginPageProps) => {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-[#DB313E] text-white py-2.5 rounded-lg text-sm font-medium 
-                     cursor-pointer transition-colors hover:bg-[#c72b36]"
+          className="w-full bg-[#6D35D9] text-white py-2.5 rounded-lg text-sm font-medium 
+                     cursor-pointer transition-colors hover:bg-[#5B2BC0]"
         >
           {isSubmitting?"Signing In...":"Sign In"}
         </button>
@@ -175,7 +175,7 @@ const LoginPage = ({ role }: LoginPageProps) => {
             <RouterLink
               to="/signup"
               state={{ from }}
-              className="text-[#DB313E] font-medium cursor-pointer hover:opacity-80"
+              className="text-[#6D35D9] font-medium cursor-pointer hover:opacity-80"
             >
               Create account
             </RouterLink>

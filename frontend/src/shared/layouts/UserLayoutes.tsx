@@ -1,13 +1,18 @@
 import UserNavbar from "../../features/user/components/Navbar";
 import Footer from "../../features/user/components/Footer";
-import { Outlet } from "react-router-dom";
+import ScrollProgress from "../../features/user/components/ui/ScrollProgress";
+import { Outlet, ScrollRestoration } from "react-router-dom";
 
 const WA_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER ?? "917994285615";
 const WA_URL = `https://wa.me/${WA_NUMBER}`;
 
 const UserLayout = () => {
   return (
-    <div className="min-h-dvh flex flex-col">
+    // .ml-site scopes the redesign's fonts/colours to the user side only
+    <div className="ml-site min-h-dvh flex flex-col">
+      {/* New page → start at the top; browser Back → return to the previous position */}
+      <ScrollRestoration />
+      <ScrollProgress />
       <UserNavbar />
 
       <main className="flex-1">
@@ -26,7 +31,7 @@ const UserLayout = () => {
         style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
       >
         {/* Tooltip */}
-        <span className="hidden sm:block opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all duration-200 bg-gray-900 text-white text-xs font-medium px-3 py-1.5 rounded-full whitespace-nowrap shadow-lg pointer-events-none">
+        <span className="hidden sm:block opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all duration-200 bg-ml-deep text-white text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap shadow-lg pointer-events-none">
           Chat with us
         </span>
 

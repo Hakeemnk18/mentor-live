@@ -213,7 +213,7 @@ export default function UsersPage() {
   };
 
   const sel =
-    "px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30";
+    "px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30";
 
   return (
     <AdminPageContainer>
@@ -223,7 +223,7 @@ export default function UsersPage() {
       />
 
       {/* ── Filters ── */}
-      <div className="flex flex-col md:flex-row md:items-end gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 flex-wrap">
+      <div className="flex flex-col md:flex-row md:items-end gap-3 rounded-2xl border border-[#E4DDF2] bg-[#FAF8FE] p-4 mb-4 flex-wrap">
         {/* Search */}
         <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
           <label className="text-xs font-medium text-gray-600">Search</label>
@@ -232,7 +232,7 @@ export default function UsersPage() {
             placeholder="Name or email…"
             value={search}
             onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30"
           />
         </div>
 
@@ -278,8 +278,8 @@ export default function UsersPage() {
                   onClick={() => handleSort(field)}
                   className={`px-3 py-2 text-xs rounded border transition ${
                     isActive
-                      ? "bg-[#DB313E] text-white border-[#DB313E]"
-                      : "border-gray-300 text-gray-600 hover:border-[#DB313E] hover:text-[#DB313E]"
+                      ? "bg-[#6D35D9] text-white border-[#6D35D9]"
+                      : "border-gray-300 text-gray-600 hover:border-[#6D35D9] hover:text-[#6D35D9]"
                   }`}
                 >
                   {field.charAt(0).toUpperCase() + field.slice(1)}
@@ -302,7 +302,7 @@ export default function UsersPage() {
             {
               label: "Edit",
               onClick: handleEdit,
-              className: "text-sm font-medium cursor-pointer text-gray-600 hover:text-[#DB313E]",
+              className: "text-sm font-medium cursor-pointer text-gray-600 hover:text-[#6D35D9]",
             },
             {
               label: (u) => (u.isBlocked ? "Unblock" : "Block"),

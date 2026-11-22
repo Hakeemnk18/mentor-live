@@ -46,10 +46,10 @@ const AdminNavbar: React.FC = () => {
   };
 
   const linkClasses = ({ isActive }: { isActive: boolean }) =>
-    `transition whitespace-nowrap ${
+    `inline-block py-2 transition whitespace-nowrap ${
       isActive
-        ? "text-[#DB313E] font-semibold"
-        : "text-gray-600 hover:text-[#DB313E]"
+        ? "text-[#6D35D9] font-semibold underline decoration-[#FF6B5E] decoration-2 underline-offset-[6px]"
+        : "text-gray-600 hover:text-[#6D35D9]"
     }`;
 
   return (
@@ -61,7 +61,7 @@ const AdminNavbar: React.FC = () => {
 
         {/* Brand - Added shrink-0 and min-w-max so it never squishes */}
         <Link to="/admin/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity shrink-0">
-          <div className="h-9 w-9 rounded bg-[#DB313E] text-white flex items-center justify-center font-bold">
+          <div className="h-9 w-9 rounded bg-[#6D35D9] text-white flex items-center justify-center font-bold">
             ML
           </div>
           <div className="leading-tight min-w-max">
@@ -88,7 +88,7 @@ const AdminNavbar: React.FC = () => {
 
           <button
             onClick={handleLogout}
-            className="text-[#DB313E] cursor-pointer whitespace-nowrap ml-2"
+            className="text-[#6D35D9] cursor-pointer whitespace-nowrap ml-2"
           >
             Logout
           </button>
@@ -130,10 +130,10 @@ const AdminNavbar: React.FC = () => {
                 to={item.path}
                 onClick={() => setOpen(false)}
                 className={({ isActive }) =>
-                  `block w-full ${
+                  `block w-full border-l-2 pl-2.5 ${
                     isActive
-                      ? "text-[#DB313E] font-semibold"
-                      : "text-gray-700 hover:text-[#DB313E]"
+                      ? "border-[#FF6B5E] text-[#6D35D9] font-semibold"
+                      : "border-transparent text-gray-700 hover:text-[#6D35D9]"
                   }`
                 }
               >
@@ -143,7 +143,7 @@ const AdminNavbar: React.FC = () => {
 
             <button
               onClick={handleLogout}
-              className="block w-full text-left text-[#DB313E] font-medium pt-3 border-t border-gray-200 cursor-pointer transition-opacity hover:opacity-80"
+              className="block w-full text-left text-[#6D35D9] font-medium pt-3 border-t border-gray-200 cursor-pointer transition-opacity hover:opacity-80"
             >
               Logout
             </button>

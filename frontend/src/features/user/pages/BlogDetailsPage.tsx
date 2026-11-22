@@ -1,7 +1,12 @@
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { getBlogById } from "../../../api/blog.api";
+import Reveal from "../components/ui/Reveal";
+import Bear from "../components/ui/Bear";
+import EmptyState from "../components/ui/EmptyState";
+import { ChevronLeft } from "../components/ui/Icons";
+import { initials, tintFor } from "../components/ui/tints";
 
 const BlogDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,22 +24,17 @@ const BlogDetailsPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white">
-        <div className="max-w-4xl mx-auto px-5 md:px-8 py-16 animate-pulse">
-          <div className="w-32 h-8 bg-gray-200 rounded-sm mb-8" />
-          <div className="h-12 bg-gray-200 rounded-sm mb-6 w-3/4" />
-          <div className="flex items-center gap-4 mb-10">
-            <div className="w-12 h-12 rounded-full bg-gray-200" />
-            <div className="space-y-2 flex-1">
-              <div className="h-4 bg-gray-200 rounded-sm w-48" />
-              <div className="h-3 bg-gray-200 rounded-sm w-32" />
-            </div>
-          </div>
-          <div className="w-full h-80 bg-gray-200 rounded-sm mb-12" />
+      <div className="min-h-screen">
+        <div className="max-w-[820px] mx-auto px-5 py-14 animate-pulse">
+          <div className="w-24 h-5 bg-ml-lav rounded mb-8" />
+          <div className="w-28 h-7 bg-ml-lav rounded-full mb-5" />
+          <div className="h-12 bg-ml-lav rounded mb-4 w-3/4" />
+          <div className="h-12 bg-ml-lav rounded mb-8 w-1/2" />
+          <div className="w-full h-[clamp(220px,34vw,380px)] bg-ml-lav rounded-[32px] mb-10" />
           <div className="space-y-4">
-            <div className="h-4 bg-gray-200 rounded-sm w-full" />
-            <div className="h-4 bg-gray-200 rounded-sm w-full" />
-            <div className="h-4 bg-gray-200 rounded-sm w-5/6" />
+            <div className="h-4 bg-ml-lav rounded w-full" />
+            <div className="h-4 bg-ml-lav rounded w-full" />
+            <div className="h-4 bg-ml-lav rounded w-5/6" />
           </div>
         </div>
       </div>
@@ -43,56 +43,63 @@ const BlogDetailsPage: React.FC = () => {
 
   if (isError || !blog) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center bg-[#F5F5F5]">
-        <div className="text-center">
-          <p className="text-2xl font-bold text-gray-900 mb-2">Blog not found</p>
-          <p className="text-gray-500 text-sm">The article you are looking for does not exist or was removed.</p>
-          <a href="/blogs" className="text-[#DB313E] font-medium text-sm hover:underline mt-4 inline-block">
-            ← Back to blogs
-          </a>
-        </div>
+      <div className="min-h-[80vh] flex items-center justify-center pt-10">
+        <EmptyState
+          pose="lost"
+          title="Blog not found"
+          sub={
+            <>
+              The article you are looking for does not exist or was removed.{" "}
+              <Link to="/blogs" className="font-extrabold text-ml-violet hover:underline">
+                Back to blogs
+              </Link>
+            </>
+          }
+        />
       </div>
     );
   }
 
+  const topic = (blog as { topic?: string | null }).topic?.trim() || "Education";
+  const tint = tintFor(topic);
+
   return (
-    <div className="min-h-screen bg-white text-gray-900 pb-20">
-      <main className="max-w-[850px] mx-auto px-5 md:px-8 pt-16 md:pt-24">
-        
+    <article className="max-w-[820px] mx-auto px-5 pt-[clamp(28px,5vw,56px)] pb-[clamp(64px,8vw,110px)]">
+      <Link to="/blogs" className="inline-flex items-center gap-1.5 font-extrabold text-sm text-ml-violet mb-6 hover:text-ml-plum">
+        <ChevronLeft /> All posts
+      </Link>
+
+      <Reveal className="flex flex-col gap-4">
         {/* Category Badge */}
-        <div className="mb-6">
-          <span className="bg-[#DB313E] text-white text-[13px] font-bold tracking-wide px-4 py-1.5 rounded-sm shadow-sm inline-block">
-            Education
-          </span>
-        </div>
+        <span
+          className="self-start px-3 py-1.5 rounded-full text-[11px] font-extrabold tracking-[0.12em] uppercase"
+          style={{ background: tint.bg, color: tint.ink }}
+        >
+          {topic}
+        </span>
 
         {/* Title */}
-        <h1 className="text-[32px] md:text-[46px] font-extralight text-black leading-[1.15] mb-8 font-serif">
+        <h1 className="m-0 font-display font-extrabold text-[clamp(34px,5vw,56px)] leading-[1.03] tracking-[-0.04em] text-ml-deep text-balance break-words">
           {blog.heading}
         </h1>
 
         {/* Author info row */}
-        <div className="flex items-center gap-4 mb-10 pb-6 border-b border-gray-100">
-          <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200">
-            {/* Simple author avatar placeholder */}
-            <svg className="w-full h-full text-gray-400 mt-2" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c-8-1.34-8-4-8-4z" />
-            </svg>
+        <div className="flex items-center gap-2.5 text-sm text-ml-muted">
+          <div className="w-9 h-9 rounded-full bg-ml-lav text-ml-plum flex items-center justify-center font-extrabold text-[13px]">
+            {initials(blog.author) || "ML"}
           </div>
-          <div>
-            <p className="text-[15px] text-black">
-              <span className="font-semibold">By {blog.author}</span>{" "}
-              <span className="text-gray-300 mx-2">|</span>{" "}
-              <span className="text-gray-500">5 min read</span>
-            </p>
-            <p className="text-xs text-gray-400 mt-1">
-              April 10, 2024 {/* Mock date as it is not in API */}
-            </p>
-          </div>
+          <span className="font-extrabold text-ml-ink">By {blog.author}</span>
+          <span aria-hidden="true" className="w-1 h-1 rounded-full bg-[#C9BFDD]" />
+          5 min read
         </div>
+      </Reveal>
 
-        {/* Hero Image Block */}
-        <div className="w-full aspect-[16/9] md:aspect-[2/1] bg-slate-800 rounded-sm mb-12 flex items-center justify-center overflow-hidden">
+      {/* Hero Image Block */}
+      <Reveal delay={100} className="mt-7 mb-8">
+        <div
+          className="w-full h-[clamp(220px,34vw,380px)] rounded-[32px] overflow-hidden flex items-center justify-center"
+          style={{ background: tint.bg }}
+        >
           {blog.image?.url && !imgError ? (
             <img
               src={blog.image.url}
@@ -102,23 +109,47 @@ const BlogDetailsPage: React.FC = () => {
             />
           ) : (
             /* Placeholder shown when the blog has no image or it fails to load */
-            <svg className="w-20 h-20 text-slate-600" fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 48 48">
-              <rect x="6" y="8" width="36" height="32" rx="4" />
-              <circle cx="18" cy="20" r="4" />
-              <path d="M6 34l10-8 6 5 10-10 10 8" strokeLinejoin="round" />
-            </svg>
+            <span
+              aria-hidden="true"
+              className="font-display font-extrabold text-[clamp(140px,22vw,240px)] leading-none tracking-[-0.06em] opacity-20"
+              style={{ color: tint.ink }}
+            >
+              {blog.heading.trim().charAt(0).toUpperCase()}
+            </span>
           )}
         </div>
+      </Reveal>
 
-        {/* Content Body */}
-        <article className="prose prose-lg md:prose-xl max-w-none text-gray-700 leading-relaxed font-serif">
-          {/* Fallback to description if content is missing for any reason.
-              whitespace-pre-wrap preserves the admin's line breaks and spacing. */}
-          <p className="whitespace-pre-wrap">{blog.content || blog.description}</p>
-        </article>
+      {/* Content Body */}
+      <Reveal>
+        {/* Fallback to description if content is missing for any reason.
+            whitespace-pre-wrap preserves the admin's line breaks and spacing. */}
+        <p className="m-0 whitespace-pre-wrap text-lg leading-[1.75] text-[#3A3152] text-pretty break-words">
+          {blog.content || blog.description}
+        </p>
+      </Reveal>
 
-      </main>
-    </div>
+      {/* Help CTA */}
+      <Reveal className="mt-11">
+        <div className="rounded-[30px] bg-ml-hero text-white p-7 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-[18px]">
+            <div className="flex-[0_0_84px] w-[84px] -my-[18px]">
+              <Bear pose="read" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <div className="font-display font-extrabold text-[26px] tracking-[-0.02em] leading-tight">Need help with this topic?</div>
+              <div className="text-[15px] text-ml-soft">Book a live session with one of our faculty.</div>
+            </div>
+          </div>
+          <Link
+            to="/book-tutor"
+            className="h-[52px] px-6 rounded-full bg-ml-coral text-ml-deep font-extrabold text-[15px] inline-flex items-center hover:text-ml-deep transition-transform hover:-translate-y-0.5"
+          >
+            Book a Tutor
+          </Link>
+        </div>
+      </Reveal>
+    </article>
   );
 };
 

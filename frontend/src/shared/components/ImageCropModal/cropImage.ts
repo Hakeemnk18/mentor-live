@@ -1,15 +1,33 @@
 type CropArea = { x: number; y: number; width: number; height: number };
 
+type CropOptions = {
+  /** Fixed output width in px (height follows the crop's ratio). Omit to keep the crop's native size. */
+  outputWidth?: number;
+  /** JPEG quality 0–1. Omit for the browser default. */
+  quality?: number;
+};
+
 export async function getCroppedImage(
   imageSrc: string,
-  crop: CropArea
+  crop: CropArea,
+  options: CropOptions = {}
 ): Promise<File> {
   const image = await createImage(imageSrc);
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
 
-  canvas.width = crop.width;
-  canvas.height = crop.height;
+  const outW = options.outputWidth ?? crop.width;
+  const outH = options.outputWidth
+    ? Math.round((options.outputWidth * crop.height) / crop.width)
+    : crop.height;
+
+  canvas.width = outW;
+  canvas.height = outH;
+
+  if (options.outputWidth) {
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+  }
 
   ctx.drawImage(
     image,
@@ -19,16 +37,20 @@ export async function getCroppedImage(
     crop.height,
     0,
     0,
-    crop.width,
-    crop.height
+    outW,
+    outH
   );
 
   return new Promise((resolve) => {
-    canvas.toBlob((blob) => {
-      resolve(
-        new File([blob!], "cropped.jpg", { type: "image/jpeg" })
-      );
-    }, "image/jpeg");
+    canvas.toBlob(
+      (blob) => {
+        resolve(
+          new File([blob!], "cropped.jpg", { type: "image/jpeg" })
+        );
+      },
+      "image/jpeg",
+      options.quality
+    );
   });
 }
 

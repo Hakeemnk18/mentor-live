@@ -145,6 +145,8 @@ export type FacultyPublicProfileView = {
     subjectName: string;
     className: string;
     syllabusName: string;
+    classId: string;
+    syllabusId: string;
     price: number;
   }[];
 };

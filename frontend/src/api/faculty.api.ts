@@ -189,6 +189,14 @@ export const addFacultyChapterSlot = async (
   return res.data;
 };
 
+/** Add several chapters to a faculty in one request (the endpoint accepts a list). */
+export const addFacultyChapterSlots = async (facultyId: string, chapterIds: string[]) => {
+  const res = await axiosInstance.post(`/faculties/${facultyId}/chapterSlots`, {
+    chapterSlots: chapterIds.map((chapter) => ({ chapter })),
+  });
+  return res.data;
+};
+
 export const setFacultyChapterSlotAvailability = async (
   facultyId: string,
   slotId: string,

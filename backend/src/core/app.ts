@@ -5,6 +5,9 @@ import { env } from "../config/env.js";
 
 const app = express();
 
+// Behind Render's proxy: use the real client IP (needed so rate limits apply per visitor, not to everyone at once)
+app.set("trust proxy", 1);
+
 const allowedOrigins = (env.FRONTEND_URL ?? "http://localhost:5173")
   .split(",")
   .map((origin) => origin.trim().replace(/\/$/, ""));

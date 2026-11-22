@@ -188,7 +188,7 @@ export default function BlogModal({
   };
 
   const inp = (err?: string) =>
-    `w-full px-3 py-2 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30 ${
+    `w-full px-3 py-2 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30 ${
       err ? "border-red-400" : "border-gray-300"
     }`;
 
@@ -242,7 +242,7 @@ export default function BlogModal({
               <div
                 onClick={() => fileInputRef.current?.click()}
                 className={`relative w-full h-40 rounded-lg border-2 border-dashed flex items-center justify-center cursor-pointer overflow-hidden transition-colors ${
-                  form.errors.image ? "border-red-400 bg-red-50" : "border-gray-300 bg-gray-50 hover:border-[#DB313E]/60"
+                  form.errors.image ? "border-red-400 bg-red-50" : "border-gray-300 bg-gray-50 hover:border-[#6D35D9]/60"
                 }`}
               >
                 {form.imageUrl ? (
@@ -258,7 +258,7 @@ export default function BlogModal({
               </div>
               {form.imageUrl && (
                 <div className="flex gap-3 mt-1">
-                  <button type="button" onClick={() => fileInputRef.current?.click()} className="text-xs text-[#DB313E] hover:underline cursor-pointer">
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="text-xs text-[#6D35D9] hover:underline cursor-pointer">
                     Change image
                   </button>
                   <button type="button" onClick={handleRemoveImage} className="text-xs text-gray-400 hover:text-red-500 cursor-pointer">
@@ -347,7 +347,7 @@ export default function BlogModal({
                 type="button"
                 onClick={() => setForm((prev) => ({ ...prev, isFeatured: !prev.isFeatured }))}
                 className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
-                  form.isFeatured ? "bg-[#DB313E]" : "bg-gray-300"
+                  form.isFeatured ? "bg-[#6D35D9]" : "bg-gray-300"
                 }`}
               >
                 <span
@@ -412,7 +412,7 @@ export default function BlogModal({
               <button
                 type="submit"
                 disabled={isLoading}
-                className="px-4 py-2 text-sm font-medium bg-[#DB313E] text-white rounded-md hover:bg-[#c02535] disabled:opacity-50 transition-colors cursor-pointer"
+                className="px-4 py-2 text-sm font-medium bg-[#6D35D9] text-white rounded-md hover:bg-[#5B2BC0] disabled:opacity-50 transition-colors cursor-pointer"
               >
                 {uploading ? "Uploading…" : loading ? "Saving…" : mode === "create" ? "Publish Blog" : "Save Changes"}
               </button>

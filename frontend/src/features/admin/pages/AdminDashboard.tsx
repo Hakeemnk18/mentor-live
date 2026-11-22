@@ -19,11 +19,11 @@ function QuickLink({ label, path, icon, desc }: { label: string; path: string; i
       onClick={() => navigate(path)}
       className="flex items-start gap-4 bg-white border border-gray-100/80 rounded-2xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 text-left group w-full"
     >
-      <div className="w-10 h-10 rounded-xl bg-gray-50/80 group-hover:bg-[#DB313E]/10 flex items-center justify-center flex-shrink-0 text-gray-400 group-hover:text-[#DB313E] transition-colors border border-gray-100 group-hover:border-[#DB313E]/20">
+      <div className="w-10 h-10 rounded-xl bg-gray-50/80 group-hover:bg-[#6D35D9]/10 flex items-center justify-center flex-shrink-0 text-gray-400 group-hover:text-[#6D35D9] transition-colors border border-gray-100 group-hover:border-[#6D35D9]/20">
         {icon}
       </div>
       <div>
-        <h3 className="text-sm font-bold text-gray-800 group-hover:text-[#DB313E] transition-colors">{label}</h3>
+        <h3 className="text-sm font-bold text-gray-800 group-hover:text-[#6D35D9] transition-colors">{label}</h3>
         <p className="text-xs text-gray-400 mt-1 leading-relaxed">{desc}</p>
       </div>
     </button>

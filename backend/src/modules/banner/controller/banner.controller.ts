@@ -119,6 +119,7 @@ export class BannerController implements IBannerController {
       const data = banners.map((b) => ({
         id: b.id,
         image: b.image,
+        mobileImage: b.mobileImage,
         description: b.description,
         priority: b.priority,
         isShow: b.isShow,
@@ -147,6 +148,8 @@ export class BannerController implements IBannerController {
 
       const data = banners.map((b) => ({
         image: b.image.url,
+        /* phones get the square mobile image; older banners without one fall back to the desktop image */
+        mobileImage: b.mobileImage?.url ?? b.image.url,
         description: b.description,
         priority: b.priority,
         isClickable: b.isClickable,

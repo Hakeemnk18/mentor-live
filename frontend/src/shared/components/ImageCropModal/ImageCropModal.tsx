@@ -79,7 +79,7 @@ export default function ImageCropModal({
 
             <button
               onClick={onCropDone}
-              className="px-4 py-2 text-sm rounded bg-[#DB313E] text-white hover:bg-[#c72b36]"
+              className="px-4 py-2 text-sm rounded bg-[#6D35D9] text-white hover:bg-[#5B2BC0]"
             >
               Crop & Save
             </button>

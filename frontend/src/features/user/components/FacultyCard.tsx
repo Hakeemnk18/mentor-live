@@ -1,4 +1,7 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowRight } from "./ui/Icons";
+import { initials, tintFor } from "./ui/tints";
 
 type FacultyCardProps = {
   id: string;
@@ -25,10 +28,12 @@ const FacultyCard: React.FC<FacultyCardProps> = ({
   variantId,
 }) => {
   const navigate = useNavigate();
+  const [imgError, setImgError] = useState(false);
   const imgUrl =
     typeof image === "string"
       ? image
       : image?.url ?? "";
+  const tint = tintFor(name);
 
   const handleClick = () => {
     navigate("/faculty-details", {
@@ -45,46 +50,45 @@ const FacultyCard: React.FC<FacultyCardProps> = ({
   return (
     <div
       onClick={handleClick}
-      className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col cursor-pointer"
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }}
+      role="link"
+      tabIndex={0}
+      className="group h-full rounded-[28px] cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ml-violet/30"
     >
-      {/* Image */}
-      <div className="relative h-56 bg-gray-100 overflow-hidden flex">
-        {/* Red accent bar */}
-        <div className="w-1.5 bg-[#DB313E] flex-shrink-0 z-10" />
-
-        <div className="flex-1 overflow-hidden">
-          {imgUrl ? (
-            <img
-              src={imgUrl}
-              alt={name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <svg className="w-16 h-16 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
-              </svg>
-            </div>
-          )}
-        </div>
+      {/* The outer box never moves (stable hover area); only this inner card lifts, so the hover can't flicker */}
+      <div className="h-full bg-white rounded-[28px] overflow-hidden flex flex-col shadow-[0_1px_0_rgba(42,22,80,.04),0_16px_36px_-20px_rgba(42,22,80,.35)] transform-gpu [backface-visibility:hidden] transition-[translate,box-shadow] duration-500 ease-[cubic-bezier(.2,.8,.2,1)] group-hover:-translate-y-1.5 group-hover:shadow-[0_28px_50px_-22px_rgba(42,22,80,.45)] motion-reduce:transition-none motion-reduce:group-hover:translate-y-0">
+      {/* Photo / initials */}
+      <div className="relative aspect-[7/5] flex items-center justify-center overflow-hidden" style={{ background: tint.bg }}>
+        {imgUrl && !imgError ? (
+          <img
+            src={imgUrl}
+            alt={name}
+            loading="lazy"
+            onError={() => setImgError(true)}
+            className="w-full h-full object-cover transform-gpu [backface-visibility:hidden] transition-transform duration-700 ease-[cubic-bezier(.2,.8,.2,1)] group-hover:scale-[1.04] motion-reduce:transition-none"
+          />
+        ) : (
+          <>
+            <div aria-hidden="true" className="absolute -right-[30px] -bottom-[30px] w-[130px] h-[130px] rounded-full bg-white/45" />
+            <span className="relative font-display font-extrabold text-[84px] tracking-[-0.06em]" style={{ color: tint.ink }}>
+              {initials(name)}
+            </span>
+          </>
+        )}
       </div>
 
       {/* Content */}
-      <div className="px-5 py-4 flex flex-col flex-1">
-        <h3 className="text-[15px] font-bold text-gray-900 mb-0.5">{name}</h3>
-        <p className="text-[#DB313E] text-xs font-semibold mb-2">
-          {qualifications.join(" · ")}
-        </p>
-        <p className="text-gray-400 text-[13px] leading-relaxed line-clamp-3 flex-1">
-          {description}
-        </p>
-
-        <span className="inline-flex items-center gap-1.5 text-[#DB313E] text-sm font-semibold group-hover:underline mt-3">
+      <div className="px-[22px] pt-5 pb-[22px] flex flex-col gap-1.5 flex-1">
+        <h3 className="m-0 font-display font-bold text-[21px] text-ml-ink tracking-[-0.02em]">{name}</h3>
+        {qualifications.length > 0 && (
+          <p className="m-0 text-[13px] font-extrabold text-ml-coral">{qualifications.join(" · ")}</p>
+        )}
+        <p className="mt-1 mb-0 text-sm leading-[1.55] text-ml-muted line-clamp-3">{description}</p>
+        <span className="mt-auto pt-3 inline-flex items-center gap-1.5 font-extrabold text-sm text-ml-violet">
           View Profile
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
-          </svg>
+          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
         </span>
+      </div>
       </div>
     </div>
   );

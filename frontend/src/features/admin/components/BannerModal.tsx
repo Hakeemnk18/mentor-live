@@ -1,5 +1,9 @@
 import { useRef, useState } from "react";
-import ImageCropModal from "../../../shared/components/ImageCropModal/ImageCropModal";
+import BannerCropModal from "./BannerCropModal";
+import { AdminButton, AdminField, AdminModal, AdminSelect, AdminToggle, adminInputCls } from "./ui";
+import { priorityOptions } from "./bannerPriority";
+import { BANNER_SHAPES } from "./bannerShapes";
+import type { BannerShape } from "./bannerShapes";
 import { uploadToCloudinary } from "../../../shared/utils/cloudinary";
 import toast from "react-hot-toast";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
@@ -17,15 +21,23 @@ interface Props {
   onSubmit: (payload: BannerPayload) => Promise<void>;
 }
 
+/** One image slot (desktop 2:1 or mobile 1:1). Only the cropped file is ever uploaded. */
+type ImageSlot = {
+  file: File | null; // cropped, waiting to upload
+  url: string | null; // what the preview shows
+  payload: CloudinaryUploadResult | null; // already-uploaded image (edit mode)
+  raw: string | null; // original pick, kept so the crop can be adjusted again
+};
+
+const emptySlot: ImageSlot = { file: null, url: null, payload: null, raw: null };
+
 type FormState = {
   description: string;
   isShow: boolean;
   isClickable: boolean;
   buttonText: string;
   priority: number | "";
-  imageFile: File | null;
-  imageUrl: string | null;
-  imagePayload: CloudinaryUploadResult | null;
+  images: Record<BannerShape, ImageSlot>;
   errors: Record<string, string>;
 };
 
@@ -35,10 +47,17 @@ const emptyForm: FormState = {
   isClickable: false,
   buttonText: "Get In Touch",
   priority: "",
-  imageFile: null,
-  imageUrl: null,
-  imagePayload: null,
+  images: { desktop: emptySlot, mobile: emptySlot },
   errors: {},
+};
+
+/* error key per slot (kept "image" for desktop so existing wording stays) */
+const ERR_KEY: Record<BannerShape, string> = { desktop: "image", mobile: "mobileImage" };
+
+const without = (errors: Record<string, string>, key: string) => {
+  const next = { ...errors };
+  delete next[key];
+  return next;
 };
 
 export default function BannerModal({
@@ -50,9 +69,10 @@ export default function BannerModal({
   onClose,
   onSubmit,
 }: Props) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const desktopInputRef = useRef<HTMLInputElement>(null);
+  const mobileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
-  const [cropOpen, setCropOpen] = useState(false);
+  const [cropShape, setCropShape] = useState<BannerShape | null>(null);
   const [uploading, setUploading] = useState(false);
 
   const [prevOpen, setPrevOpen] = useState(false);
@@ -68,18 +88,24 @@ export default function BannerModal({
           isClickable: initialData.isClickable ?? false,
           buttonText: initialData.buttonText ?? "Get In Touch",
           priority: initialData.priority ?? "",
-          imageFile: null,
-          imageUrl: initialData.image.url,
-          imagePayload: initialData.image,
+          images: {
+            desktop: { ...emptySlot, url: initialData.image.url, payload: initialData.image },
+            mobile: initialData.mobileImage
+              ? { ...emptySlot, url: initialData.mobileImage.url, payload: initialData.mobileImage }
+              : emptySlot,
+          },
           errors: {},
         });
       } else {
         setForm(emptyForm);
       }
+      setCropShape(null);
     }
   }
 
   if (!open) return null;
+
+  const { desktop, mobile } = form.images;
 
   /* Priorities already taken by OTHER visible banners */
   const takenPriorities = new Set(
@@ -94,13 +120,14 @@ export default function BannerModal({
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!form.imagePayload && !form.imageFile) e.image = "Banner image is required";
+    if (!desktop.payload && !desktop.file) e.image = "Desktop image is required";
+    if (!mobile.payload && !mobile.file) e.mobileImage = "Mobile image is required";
     if (!form.description.trim()) {
-      e.description = "Description is required";
+      e.description = "Title is required";
     } else if (form.description.trim().length < 5) {
-      e.description = "Description must be at least 5 characters";
+      e.description = "Title must be at least 5 characters";
     } else if (form.description.trim().length > 200) {
-      e.description = "Description must be under 200 characters";
+      e.description = "Title must be under 200 characters";
     }
     if (form.isShow && form.priority === "") {
       e.priority = "Priority (1–5) is required when the banner is set to visible";
@@ -108,26 +135,41 @@ export default function BannerModal({
     return e;
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const setSlot = (shape: BannerShape, patch: Partial<ImageSlot>, clearErr = false) =>
+    setForm((prev) => ({
+      ...prev,
+      images: { ...prev.images, [shape]: { ...prev.images[shape], ...patch } },
+      errors: clearErr ? without(prev.errors, ERR_KEY[shape]) : prev.errors,
+    }));
+
+  const handleFileChange = (shape: BannerShape) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      setForm((prev) => ({ ...prev, errors: { ...prev.errors, image: "Image must be under 5 MB" } }));
-      e.target.value = "";
+      setForm((prev) => ({ ...prev, errors: { ...prev.errors, [ERR_KEY[shape]]: "Image must be under 5 MB" } }));
       return;
     }
-    setForm((prev) => {
-      const errors = { ...prev.errors };
-      delete errors.image;
-      return { ...prev, imageFile: file, imageUrl: URL.createObjectURL(file), errors };
-    });
-    setCropOpen(true);
-    e.target.value = "";
+    setSlot(shape, { raw: URL.createObjectURL(file) }, true);
+    setCropShape(shape);
   };
 
   const handleCropComplete = (croppedFile: File) => {
-    setForm((prev) => ({ ...prev, imageFile: croppedFile, imageUrl: URL.createObjectURL(croppedFile) }));
+    if (!cropShape) return;
+    setSlot(cropShape, { file: croppedFile, url: URL.createObjectURL(croppedFile) }, true);
   };
+
+  const pick = (shape: BannerShape) =>
+    (shape === "desktop" ? desktopInputRef : mobileInputRef).current?.click();
+
+  const uploadSlot = async (slot: ImageSlot) =>
+    slot.file
+      ? uploadToCloudinary({
+          file: slot.file,
+          uploadPreset: "banners",
+          cloudName: import.meta.env.VITE_CLOUDINARY_NAME,
+        })
+      : slot.payload;
 
   const handleSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
@@ -135,22 +177,16 @@ export default function BannerModal({
     if (Object.keys(errs).length > 0) { setForm((prev) => ({ ...prev, errors: errs })); return; }
 
     try {
-      let finalImage = form.imagePayload;
-      if (form.imageFile) {
-        setUploading(true);
-        finalImage = await uploadToCloudinary({
-          file: form.imageFile,
-          uploadPreset: "banners",
-          cloudName: import.meta.env.VITE_CLOUDINARY_NAME,
-        });
-        setUploading(false);
-      }
-      if (!finalImage) {
+      if (desktop.file || mobile.file) setUploading(true);
+      const [finalImage, finalMobile] = await Promise.all([uploadSlot(desktop), uploadSlot(mobile)]);
+      setUploading(false);
+      if (!finalImage || !finalMobile) {
         toast.error("Image upload failed");
         return;
       }
       await onSubmit({
         image: finalImage,
+        mobileImage: finalMobile,
         description: form.description.trim(),
         isShow: form.isShow,
         isClickable: form.isClickable,
@@ -163,217 +199,280 @@ export default function BannerModal({
     }
   };
 
-  const inp = (err?: string) =>
-    `w-full px-3 py-2 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30 ${
-      err ? "border-red-400" : "border-gray-300"
-    }`;
+  const cropSlot = cropShape ? form.images[cropShape] : null;
 
   return (
     <>
-      <div className="fixed inset-0 z-[100] bg-black/40" onClick={onClose} />
+      {cropShape && cropSlot?.raw && (
+        <BannerCropModal
+          key={`${cropShape}-${cropSlot.raw}`}
+          open
+          shape={cropShape}
+          image={cropSlot.raw}
+          onClose={() => setCropShape(null)}
+          onCropComplete={handleCropComplete}
+        />
+      )}
 
-      <ImageCropModal
-        open={cropOpen}
-        image={form.imageUrl ?? ""}
-        aspect={16 / 9}
-        onClose={() => setCropOpen(false)}
-        onCropComplete={handleCropComplete}
-      />
+      <AdminModal
+        open={open}
+        onClose={onClose}
+        size="lg"
+        closeOnEsc={!cropShape}
+        title={mode === "create" ? "Add Banner" : "Edit Banner"}
+        footer={
+          <>
+            <AdminButton variant="outline" onClick={onClose}>
+              Cancel
+            </AdminButton>
+            <AdminButton onClick={handleSubmit} loading={loading || uploading}>
+              {uploading ? "Uploading…" : loading ? "Saving…" : mode === "create" ? "Add Banner" : "Save Changes"}
+            </AdminButton>
+          </>
+        }
+      >
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Images — desktop 2:1 + mobile 1:1 (columns 2fr/1fr keep both boxes the same height) */}
+          <div>
+            <p className="text-xs font-semibold text-[#2A1650]/80 mb-1.5">
+              Banner Images<span className="text-[#FF6B5E] ml-0.5">*</span>
+              <span className="font-normal text-gray-400"> (one for laptops, one for phones)</span>
+            </p>
+            <div className="grid grid-cols-[2fr_1fr] gap-3 items-start">
+              {(["desktop", "mobile"] as const).map((shape) => {
+                const slot = form.images[shape];
+                const spec = BANNER_SHAPES[shape];
+                const err = form.errors[ERR_KEY[shape]];
+                return (
+                  <div key={shape} className="min-w-0">
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Upload ${spec.name.toLowerCase()}`}
+                      onClick={() => pick(shape)}
+                      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), pick(shape))}
+                      className={`relative w-full ${shape === "desktop" ? "aspect-[2/1]" : "aspect-square"} rounded-2xl border-2 border-dashed flex items-center justify-center cursor-pointer overflow-hidden transition-colors focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#6D35D9]/25 ${
+                        err
+                          ? "border-red-400 bg-red-50"
+                          : slot.url
+                          ? "border-transparent bg-[#F4F1FA]"
+                          : "border-[#E4DDF2] bg-[#FAF8FE] hover:border-[#6D35D9]/60"
+                      }`}
+                    >
+                      {slot.url ? (
+                        <BannerPreview
+                          src={slot.url}
+                          isClickable={form.isClickable}
+                          buttonText={form.buttonText}
+                          size={shape === "desktop" ? "md" : "sm"}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center gap-1.5 px-1 text-center text-[#8A80A3]">
+                          <span className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white flex items-center justify-center text-[#6D35D9] shadow-sm">
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5V18a2.25 2.25 0 002.25 2.25h13.5A2.25 2.25 0 0021 18v-1.5M12 15V3m0 0L8.25 6.75M12 3l3.75 3.75" />
+                            </svg>
+                          </span>
+                          <span className="text-[11px] sm:text-xs font-medium text-[#2A1650]">Upload</span>
+                          <span className="hidden sm:block text-[11px]">{spec.recommended}</span>
+                        </div>
+                      )}
+                    </div>
 
-      <div className="fixed inset-0 z-[101] flex items-center justify-center pointer-events-none">
-        <div
-          className="pointer-events-auto w-full max-w-lg bg-white rounded-xl shadow-xl flex flex-col max-h-[92vh]"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header — sticky */}
-          <div className="flex items-center justify-between border-b px-6 py-4 shrink-0">
-            <h2 className="text-base font-semibold text-gray-900">
-              {mode === "create" ? "Add Banner" : "Edit Banner"}
-            </h2>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none cursor-pointer">
-              ×
-            </button>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="text-[11px] font-semibold text-[#2A1650]">{shape === "desktop" ? "Desktop" : "Mobile"}</span>
+                      <span className="text-[11px] text-gray-400">{spec.ratioLabel.replace(/\s/g, "")}</span>
+                    </div>
+                    {slot.url && (
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        <AdminButton size="sm" variant="soft" className="!h-8 !px-3 !text-xs" onClick={() => pick(shape)}>
+                          Change
+                        </AdminButton>
+                        {slot.raw && (
+                          <AdminButton size="sm" variant="soft" className="!h-8 !px-3 !text-xs" onClick={() => setCropShape(shape)}>
+                            Crop
+                          </AdminButton>
+                        )}
+                      </div>
+                    )}
+                    {err && <p className="text-xs text-red-500 mt-1">{err}</p>}
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-gray-400 mt-2">
+              JPG / PNG / WebP · max 5 MB each. Desktop {BANNER_SHAPES.desktop.recommended}, mobile {BANNER_SHAPES.mobile.recommended} recommended.
+            </p>
+            <input ref={desktopInputRef} type="file" accept="image/*" onChange={handleFileChange("desktop")} hidden />
+            <input ref={mobileInputRef} type="file" accept="image/*" onChange={handleFileChange("mobile")} hidden />
           </div>
 
-          {/* Form — scrollable body */}
-          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
-            {/* Image */}
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Banner Image <span className="text-gray-400">(16:9)</span> *
-              </label>
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className={`relative w-full h-40 rounded-lg border-2 border-dashed flex items-center justify-center cursor-pointer overflow-hidden transition-colors ${
-                  form.errors.image ? "border-red-400 bg-red-50" : "border-gray-300 bg-gray-50 hover:border-[#DB313E]/60"
-                }`}
-              >
-                {form.imageUrl ? (
-                  <img src={form.imageUrl} alt="banner preview" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="flex flex-col items-center gap-1 text-gray-400">
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5V18a2.25 2.25 0 002.25 2.25h13.5A2.25 2.25 0 0021 18v-1.5M12 15V3m0 0L8.25 6.75M12 3l3.75 3.75" />
-                    </svg>
-                    <span className="text-xs">Click to upload banner image</span>
+          {/* How it will look on the website */}
+          {(desktop.url || mobile.url) && (
+            <div className="rounded-2xl border border-[#E4DDF2] bg-[#FAF8FE] p-4">
+              <p className="text-xs font-semibold text-[#2A1650]/80 mb-3">How it looks on the website</p>
+              <div className="flex items-end gap-3 sm:gap-5">
+                <div className="flex-1 min-w-0">
+                  <div className="rounded-xl border-[4px] sm:border-[6px] border-[#2A1650] bg-white p-1 sm:p-2 shadow-sm">
+                    <div className="aspect-[2/1] rounded-lg overflow-hidden bg-[#F4F1FA]">
+                      {desktop.url ? (
+                        <BannerPreview src={desktop.url} isClickable={form.isClickable} buttonText={form.buttonText} size="md" />
+                      ) : (
+                        <PreviewMissing />
+                      )}
+                    </div>
                   </div>
+                  <p className="text-[11px] text-gray-400 text-center mt-1.5">Laptop</p>
+                </div>
+                <div className="w-[96px] sm:w-[150px] shrink-0">
+                  <div className="rounded-[16px] sm:rounded-[22px] border-[4px] sm:border-[6px] border-[#2A1650] bg-white px-1 sm:px-1.5 pt-3 sm:pt-4 pb-4 sm:pb-6 shadow-sm">
+                    <div className="aspect-square rounded-md overflow-hidden bg-[#F4F1FA]">
+                      {mobile.url ? (
+                        <BannerPreview src={mobile.url} isClickable={form.isClickable} buttonText={form.buttonText} size="sm" />
+                      ) : (
+                        <PreviewMissing />
+                      )}
+                    </div>
+                    <div className="mt-2 space-y-1">
+                      <div className="h-1.5 w-3/4 rounded-full bg-[#EFE9FA]" />
+                      <div className="h-1.5 w-1/2 rounded-full bg-[#EFE9FA]" />
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-gray-400 text-center mt-1.5">Phone</p>
+                </div>
+              </div>
+              <p className="text-[11px] text-gray-400 mt-3">
+                Laptops and tablets show the desktop image, phones show the mobile image, always in full. When the button is on, keep important text away from the bottom-left corner.
+              </p>
+            </div>
+          )}
+
+          {/* Title (stored as description) */}
+          <AdminField
+            label="Banner Title"
+            required
+            hint="(not shown on the banner — used as image alt text and shown in Leads)"
+            error={form.errors.description}
+          >
+            <textarea
+              rows={2}
+              value={form.description}
+              onChange={(e) => {
+                const val = e.target.value;
+                setForm((prev) => ({ ...prev, description: val, errors: without(prev.errors, "description") }));
+              }}
+              maxLength={200}
+              placeholder="e.g. Summer crash course 2026"
+              className={adminInputCls(form.errors.description) + " resize-none"}
+            />
+            <p className={`text-right text-xs mt-0.5 ${form.description.length > 185 ? "text-red-500" : "text-gray-400"}`}>
+              {form.description.length}/200
+            </p>
+          </AdminField>
+
+          {/* Show / priority */}
+          <div className="space-y-3">
+            <AdminToggle
+              label="Show to users"
+              description={form.isShow ? "This banner will appear in the carousel" : "Banner is saved but hidden from users"}
+              checked={form.isShow}
+              onChange={() =>
+                setForm((prev) => ({
+                  ...prev,
+                  isShow: !prev.isShow,
+                  priority: !prev.isShow ? prev.priority : "",
+                  errors: without(prev.errors, "priority"),
+                }))
+              }
+            />
+
+            {form.isShow && (
+              <AdminField label="Priority" required hint="(1 = highest, 5 = lowest)" error={form.errors.priority}>
+                <AdminSelect
+                  label="Priority"
+                  placeholder="Select priority…"
+                  value={form.priority}
+                  options={priorityOptions(availablePriorities)}
+                  error={!!form.errors.priority}
+                  disabled={availablePriorities.length === 0}
+                  onChange={(p) => setForm((prev) => ({ ...prev, priority: p, errors: without(prev.errors, "priority") }))}
+                />
+                {availablePriorities.length === 0 && (
+                  <p className="text-xs text-amber-600 mt-1">All 5 priority slots are taken. Hide another banner first.</p>
                 )}
-              </div>
-              {form.imageUrl && (
-                <button type="button" onClick={() => fileInputRef.current?.click()} className="mt-1 text-xs text-[#DB313E] hover:underline cursor-pointer">
-                  Change image
-                </button>
-              )}
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} hidden />
-              {form.errors.image && <p className="text-xs text-red-500 mt-0.5">{form.errors.image}</p>}
-            </div>
+              </AdminField>
+            )}
+          </div>
 
-            {/* Description */}
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Description *</label>
-              <textarea
-                rows={3}
-                value={form.description}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setForm((prev) => {
-                    const errors = { ...prev.errors };
-                    delete errors.description;
-                    return { ...prev, description: val, errors };
-                  });
-                }}
-                maxLength={200}
-                placeholder="Enter banner description…"
-                className={inp(form.errors.description) + " resize-none"}
-              />
-              <div className="flex items-center justify-between mt-0.5">
-                {form.errors.description
-                  ? <p className="text-xs text-red-500">{form.errors.description}</p>
-                  : <span />}
-                <span className={`text-xs ${form.description.length > 185 ? "text-red-500" : "text-gray-400"}`}>
-                  {form.description.length}/200
-                </span>
-              </div>
-            </div>
+          {/* Clickable / button text */}
+          <div className="space-y-3">
+            <AdminToggle
+              label="Clickable Banner"
+              description={
+                form.isClickable
+                  ? "Shows a button on the banner — clicking opens an inquiry form"
+                  : "Banner is display-only, no action button"
+              }
+              checked={form.isClickable}
+              onChange={() => setForm((prev) => ({ ...prev, isClickable: !prev.isClickable }))}
+            />
 
-            {/* isShow toggle */}
-            <div className="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-gray-50">
-              <div>
-                <p className="text-sm font-medium text-gray-800">Show to users</p>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {form.isShow ? "This banner will appear in the carousel" : "Banner is saved but hidden from users"}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() =>
-                  setForm((prev) => {
-                    const errors = { ...prev.errors };
-                    delete errors.priority;
-                    return { ...prev, isShow: !prev.isShow, priority: !prev.isShow ? prev.priority : "", errors };
-                  })
-                }
-                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
-                  form.isShow ? "bg-[#DB313E]" : "bg-gray-300"
-                }`}
-              >
-                <span
-                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
-                    form.isShow ? "translate-x-5" : "translate-x-0"
-                  }`}
-                />
-              </button>
-            </div>
-
-            {/* isClickable toggle */}
-            <div className="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-gray-50">
-              <div>
-                <p className="text-sm font-medium text-gray-800">Clickable Banner</p>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {form.isClickable ? "Shows a button on the banner — clicking opens an inquiry form" : "Banner is display-only, no action button"}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setForm((prev) => ({ ...prev, isClickable: !prev.isClickable }))}
-                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
-                  form.isClickable ? "bg-[#DB313E]" : "bg-gray-300"
-                }`}
-              >
-                <span
-                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
-                    form.isClickable ? "translate-x-5" : "translate-x-0"
-                  }`}
-                />
-              </button>
-            </div>
-
-            {/* Button text — only when isClickable=true */}
             {form.isClickable && (
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
-                  Button Text <span className="text-gray-400">(shown on the banner)</span>
-                </label>
+              <AdminField label="Button Text" hint="(shown on the banner)">
                 <input
                   value={form.buttonText}
                   onChange={(e) => setForm((prev) => ({ ...prev, buttonText: e.target.value }))}
                   maxLength={50}
                   placeholder="e.g. Get In Touch, Join Now, Learn More"
-                  className={inp()}
+                  className={adminInputCls()}
                 />
-                <p className="text-xs text-gray-400 mt-0.5">{form.buttonText.length}/50</p>
-              </div>
+                <p className="text-right text-xs text-gray-400 mt-0.5">{form.buttonText.length}/50</p>
+              </AdminField>
             )}
-
-            {/* Priority — only when isShow=true */}
-            {form.isShow && (
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
-                  Priority * <span className="text-gray-400">(1 = highest, 5 = lowest)</span>
-                </label>
-                <select
-                  value={form.priority}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setForm((prev) => {
-                      const errors = { ...prev.errors };
-                      delete errors.priority;
-                      return { ...prev, priority: val === "" ? "" : Number(val), errors };
-                    });
-                  }}
-                  className={inp(form.errors.priority)}
-                >
-                  <option value="">Select priority…</option>
-                  {availablePriorities.map((p) => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                </select>
-                {availablePriorities.length === 0 && (
-                  <p className="text-xs text-amber-600 mt-0.5">
-                    All 5 priority slots are taken. Hide another banner first.
-                  </p>
-                )}
-                {form.errors.priority && <p className="text-xs text-red-500 mt-0.5">{form.errors.priority}</p>}
-              </div>
-            )}
-
-          </form>
-
-          {/* Footer — sticky at bottom */}
-          <div className="shrink-0 border-t px-6 py-4 flex items-center justify-end gap-3 bg-white rounded-b-xl">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 cursor-pointer">
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={loading || uploading}
-              className="px-4 py-2 text-sm font-medium bg-[#DB313E] text-white rounded-md hover:bg-[#c02535] disabled:opacity-50 transition-colors cursor-pointer"
-            >
-              {uploading ? "Uploading…" : loading ? "Saving…" : mode === "create" ? "Add Banner" : "Save Changes"}
-            </button>
           </div>
-        </div>
-      </div>
+        </form>
+      </AdminModal>
     </>
+  );
+}
+
+function PreviewMissing() {
+  return (
+    <div className="w-full h-full flex items-center justify-center text-[9px] sm:text-[10px] text-[#8A80A3] text-center px-1">
+      Not uploaded
+    </div>
+  );
+}
+
+/* ── Banner exactly as the carousel renders it: full image + optional button bottom-left ── */
+const PREVIEW_BTN = {
+  lg: "left-5 bottom-5 h-7 px-3 text-[11px] gap-1",
+  md: "left-3 bottom-3 h-[18px] px-2 text-[8px] gap-0.5",
+  sm: "left-1.5 bottom-1.5 h-4 px-1.5 text-[7px] gap-0.5",
+} as const;
+
+function BannerPreview({
+  src,
+  isClickable,
+  buttonText,
+  size,
+}: {
+  src: string;
+  isClickable: boolean;
+  buttonText: string;
+  size: keyof typeof PREVIEW_BTN;
+}) {
+  return (
+    <div className="relative w-full h-full">
+      <img src={src} alt="banner preview" className="w-full h-full object-cover" draggable={false} />
+      {isClickable && (
+        <span
+          className={`absolute ${PREVIEW_BTN[size]} rounded-full bg-white text-[#2A1650] font-extrabold inline-flex items-center shadow-md pointer-events-none whitespace-nowrap`}
+        >
+          {buttonText.trim() || "Get In Touch"}
+          <span aria-hidden>&rsaquo;</span>
+        </span>
+      )}
+    </div>
   );
 }

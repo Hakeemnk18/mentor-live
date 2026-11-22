@@ -7,15 +7,19 @@ import TimeInput from "../../../shared/components/TimeInput";
 import {
   getFacultyById,
   setFacultySlotAvailability,
-  addFacultyChapterSlot,
+  addFacultyChapterSlots,
   setFacultyChapterSlotAvailability,
   addFacultySlotIST,
+  updateFaculty,
 } from "../../../api/faculty.api";
-import { getChaptersList } from "../../../api/chapter.api";
 import { getClasses } from "../../../api/class.api";
 import { getSyllabus } from "../../../api/syllabus.api";
-import EditFacultyBasicModal from "../components/EditFacultyBasicModal";
+import FacultyModal from "../components/FacultyModal";
+import type { FacultySubmitPayload } from "../components/FacultyModal";
 import PoolBookingModal from "../components/PoolBookingModal";
+import { AdminAsyncMultiSelect, AdminButton } from "../components/ui";
+import type { AsyncOption } from "../components/ui";
+import { CHAPTER_SEARCH_LIMIT, searchChapters } from "../components/chapterSearch";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 import type { TimeSlot, ChapterSlot, FacultyData } from "../../../shared/types/faculty.types";
 import type { PoolBooking } from "../../../shared/types/booking.types";
@@ -63,6 +67,7 @@ export default function FacultyDetailPage() {
 
   // Edit basic info modal
   const [editOpen, setEditOpen] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
   const [syllabusList, setSyllabusList] = useState<{ _id: string; name: string }[]>([]);
   const [classesList, setClassesList] = useState<{ _id: string; name: string }[]>([]);
 
@@ -76,10 +81,7 @@ export default function FacultyDetailPage() {
   const [selectedSlotVariantId, setSelectedSlotVariantId] = useState("");
 
   // Chapter slot add
-  const [chapterSyllabusId, setChapterSyllabusId] = useState("");
-  const [chapterClassId, setChapterClassId] = useState("");
-  const [chapterOptions, setChapterOptions] = useState<{ _id: string; name: string }[]>([]);
-  const [chapterId, setChapterId] = useState("");
+  const [chapterPicks, setChapterPicks] = useState<AsyncOption[]>([]);
   const [chapterWorking, setChapterWorking] = useState(false);
 
   // Pool booking modal
@@ -126,17 +128,6 @@ export default function FacultyDetailPage() {
       .catch(handleApiError);
   }, []);
 
-  /* Fetch chapter options when syllabus + class selected */
-  useEffect(() => {
-    if (!chapterSyllabusId || !chapterClassId) {
-      setChapterOptions([]);
-      setChapterId("");
-      return;
-    }
-    getChaptersList({ syllabusId: chapterSyllabusId, classId: chapterClassId })
-      .then((items) => setChapterOptions(items.map((c) => ({ _id: c._id, name: c.name }))))
-      .catch(handleApiError);
-  }, [chapterSyllabusId, chapterClassId]);
 
   /* ================================================================ */
   /* TIME SLOT ACTIONS                                                  */
@@ -211,12 +202,12 @@ export default function FacultyDetailPage() {
   /* ================================================================ */
 
   const handleAddChapterSlot = async () => {
-    if (!chapterId || !id) return;
+    if (chapterPicks.length === 0 || !id) return;
     try {
       setChapterWorking(true);
-      await addFacultyChapterSlot(id, { chapter: chapterId });
-      toast.success("Chapter slot added");
-      setChapterId("");
+      await addFacultyChapterSlots(id, chapterPicks.map((c) => c.value));
+      toast.success(chapterPicks.length === 1 ? "Chapter added" : `${chapterPicks.length} chapters added`);
+      setChapterPicks([]);
       await fetchFaculty();
     } catch (err) {
       handleApiError(err);
@@ -346,7 +337,7 @@ export default function FacultyDetailPage() {
           <p className="text-gray-500 text-lg">Faculty not found</p>
           <button
             onClick={() => navigate("/admin/faculty")}
-            className="mt-4 text-sm text-[#DB313E] hover:underline"
+            className="mt-4 text-sm text-[#6D35D9] hover:underline cursor-pointer"
           >
              Back to Faculty List
           </button>
@@ -362,7 +353,7 @@ export default function FacultyDetailPage() {
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate("/admin/faculty")}
-            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -391,7 +382,7 @@ export default function FacultyDetailPage() {
           <h2 className="text-base font-semibold text-gray-800">Basic Information</h2>
           <button
             onClick={() => setEditOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#DB313E] rounded-lg hover:bg-[#c22935] transition-colors shadow-sm"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#6D35D9] rounded-lg hover:bg-[#5B2BC0] transition-colors shadow-sm cursor-pointer"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -406,7 +397,7 @@ export default function FacultyDetailPage() {
             <img
               src={typeof faculty.image === "object" ? faculty.image.url : faculty.image}
               alt={faculty.name}
-              className="w-20 h-20 sm:w-28 sm:h-28 rounded-xl object-cover border border-gray-200 shadow-sm flex-shrink-0"
+              className="w-28 sm:w-40 aspect-[7/5] h-auto self-start rounded-xl object-cover border border-[#E4DDF2] shadow-sm flex-shrink-0"
             />
 
             {/* Details */}
@@ -441,7 +432,7 @@ export default function FacultyDetailPage() {
                     />
                     {/* Play button overlay */}
                     <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-                      <div className="w-12 h-12 rounded-full bg-[#DB313E] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                      <div className="w-12 h-12 rounded-full bg-[#6D35D9] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                         <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M8 5v14l11-7z" />
                         </svg>
@@ -453,7 +444,7 @@ export default function FacultyDetailPage() {
                     href={faculty.demoClass}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-[#DB313E] hover:underline"
+                    className="text-sm text-[#6D35D9] hover:underline"
                   >
                     {faculty.demoClass}
                   </a>
@@ -465,20 +456,23 @@ export default function FacultyDetailPage() {
           {/* Subjects */}
           {faculty.subjectOffering.length > 0 && (
             <div className="mt-6 pt-5 border-t border-gray-100">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-                Subject Offerings
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Subjects &amp; fees
               </p>
+              <p className="text-xs text-gray-400 mt-0.5 mb-3">What this teacher teaches and the fee per hour</p>
               <div className="flex flex-wrap gap-2">
                 {faculty.subjectOffering.map((so) => (
                   <span
                     key={so.id}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-[#DB313E]/8 text-[#DB313E] border border-[#DB313E]/15"
+                    className="inline-flex items-center gap-2 pl-3 pr-1.5 py-1.5 text-xs rounded-full bg-[#F4F1FA] border border-[#E4DDF2]"
                   >
-                    {so.subject.name}
-                    <span className="text-gray-500">{so.class.name}</span>
-                    <span className="text-gray-500">{so.syllabus.name}</span>
-                    <span className="ml-1 px-1.5 py-0.5 rounded bg-white border border-[#DB313E]/20 text-gray-700 font-semibold">
+                    <span className="font-semibold text-[#6D35D9]">{so.subject.name}</span>
+                    <span className="text-gray-500">
+                      {so.class.name} · {so.syllabus.name}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-white border border-[#E4DDF2] text-[#2A1650] font-semibold">
                       {String.fromCharCode(8377)}{so.price}
+                      <span className="font-normal text-gray-400">/hr</span>
                     </span>
                   </span>
                 ))}
@@ -492,7 +486,7 @@ export default function FacultyDetailPage() {
       <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
           <h2 className="text-base font-semibold text-gray-800">
-            Time Slots
+            Class times
             <span className="ml-2 text-xs font-normal text-gray-400">
               ({faculty.slots.length} total)
             </span>
@@ -502,7 +496,7 @@ export default function FacultyDetailPage() {
         <div className="p-4 sm:p-6">
           {faculty.subjectOffering.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-6">
-              No subject offerings added yet
+              No subjects added yet
             </p>
           ) : (
             <>
@@ -518,9 +512,9 @@ export default function FacultyDetailPage() {
                         setSelectedSlotVariantId(so.id);
                         setSlotError("");
                       }}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
                         isSelected
-                          ? "bg-[#DB313E] text-white border-[#DB313E]"
+                          ? "bg-[#6D35D9] text-white border-[#6D35D9]"
                           : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
                       }`}
                     >
@@ -551,7 +545,7 @@ export default function FacultyDetailPage() {
                   <button
                     onClick={handleAddTimeSlot}
                     disabled={!newTime || !selectedSlotVariantId || slotWorking}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#DB313E] rounded-lg hover:bg-[#c22935] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#6D35D9] rounded-lg hover:bg-[#5B2BC0] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {slotWorking ? "Adding…" : "+ Add Slot"}
                   </button>
@@ -638,7 +632,7 @@ export default function FacultyDetailPage() {
                                 ? "Cannot block — has active bookings"
                                 : ""
                             }
-                            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                               slot.isAvailable
                                 ? "text-red-600 bg-red-50 hover:bg-red-100 border border-red-200"
                                 : "text-green-600 bg-green-50 hover:bg-green-100 border border-green-200"
@@ -661,7 +655,7 @@ export default function FacultyDetailPage() {
       <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-8">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
           <h2 className="text-base font-semibold text-gray-800">
-            Chapter Slots
+            Chapter-wise classes
             <span className="ml-2 text-xs font-normal text-gray-400">
               ({faculty.chapterSlots.length} total)
             </span>
@@ -669,73 +663,40 @@ export default function FacultyDetailPage() {
         </div>
 
         <div className="p-4 sm:p-6">
-          {/* Add chapter row */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-5 items-end">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-500">Syllabus</label>
-              <select
-                value={chapterSyllabusId}
-                onChange={(e) => {
-                  setChapterSyllabusId(e.target.value);
-                  setChapterClassId("");
-                }}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-lg w-full"
-              >
-                <option value="">Select</option>
-                {syllabusList.map((s) => (
-                  <option key={s._id} value={s._id}>{s.name}</option>
-                ))}
-              </select>
+          {/* Add chapters: one search across every syllabus & class, pick several, add in one go */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-start mb-5">
+            <div className="flex-1 min-w-0">
+              <label className="block text-xs font-medium text-gray-500 mb-1">Search chapters</label>
+              <AdminAsyncMultiSelect
+                label="Chapters"
+                placeholder="Search by chapter name, e.g. motion"
+                searchPlaceholder="Type a chapter name…"
+                selected={chapterPicks}
+                onChange={setChapterPicks}
+                loadOptions={searchChapters}
+                pageSize={CHAPTER_SEARCH_LIMIT}
+                disabledValues={faculty.chapterSlots.map((cs) => (typeof cs.chapter === "object" ? cs.chapter.id : cs.chapter))}
+                disabledHint="Added"
+                emptyText="No chapters match"
+              />
             </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-500">Class</label>
-              <select
-                value={chapterClassId}
-                onChange={(e) => setChapterClassId(e.target.value)}
-                disabled={!chapterSyllabusId}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-lg w-full disabled:bg-gray-100"
-              >
-                <option value="">{chapterSyllabusId ? "Select" : "Pick syllabus"}</option>
-                {classesList.map((c) => (
-                  <option key={c._id} value={c._id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-500">Chapter</label>
-              <select
-                value={chapterId}
-                onChange={(e) => setChapterId(e.target.value)}
-                disabled={!chapterClassId}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-lg w-full disabled:bg-gray-100"
-              >
-                <option value="">
-                  {!chapterClassId
-                    ? "Pick class first"
-                    : chapterOptions.length === 0
-                      ? "No chapters found"
-                      : "Select chapter"}
-                </option>
-                {chapterOptions.map((c) => (
-                  <option key={c._id} value={c._id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <button
+            <AdminButton
               onClick={handleAddChapterSlot}
-              disabled={!chapterId || chapterWorking}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#DB313E] rounded-lg hover:bg-[#c22935] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={chapterPicks.length === 0}
+              loading={chapterWorking}
+              className="sm:mt-[21px] shrink-0"
             >
-              {chapterWorking ? "Adding" : "+ Add Chapter"}
-            </button>
+              {chapterWorking
+                ? "Adding…"
+                : chapterPicks.length > 1
+                ? `+ Add ${chapterPicks.length} chapters`
+                : "+ Add chapter"}
+            </AdminButton>
           </div>
 
           {/* Chapter slot list */}
           {faculty.chapterSlots.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-6">No chapter slots added yet</p>
+            <p className="text-sm text-gray-400 text-center py-6">No chapter-wise classes added yet</p>
           ) : (
             <div className="space-y-2">
               {faculty.chapterSlots.map((cs) => {
@@ -804,7 +765,7 @@ export default function FacultyDetailPage() {
                           ? "Cannot block has active bookings"
                           : ""
                       }
-                      className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                      className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                         cs.isAvailable
                           ? "text-red-600 bg-red-50 hover:bg-red-100 border border-red-200"
                           : "text-green-600 bg-green-50 hover:bg-green-100 border border-green-200"
@@ -823,16 +784,37 @@ export default function FacultyDetailPage() {
 
       {/* â"€â"€ EDIT BASIC INFO MODAL â"€â"€ */}
       {editOpen && (
-        <EditFacultyBasicModal
+        <FacultyModal
           open={editOpen}
+          mode="edit"
           facultyId={faculty.id}
           initialData={faculty}
           syllabuses={syllabusList}
           classes={classesList}
+          saving={editSaving}
           onClose={() => setEditOpen(false)}
-          onSuccess={() => {
-            setEditOpen(false);
-            fetchFaculty();
+          onSubmit={async (payload: FacultySubmitPayload) => {
+            try {
+              setEditSaving(true);
+              await updateFaculty(faculty.id, {
+                name: payload.name,
+                qualifications: payload.qualifications,
+                description: payload.description,
+                demoClass: payload.demoClass,
+                isFeatured: payload.isFeatured,
+                subjects: payload.subjects,
+                ...(payload.image ? { image: payload.image } : {}),
+                ...(payload.subjectSlots?.length ? { subjectSlots: payload.subjectSlots } : {}),
+              });
+              toast.success("Faculty updated");
+              setEditOpen(false);
+              fetchFaculty();
+            } catch (err: unknown) {
+              handleApiError(err);
+              throw err;
+            } finally {
+              setEditSaving(false);
+            }
           }}
         />
       )}

@@ -76,7 +76,7 @@ export default function TestimonialModal({
   };
 
   const inp = (err?: string) =>
-    `w-full px-3 py-2 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30 ${
+    `w-full px-3 py-2 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30 ${
       err ? "border-red-400" : "border-gray-300"
     }`;
 
@@ -164,7 +164,7 @@ export default function TestimonialModal({
               <button
                 type="submit"
                 disabled={loading}
-                className="px-4 py-2 text-sm font-medium bg-[#DB313E] text-white rounded-md hover:bg-[#c02535] disabled:opacity-50 transition-colors"
+                className="px-4 py-2 text-sm font-medium bg-[#6D35D9] text-white rounded-md hover:bg-[#5B2BC0] disabled:opacity-50 transition-colors"
               >
                 {loading ? "Saving…" : mode === "create" ? "Add Testimonial" : "Save Changes"}
               </button>

@@ -1,4 +1,6 @@
 import { useNavigate } from "react-router-dom";
+import { ArrowRight } from "./ui/Icons";
+import { tintFor } from "./ui/tints";
 
 type ChapterCardProps = {
   id: string;
@@ -12,6 +14,15 @@ type ChapterCardProps = {
   className?: string;
 };
 
+/** "Quadratic Equations" → "QE" style glyph when the chapter has no icon */
+const glyph = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter((w) => /^[A-Za-z]/.test(w))
+    .slice(0, 2)
+    .map((w, i) => (i === 0 ? w[0].toUpperCase() : w[0].toLowerCase()))
+    .join("") || "Ch";
+
 const ChapterCard: React.FC<ChapterCardProps> = ({
   id,
   name,
@@ -24,6 +35,8 @@ const ChapterCard: React.FC<ChapterCardProps> = ({
   className,
 }) => {
   const navigate = useNavigate();
+  const tint = tintFor(subjectName || name);
+  const iconUrl = icon ? (typeof icon === "string" ? icon : (icon as any)?.url) : "";
 
   const handleClick = () => {
     navigate("/chapter-faculty", {
@@ -34,44 +47,43 @@ const ChapterCard: React.FC<ChapterCardProps> = ({
   return (
     <div
       onClick={handleClick}
-      className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col cursor-pointer"
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }}
+      role="link"
+      tabIndex={0}
+      className="group h-full bg-white rounded-[26px] overflow-hidden cursor-pointer flex flex-col shadow-[0_1px_0_rgba(42,22,80,.04),0_16px_36px_-22px_rgba(42,22,80,.35)] transition-transform duration-300 hover:-translate-y-1.5 hover:-rotate-[0.6deg] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ml-violet/30"
     >
-      {/* Image area */}
-      <div className="relative h-56 bg-gray-100 overflow-hidden flex">
-        {/* Red accent bar */}
-        <div className="w-1.5 bg-[#DB313E] flex-shrink-0 z-10" />
-
-        <div className="flex-1 overflow-hidden">
-          {icon ? (
-            <img
-              src={typeof icon === "string" ? icon : (icon as any)?.url}
-              alt={name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <svg className="w-16 h-16 text-gray-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                <path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          )}
-        </div>
+      {/* Icon / glyph area */}
+      <div className="relative h-[130px] flex items-center justify-center overflow-hidden" style={{ background: tint.bg }}>
+        {iconUrl ? (
+          <img
+            src={iconUrl}
+            alt={name}
+            loading="lazy"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <>
+            <div aria-hidden="true" className="absolute -left-6 -top-6 w-[90px] h-[90px] rounded-3xl rotate-[20deg] bg-white/40" />
+            <span className="relative font-display font-extrabold text-[56px] tracking-[-0.04em]" style={{ color: tint.ink }}>
+              {glyph(name)}
+            </span>
+          </>
+        )}
+        {subjectName && (
+          <span className="absolute right-3 top-3 px-2.5 py-[5px] rounded-full bg-white text-[11px] font-extrabold" style={{ color: tint.ink }}>
+            {subjectName}
+          </span>
+        )}
       </div>
 
       {/* Content */}
-      <div className="px-5 py-4 flex flex-col flex-1">
-        <h3 className="text-[15px] font-bold text-gray-900 mb-0.5">{name}</h3>
-        <p className="text-[#DB313E] text-xs font-semibold mb-2">
-          {subjectName}
-        </p>
-
-        <div className="flex items-center justify-between mt-auto pt-3">
-          <p className="text-gray-900 font-extrabold text-lg">₹{price}</p>
-          <span className="inline-flex items-center gap-1.5 text-[#DB313E] text-sm font-semibold group-hover:underline">
+      <div className="px-5 pt-[18px] pb-5 flex flex-col gap-3 flex-1">
+        <h3 className="m-0 font-display font-bold text-[19px] leading-[1.2] text-ml-ink tracking-[-0.02em]">{name}</h3>
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-2">
+          <span className="font-display font-extrabold text-[21px] text-ml-deep">₹{price}</span>
+          <span className="inline-flex items-center gap-1.5 font-extrabold text-sm text-ml-violet">
             Find Tutors
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
-            </svg>
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </span>
         </div>
       </div>

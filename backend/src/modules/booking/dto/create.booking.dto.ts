@@ -12,7 +12,8 @@ export const CreateBookingSchema = z
       name: z.string().trim().min(2).max(100),
       class: ObjectIdSchema,
       place: z.string().trim().min(1),
-      phoneNumber: z.string().trim().min(7).max(15),
+      // international format, e.g. +919876543210 ("+" plus up to 15 digits)
+      phoneNumber: z.string().trim().min(7).max(16),
       school: z.string().trim().min(1),
       syllabus: ObjectIdSchema,
     }),

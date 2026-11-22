@@ -3,14 +3,15 @@ import { container } from "tsyringe";
 import { Authenticate } from "../../../infrastructure/middileware/auth.middleware.js";
 import { authorizeRoles } from "../../../infrastructure/middileware/role.middleware.js";
 import { BookingController } from "../controller/booking.controller.js";
+import { bookingLimiter } from "../../../config/rate.limit.js";
 
 const router = Router({ mergeParams: true });
 
 const authenticate = container.resolve(Authenticate);
 const bookingController = container.resolve(BookingController);
 
-// create booking
-router.post("/", (req, res) => bookingController.createBooking(req, res));
+// create booking (rate limited — protects the public form now that OTP is off)
+router.post("/", bookingLimiter, (req, res) => bookingController.createBooking(req, res));
 
 // get all one to one booking for admin
 router.get("/one-to-one",

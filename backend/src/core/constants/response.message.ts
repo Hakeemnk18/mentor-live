@@ -149,6 +149,9 @@ export const ResponseMessages = {
     "Cannot remove this subject variant — one or more slots still have active student bookings. Please resolve all bookings first.",
 
   SLOT_TIME_NOT_VALID: "Slot times are not valid",
+  NEW_SUBJECT_NEEDS_SLOTS: "Add at least one class time for every new subject",
+  SLOTS_ONLY_FOR_NEW_SUBJECTS:
+    "Class times can only be sent for newly added subjects — manage existing subjects' times from the faculty page",
   SLOT_UNBLOCK_TIME_CONFLICT:
     "Cannot unblock — this slot must be at least 1 hr apart from other active slots for this subject",
   SLOT_ADDED_SUCCESS: "Slot added successfully",

@@ -15,6 +15,9 @@ import {
   toggleBannerShow,
 } from "../../../api/banner.api";
 import BannerModal from "../components/BannerModal";
+import { AdminButton, AdminField, AdminModal, AdminSelect, adminInputCls } from "../components/ui";
+import type { SelectOption } from "../components/ui";
+import { priorityOptions } from "../components/bannerPriority";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
 import type { Banner, BannerPayload } from "../../../shared/types/banner.types";
@@ -23,18 +26,36 @@ import type { Banner, BannerPayload } from "../../../shared/types/banner.types";
 const columns: Column<Banner>[] = [
   {
     key: "image",
-    label: "Image",
+    label: "Images",
     render: (b) => (
-      <img
-        src={b.image.url}
-        alt="banner"
-        className="h-14 w-28 object-cover rounded border border-gray-200"
-      />
+      <div className="flex items-center gap-2">
+        <img
+          src={b.image.url}
+          alt="desktop banner"
+          title="Desktop (2:1)"
+          className="h-14 w-28 max-w-none shrink-0 object-cover rounded-xl border border-[#E4DDF2]"
+        />
+        {b.mobileImage ? (
+          <img
+            src={b.mobileImage.url}
+            alt="mobile banner"
+            title="Mobile (1:1)"
+            className="h-14 w-14 max-w-none shrink-0 object-cover rounded-lg border border-[#E4DDF2]"
+          />
+        ) : (
+          <span
+            title="No mobile image — edit to add one"
+            className="h-14 w-14 shrink-0 rounded-lg border border-dashed border-amber-300 bg-amber-50 text-amber-600 text-[9px] font-semibold leading-tight flex items-center justify-center text-center"
+          >
+            No mobile
+          </span>
+        )}
+      </div>
     ),
   },
   {
     key: "description",
-    label: "Description",
+    label: "Title",
     render: (b) => (
       <p className="text-sm text-gray-700 max-w-xs line-clamp-2">{b.description}</p>
     ),
@@ -67,6 +88,13 @@ const columns: Column<Banner>[] = [
 ];
 
 /* ── toggle-show confirmation state ─────────────────────── */
+type VisibilityFilter = "" | "visible" | "hidden";
+const VISIBILITY_OPTIONS: SelectOption<VisibilityFilter>[] = [
+  { value: "", label: "All" },
+  { value: "visible", label: "Visible" },
+  { value: "hidden", label: "Hidden" },
+];
+
 type ToggleTarget = { banner: Banner; nextShow: boolean; priority?: number };
 
 /* ── component ────────────────────────────────────────────── */
@@ -233,9 +261,6 @@ export default function BannersPage() {
   );
   const availableForPrompt = [1, 2, 3, 4, 5].filter((p) => !takenPriorities.has(p));
 
-  const sel =
-    "px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30";
-
   return (
     <AdminPageContainer>
       <AdminPageActions
@@ -244,28 +269,28 @@ export default function BannersPage() {
       />
 
       {/* ── Filters ── */}
-      <div className="flex flex-col md:flex-row md:items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
-        <div className="flex flex-col gap-1 flex-1">
-          <label className="text-xs font-medium text-gray-600">Search</label>
-          <input
-            type="text"
-            placeholder="Search by description…"
-            value={search}
-            onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30"
-          />
+      <div className="flex flex-col md:flex-row md:items-end gap-3 rounded-2xl border border-[#E4DDF2] bg-[#FAF8FE] p-4 mb-4">
+        <div className="flex-1">
+          <AdminField label="Search" htmlFor="banner-search">
+            <input
+              id="banner-search"
+              type="text"
+              placeholder="Search by title…"
+              value={search}
+              onChange={(e) => { setPage(1); setSearch(e.target.value); }}
+              className={adminInputCls() + " h-11 sm:h-10 py-0"}
+            />
+          </AdminField>
         </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Visibility</label>
-          <select
-            value={visibilityFilter}
-            onChange={(e) => { setPage(1); setVisibilityFilter(e.target.value as "" | "visible" | "hidden"); }}
-            className={sel}
-          >
-            <option value="">All</option>
-            <option value="visible">Visible</option>
-            <option value="hidden">Hidden</option>
-          </select>
+        <div className="md:w-48">
+          <AdminField label="Visibility">
+            <AdminSelect
+              label="Visibility"
+              value={visibilityFilter}
+              options={VISIBILITY_OPTIONS}
+              onChange={(v) => { setPage(1); setVisibilityFilter(v); }}
+            />
+          </AdminField>
         </div>
       </div>
 
@@ -316,47 +341,44 @@ export default function BannersPage() {
       />
 
       {/* ── Priority Prompt (Show banner that has no priority) ── */}
-      {priorityPrompt && (
-        <div className="fixed inset-0 z-[1100] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setPriorityPrompt(null)} />
-          <div className="relative w-full max-w-sm rounded-lg bg-white p-6 shadow-lg">
-            <h2 className="text-base font-semibold text-gray-800 mb-1">Set a Priority to Show</h2>
-            <p className="text-sm text-gray-500 mb-4">
-              This banner has no priority assigned. Choose a slot (1–5) to display it in the carousel.
-            </p>
-            <select
-              value={promptedPriority}
-              onChange={(e) => setPromptedPriority(e.target.value === "" ? "" : Number(e.target.value))}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#DB313E]/30 mb-4"
+      <AdminModal
+        open={!!priorityPrompt}
+        onClose={() => setPriorityPrompt(null)}
+        size="sm"
+        zIndex={1100}
+        title="Set a Priority to Show"
+        description="This banner has no priority assigned. Choose a slot (1–5) to display it in the carousel."
+        footer={
+          <>
+            <AdminButton variant="outline" onClick={() => setPriorityPrompt(null)}>
+              Cancel
+            </AdminButton>
+            <AdminButton
+              variant="success"
+              onClick={confirmPriorityPrompt}
+              disabled={promptedPriority === "" || availableForPrompt.length === 0}
             >
-              <option value="">Select priority…</option>
-              {availableForPrompt.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
-            {availableForPrompt.length === 0 && (
-              <p className="text-xs text-amber-600 mb-3">
-                All 5 priority slots are taken. Hide another visible banner first.
-              </p>
-            )}
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setPriorityPrompt(null)}
-                className="px-4 py-2 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-100 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmPriorityPrompt}
-                disabled={promptedPriority === "" || availableForPrompt.length === 0}
-                className="px-4 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 cursor-pointer"
-              >
-                Show Banner
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              Show Banner
+            </AdminButton>
+          </>
+        }
+      >
+        <AdminField label="Priority" required hint="(1 = highest, 5 = lowest)">
+          <AdminSelect
+            label="Priority"
+            placeholder="Select priority…"
+            value={promptedPriority}
+            options={priorityOptions(availableForPrompt)}
+            disabled={availableForPrompt.length === 0}
+            onChange={setPromptedPriority}
+          />
+        </AdminField>
+        {availableForPrompt.length === 0 && (
+          <p className="text-xs text-amber-600 mt-2">
+            All 5 priority slots are taken. Hide another visible banner first.
+          </p>
+        )}
+      </AdminModal>
 
       {/* ── Confirm Visibility Toggle ── */}
       <ConfirmModal

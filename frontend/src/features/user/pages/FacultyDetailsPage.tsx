@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   getFacultyPublicProfile,
@@ -7,12 +7,20 @@ import {
   getFacultyByChapter,
 } from "../../../api/faculty.api";
 import BookingModal from "../components/BookingModal";
+import WaveEdge from "../components/ui/WaveEdge";
+import Reveal from "../components/ui/Reveal";
+import ErrorState from "../components/ui/ErrorState";
+import { ArrowRight, ChevronLeft, Person } from "../components/ui/Icons";
+import { initials, tintFor } from "../components/ui/tints";
 
 type OfferingItem = {
   variantId: string;
   subjectName: string;
   className: string;
   syllabusName: string;
+  /** ids of the class & syllabus this subject belongs to (used for bookings) */
+  classId?: string;
+  syllabusId?: string;
   price: number;
 };
 
@@ -66,6 +74,7 @@ const formatTime = (time: string) => {
 
 const FacultyDetailsPage = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const {
     facultyId = "",
     chapterId,
@@ -87,6 +96,7 @@ const FacultyDetailsPage = () => {
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [bookingType, setBookingType] = useState<"oneToOne" | "pooling">("pooling");
+  const [avatarError, setAvatarError] = useState(false);
 
   /* ─── Chapter mode: fetch via existing chapter endpoint ─── */
   const {
@@ -165,19 +175,25 @@ const FacultyDetailsPage = () => {
   const displayImage   = isChapterMode ? chapterFaculty?.image        : profile?.image          ?? "";
   const offerings: OfferingItem[] = profile?.subjectOffering ?? [];
 
+  const bookDisabled = !isChapterMode && !selectedSlotId;
+  const tint = tintFor(displayName);
+
   /* ─── Loading skeleton ─── */
   if (isLoading) {
     return (
-      <div className="min-h-[80vh] bg-[#F5F5F5]">
-        <div className="bg-[#111] h-[200px]" />
-        <div className="max-w-5xl mx-auto px-5 md:px-8 -mt-20">
-          <div className="animate-pulse">
-            <div className="w-36 h-36 rounded-full bg-gray-300 border-4 border-white" />
-            <div className="mt-6 space-y-4">
-              <div className="h-6 bg-gray-200 rounded w-1/3" />
-              <div className="h-4 bg-gray-200 rounded w-2/3" />
-              <div className="h-4 bg-gray-200 rounded w-1/2" />
-            </div>
+      <div className="min-h-[80vh]">
+        <div className="relative bg-ml-hero h-[300px]">
+          <WaveEdge />
+        </div>
+        <div className="max-w-[1200px] mx-auto px-5 -mt-[180px] relative animate-pulse">
+          <div className="w-[140px] h-[140px] rounded-[40px] bg-white/30" />
+          <div className="mt-6 space-y-4">
+            <div className="h-6 bg-white/40 rounded w-1/3" />
+            <div className="h-4 bg-white/30 rounded w-1/2" />
+          </div>
+          <div className="grid lg:grid-cols-[1.4fr_1fr] gap-5 mt-24">
+            <div className="h-64 bg-white rounded-[30px]" />
+            <div className="h-80 bg-white rounded-[32px]" />
           </div>
         </div>
       </div>
@@ -186,297 +202,329 @@ const FacultyDetailsPage = () => {
 
   if (isError || (!isChapterMode && !profile) || (isChapterMode && !chapterFaculty)) {
     return (
-      <div className="min-h-[80vh] bg-[#F5F5F5] flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-500 text-lg font-medium">Something went wrong</p>
-          <p className="text-gray-400 text-sm mt-1">Couldn't load faculty details.</p>
-        </div>
+      <div className="min-h-[80vh] flex items-center justify-center">
+        <ErrorState sub="Couldn't load faculty details." />
       </div>
     );
   }
 
+  const cardCls = "bg-white rounded-[30px] p-[clamp(22px,3vw,32px)] shadow-[0_18px_40px_-26px_rgba(42,22,80,.4)] flex flex-col gap-4";
+  const cardTitle = "m-0 font-display font-extrabold text-2xl text-ml-deep tracking-[-0.02em]";
+  const eyebrow = "text-xs font-extrabold tracking-[0.14em] text-ml-ink";
+
   return (
-    <div className="min-h-[80vh] bg-[#F5F5F5]">
-      {/* ── Black hero strip ── */}
-      <div className="bg-[#111] h-[200px] md:h-[220px]" />
-
-      {/* ── Profile header (overlapping hero) ── */}
-      <div className="max-w-5xl mx-auto px-5 md:px-8 -mt-24">
-        <div className="flex items-end gap-6 mb-10">
-          {/* Avatar */}
-          <div className="w-36 h-36 rounded-full bg-gray-200 border-4 border-white shadow-lg overflow-hidden shrink-0">
-            {displayImage ? (
-              <img
-                src={displayImage}
-                alt={displayName}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                <svg className="w-16 h-16 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
-                </svg>
-              </div>
-            )}
-          </div>
-
-          {/* Name + badges */}
-          <div className="pb-2">
-            <h1 className="text-2xl md:text-3xl font-extrabold text-white [text-shadow:0_2px_4px_rgba(0,0,0,0.8),0_0_8px_rgba(0,0,0,0.6)]">
-              {displayName}
-            </h1>
-            <div className="flex items-center gap-3 mt-1 flex-wrap">
-              <span className="bg-[#DB313E] text-white text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
-                {(displayQuals ?? [])[0] ?? "Faculty"}
-              </span>
-              {isChapterMode && activeSlot?.chapter && (
-                <span className="bg-gray-700 text-white text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
-                  {activeSlot.chapter.name}
-                </span>
+    <div className="min-h-[80vh]">
+      {/* ── Purple profile header ── */}
+      <section className="relative overflow-hidden bg-ml-hero text-white">
+        <div
+          aria-hidden="true"
+          className="absolute w-[640px] h-[640px] -right-[200px] -top-[320px] rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle,rgba(146,98,245,.6),rgba(146,98,245,0) 65%)" }}
+        />
+        <div className="relative max-w-[1200px] mx-auto px-5 pt-[clamp(22px,3vw,36px)] pb-[clamp(100px,10vw,130px)]">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-1.5 font-extrabold text-sm text-ml-soft cursor-pointer hover:text-white"
+          >
+            <ChevronLeft /> Back
+          </button>
+          <Reveal className="flex flex-wrap gap-[clamp(20px,3vw,36px)] items-center mt-[22px]">
+            <div
+              className="flex-shrink-0 w-[clamp(116px,15vw,160px)] aspect-square rounded-[40px] -rotate-[4deg] overflow-hidden flex items-center justify-center font-display font-extrabold text-[clamp(48px,6vw,64px)] tracking-[-0.05em] shadow-[0_24px_40px_-18px_rgba(10,0,40,.6)]"
+              style={{ background: tint.bg, color: tint.ink }}
+            >
+              {displayImage && !avatarError ? (
+                <img
+                  src={displayImage}
+                  alt={displayName}
+                  onError={() => setAvatarError(true)}
+                  className="w-full h-full object-cover rotate-[4deg] scale-110"
+                />
+              ) : (
+                initials(displayName)
               )}
             </div>
-          </div>
+            <div className="flex-[1_1_320px] min-w-0 flex flex-col gap-2.5">
+              <span className="text-xs font-extrabold tracking-[0.16em] text-ml-peach uppercase">
+                {isChapterMode && activeSlot?.chapter ? `${activeSlot.chapter.name} · Faculty` : "Faculty"}
+              </span>
+              <h1 className="m-0 font-display font-extrabold text-[clamp(36px,5vw,58px)] leading-none tracking-[-0.04em] break-words">
+                {displayName}
+              </h1>
+              {(displayQuals ?? []).length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {(displayQuals ?? []).map((q, i) => (
+                    <span key={i} className="px-3 py-1.5 rounded-full bg-white/12 border border-white/22 text-[13px] font-bold">
+                      {q}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Reveal>
         </div>
+        <WaveEdge />
+      </section>
 
-        {/* ── Main content grid ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 pb-16">
-          {/* LEFT COLUMN (3/5) */}
-          <div className="lg:col-span-3 space-y-10">
+      {/* ── Main content ── */}
+      <section className="relative z-[2] max-w-[1200px] mx-auto -mt-[clamp(44px,5vw,60px)] px-5 pb-[clamp(64px,8vw,110px)] flex flex-wrap gap-5 items-start">
+        {/* LEFT COLUMN */}
+        <div className="flex-[1.4_1_420px] min-w-0 flex flex-col gap-5">
+          {/* Introduction */}
+          <Reveal className={cardCls}>
+            <h2 className={cardTitle}>About</h2>
+            <p className="m-0 text-base leading-[1.7] text-ml-body text-pretty whitespace-pre-line">{displayDesc}</p>
+          </Reveal>
 
-            {/* Introduction */}
-            <div>
-              <SectionHeading label="Introduction" />
-              <p className="text-gray-500 text-sm leading-relaxed pl-3">{displayDesc}</p>
-            </div>
-
-            {/* Qualifications */}
-            <div>
-              <SectionHeading label="Qualifications" />
-              <div className="flex flex-wrap gap-3 pl-3">
-                {(displayQuals ?? []).map((q, i) => (
-                  <span
-                    key={i}
-                    className="bg-gray-100 text-gray-700 text-sm font-medium px-4 py-2 rounded-md border border-gray-200"
-                  >
-                    {q}
-                  </span>
-                ))}
+          {/* ── Slot mode: Subject Variant Selector ── */}
+          {!isChapterMode && offerings.length > 0 && (
+            <Reveal className={cardCls}>
+              <div className="flex flex-col gap-1">
+                <h2 className={cardTitle}>Choose a subject</h2>
+                <span className="text-[13px] font-bold text-ml-muted">Pick a subject to see available slots</span>
               </div>
-            </div>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,200px),1fr))] gap-2.5">
+                {offerings.map((o) => {
+                  const isActive = activeVariantId === o.variantId;
+                  return (
+                    <button
+                      key={o.variantId}
+                      type="button"
+                      aria-pressed={isActive}
+                      onClick={() => {
+                        setActiveVariantId(o.variantId);
+                        setSelectedSlotId(null); // reset slot on variant change
+                      }}
+                      className={`px-4 py-3.5 rounded-[18px] border-2 text-left flex flex-col gap-1 cursor-pointer transition-all duration-200 ${
+                        isActive
+                          ? "bg-ml-violet border-ml-violet text-white"
+                          : "bg-white border-ml-line text-ml-ink hover:border-ml-violet"
+                      }`}
+                    >
+                      <span className="font-extrabold text-[15px] leading-tight">{o.subjectName}</span>
+                      <span className={`text-xs font-bold ${isActive ? "text-white/80" : "text-ml-muted"}`}>
+                        {o.className} · {o.syllabusName}
+                      </span>
+                      <span className={`text-xs font-extrabold ${isActive ? "text-white" : "text-ml-violet"}`}>₹{o.price} /hr</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </Reveal>
+          )}
 
-            {/* Demo Class */}
-            {displayDemo && (() => {
-              const videoId = getYoutubeId(displayDemo);
-              return (
-                <div>
-                  <SectionHeading label="Demo Class" />
-                  <div className="pl-3">
-                    {videoId ? (
-                      <a
-                        href={displayDemo}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="group relative inline-block rounded-xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
-                      >
-                        <img
-                          src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
-                          alt="Demo class thumbnail"
-                          className="w-64 h-36 object-cover"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-                          <div className="w-12 h-12 rounded-full bg-[#DB313E] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                            <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M8 5v14l11-7z" />
-                            </svg>
-                          </div>
-                        </div>
-                      </a>
-                    ) : (
-                      <a
-                        href={displayDemo}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-[#DB313E] text-sm font-semibold hover:underline"
-                      >
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+          {/* Demo Class */}
+          {displayDemo && (() => {
+            const videoId = getYoutubeId(displayDemo);
+            return (
+              <Reveal className={cardCls}>
+                <h2 className={cardTitle}>Demo Class</h2>
+                {videoId ? (
+                  <a
+                    href={displayDemo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group relative block w-full max-w-[420px] aspect-video rounded-[22px] overflow-hidden"
+                  >
+                    <img
+                      src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
+                      alt="Demo class thumbnail"
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                    />
+                    <span className="absolute inset-0 flex items-center justify-center bg-ml-night/25 group-hover:bg-ml-night/35 transition-colors">
+                      <span className="w-14 h-14 rounded-full bg-ml-coral flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <svg className="w-6 h-6 text-ml-deep ml-0.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                           <path d="M8 5v14l11-7z" />
                         </svg>
-                        Watch Demo Class
-                      </a>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
+                      </span>
+                    </span>
+                  </a>
+                ) : (
+                  <a
+                    href={displayDemo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="self-start inline-flex items-center gap-2 font-extrabold text-ml-violet hover:underline"
+                  >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+                    Watch Demo Class
+                  </a>
+                )}
+              </Reveal>
+            );
+          })()}
 
-            {/* ── Slot mode: Subject Variant Selector ── */}
-            {!isChapterMode && offerings.length > 0 && (
-              <div>
-                <SectionHeading label="Select Subject" />
-                <div className="flex flex-wrap gap-2 pl-3">
-                  {offerings.map((o) => {
-                    const isActive = activeVariantId === o.variantId;
-                    return (
-                      <button
-                        key={o.variantId}
-                        onClick={() => {
-                          setActiveVariantId(o.variantId);
-                          setSelectedSlotId(null); // reset slot on variant change
-                        }}
-                        className={`px-4 py-2 rounded-full text-xs font-bold border transition-all cursor-pointer ${
-                          isActive
-                            ? "bg-[#DB313E] text-white border-[#DB313E] shadow-sm"
-                            : "bg-white text-gray-700 border-gray-300 hover:border-[#DB313E] hover:text-[#DB313E]"
-                        }`}
-                      >
-                        <span className="font-semibold">{o.subjectName}</span>
-                        <span className="text-[10px] ml-1 opacity-80">
-                          {o.className} · {o.syllabusName}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+          {/* Chapter info — only in chapter mode */}
+          {isChapterMode && activeSlot?.chapter && (
+            <Reveal className={cardCls}>
+              <h2 className={cardTitle}>Chapter</h2>
+              <span className="self-start px-4 py-3 rounded-[18px] bg-ml-lav text-ml-plum font-extrabold">{activeSlot.chapter.name}</span>
+            </Reveal>
+          )}
+        </div>
+
+        {/* RIGHT COLUMN — Booking Card */}
+        <div className="flex-[1_1_340px] min-w-0 lg:sticky lg:top-[92px]">
+          <Reveal delay={120} className="bg-white rounded-[32px] p-[clamp(20px,2.6vw,28px)] shadow-[0_30px_60px_-30px_rgba(42,22,80,.5)] flex flex-col gap-[18px]">
+            <div className="flex justify-between items-baseline gap-2.5">
+              <h2 className={cardTitle}>Book a session</h2>
+              {slotPrice > 0 && <span className="text-sm font-bold text-ml-muted whitespace-nowrap">₹{slotPrice}/hr</span>}
+            </div>
+
+            {/* Selected variant info */}
+            {!isChapterMode && selectedOffering && (
+              <div className="px-4 py-3 rounded-[18px] bg-ml-mist">
+                <p className="m-0 text-[11px] font-extrabold tracking-[0.14em] text-ml-muted">SUBJECT</p>
+                <p className="m-0 mt-0.5 text-sm font-extrabold text-ml-ink">
+                  {selectedOffering.subjectName}
+                  <span className="ml-2 text-xs font-semibold text-ml-muted">
+                    {selectedOffering.className} · {selectedOffering.syllabusName}
+                  </span>
+                </p>
               </div>
             )}
 
-            {/* ── Slot mode: Available Slots (only after variant is picked) ── */}
+            {/* Mode toggle */}
+            <div className="grid grid-cols-2 gap-2 p-1.5 rounded-[20px] bg-ml-mist" role="radiogroup" aria-label="Session type">
+              {([
+                { key: "oneToOne", label: "1-on-1", sub: "Just you" },
+                { key: "pooling", label: "Pool", sub: `Up to ${poolLimit} students` },
+              ] as const).map((m) => {
+                const on = bookingType === m.key;
+                return (
+                  <button
+                    key={m.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => setBookingType(m.key)}
+                    className={`px-3 py-2.5 rounded-[15px] text-left cursor-pointer transition-all duration-[250ms] ${
+                      on ? "bg-ml-deep text-white shadow-md" : "bg-transparent text-ml-ink hover:bg-white/70"
+                    }`}
+                  >
+                    <span className="block font-extrabold text-[15px]">{m.label}</span>
+                    <span className={`block text-xs font-semibold mt-0.5 ${on ? "text-white/75" : "text-ml-muted"}`}>{m.sub}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* ── Slot mode: Available Slots ── */}
             {!isChapterMode && (
-              <div>
-                <SectionHeading label="Available Slots" />
-                <div className="flex flex-wrap gap-2 pl-3">
-                  {!activeVariantId ? (
-                    <p className="text-gray-400 text-sm">Select a subject above to see available slots.</p>
-                  ) : availableSlots.length === 0 ? (
-                    <p className="text-gray-400 text-sm">No available slots for this subject at the moment.</p>
-                  ) : (
-                    availableSlots.map((s) => {
+              <div className="flex flex-col gap-3">
+                <span className={eyebrow}>AVAILABLE SLOTS</span>
+                {!activeVariantId ? (
+                  <p className="m-0 text-sm text-ml-muted">Select a subject to see available slots.</p>
+                ) : availableSlots.length === 0 ? (
+                  <p className="m-0 text-sm text-ml-muted">No available slots for this subject at the moment.</p>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    {availableSlots.map((s) => {
                       const isSelected = selectedSlotId === s.id;
                       return (
                         <button
                           key={s.id}
+                          type="button"
+                          aria-pressed={isSelected}
                           onClick={() => setSelectedSlotId(s.id)}
-                          className={`px-4 py-2 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                          className={`h-[46px] rounded-[14px] border-2 font-extrabold text-[13px] cursor-pointer transition-all duration-200 ${
                             isSelected
-                              ? "bg-[#DB313E] text-white shadow-sm"
-                              : "bg-[#DB313E]/10 text-[#DB313E] hover:bg-[#DB313E]/20"
+                              ? "bg-ml-coral border-ml-coral text-ml-deep"
+                              : "bg-white border-ml-line text-ml-ink hover:border-ml-coral"
                           }`}
                         >
                           {formatTime(s.time)}
                         </button>
                       );
-                    })
-                  )}
-                </div>
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Chapter info — only in chapter mode */}
-            {isChapterMode && activeSlot?.chapter && (
-              <div>
-                <SectionHeading label="Chapter" />
-                <p className="text-gray-600 text-sm font-medium pl-3">{activeSlot.chapter.name}</p>
+            {/* Pooling status */}
+            {bookingType === "pooling" && (
+              <div className="flex flex-col gap-3">
+                <span className={eyebrow}>
+                  POOLING STATUS ·{" "}
+                  <span className="text-ml-coral">{poolCount}</span>
+                  <span className="text-ml-muted"> / {poolLimit} joined</span>
+                </span>
+                <div className="grid grid-cols-5 gap-2 p-3.5 rounded-[20px] bg-[#F4F8FF]" aria-hidden="true">
+                  {Array.from({ length: Math.max(poolLimit, 1) }).slice(0, 10).map((_, i) => {
+                    const state = i < poolCount ? "on" : i === poolCount ? "you" : "off";
+                    const cls = {
+                      on: "border-solid border-ml-ice bg-ml-ice",
+                      you: "border-dashed border-ml-coral bg-ml-rose",
+                      off: "border-dashed border-[#DCD3EE] bg-transparent scale-[.88]",
+                    }[state];
+                    const ic = { on: "#512B81", you: "#B4332A", off: "transparent" }[state];
+                    return (
+                      <div key={i} className={`aspect-square rounded-[14px] border-2 flex items-center justify-center transition-all duration-[450ms] ${cls}`}>
+                        <Person className="w-[48%] h-[48%]" fill={ic} />
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Price tiers */}
+                <div className="flex gap-1.5">
+                  {priceTiers.map((tier, i) => {
+                    const isActive = i < poolCount;
+                    return (
+                      <div key={i} className="flex-1 min-w-0">
+                        <div className={`h-1.5 rounded-full mb-1 ${isActive ? "bg-ml-coral" : "bg-ml-lav"}`} />
+                        <p className="m-0 text-[10px] font-extrabold text-ml-ink text-center truncate">
+                          ₹{tier.label}
+                          <span className="hidden sm:inline text-ml-muted font-semibold">{tier.suffix}</span>
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+                <span className="text-[13px] font-semibold text-ml-muted">The dashed seat is yours. Each new student lowers the fee.</span>
               </div>
             )}
-          </div>
 
-          {/* RIGHT COLUMN — Booking Card (2/5) */}
-          <div className="lg:col-span-2">
-            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm sticky top-8">
+            {/* Prompt messages */}
+            {!isChapterMode && !activeVariantId && (
+              <p className="m-0 px-3.5 py-2.5 rounded-[14px] bg-ml-rose text-ml-red text-[13px] font-bold text-center">
+                Please select a subject to continue.
+              </p>
+            )}
+            {!isChapterMode && activeVariantId && !selectedSlotId && (
+              <p className="m-0 px-3.5 py-2.5 rounded-[14px] bg-ml-rose text-ml-red text-[13px] font-bold text-center">
+                Please select a time slot to proceed.
+              </p>
+            )}
 
-              {/* Selected variant info */}
-              {!isChapterMode && selectedOffering && (
-                <div className="mb-4 pb-4 border-b border-gray-100">
-                  <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-1">Subject</p>
-                  <p className="text-sm font-bold text-gray-800">
-                    {selectedOffering.subjectName}
-                    <span className="ml-2 text-xs font-normal text-gray-400">
-                      {selectedOffering.className} · {selectedOffering.syllabusName}
-                    </span>
-                  </p>
-                </div>
-              )}
-
-              {/* Pooling status */}
-              <h3 className="text-lg font-bold text-gray-900 mb-4">
-                Pooling status:{" "}
-                <span className="text-[#DB313E]">{poolCount}</span>
-                <span className="text-gray-400"> / {poolLimit} students joined</span>
-              </h3>
-
-              {/* Price tiers */}
-              <div className="flex gap-2 mb-4">
-                {priceTiers.map((tier, i) => {
-                  const isActive = i < poolCount;
-                  return (
-                    <div key={i} className="flex-1">
-                      <div className={`h-2 rounded-full mb-1 ${isActive ? "bg-[#DB313E]" : "bg-gray-200"}`} />
-                      <p className="text-[10px] font-bold text-gray-700 text-center">
-                        {tier.label}
-                        <span className="text-gray-400 font-normal">{tier.suffix}</span>
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Pool avatars */}
-              {poolCount > 0 && (
-                <div className="flex gap-2 mb-5">
-                  {Array.from({ length: poolCount }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="w-10 h-10 rounded-full bg-gray-100 border-2 border-white shadow flex items-center justify-center"
-                    >
-                      <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
-                      </svg>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Prompt messages */}
-              {!isChapterMode && !activeVariantId && (
-                <p className="text-[#DB313E] text-xs font-bold text-center mb-3">
-                  Please select a subject to continue.
-                </p>
-              )}
-              {!isChapterMode && activeVariantId && !selectedSlotId && (
-                <p className="text-[#DB313E] text-xs font-bold text-center mb-3">
-                  Please select a time slot to proceed.
-                </p>
-              )}
-
-              {/* Action buttons */}
-              <div className="space-y-3">
-                <button
-                  onClick={() => { setBookingType("oneToOne"); setBookingModalOpen(true); }}
-                  disabled={!isChapterMode && !selectedSlotId}
-                  className={`w-full py-3 text-sm font-bold rounded-md transition ${
-                    !isChapterMode && !selectedSlotId
-                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                      : "bg-[#111] text-white hover:bg-black cursor-pointer"
-                  }`}
-                >
-                  Book One-to-One — ₹{slotPrice}/hr
-                </button>
-                <button
-                  onClick={() => { setBookingType("pooling"); setBookingModalOpen(true); }}
-                  disabled={!isChapterMode && !selectedSlotId}
-                  className={`w-full py-3 text-sm font-bold rounded-md transition ${
-                    !isChapterMode && !selectedSlotId
-                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                      : "bg-[#DB313E] text-white hover:bg-[#c12a36] cursor-pointer"
-                  }`}
-                >
-                  Join For Pooling
-                </button>
-              </div>
+            {/* Action */}
+            <div className="pt-4 border-t-2 border-dashed border-ml-lav flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => setBookingModalOpen(true)}
+                disabled={bookDisabled}
+                className={`h-[58px] rounded-[18px] font-extrabold text-base flex items-center justify-center gap-2.5 transition-all duration-[250ms] ${
+                  bookDisabled
+                    ? "bg-[#EEEAF5] text-[#8E86A3] cursor-not-allowed"
+                    : bookingType === "oneToOne"
+                      ? "bg-ml-violet text-white cursor-pointer hover:-translate-y-0.5"
+                      : "bg-ml-coral text-ml-deep cursor-pointer hover:-translate-y-0.5"
+                }`}
+              >
+                {bookingType === "oneToOne" ? `Book One-to-One — ₹${slotPrice}/hr` : "Join For Pooling"}
+                <ArrowRight className="w-[18px] h-[18px]" />
+              </button>
+              {/* [OTP DISABLED – early stage] Re-enable when phone verification is needed again
+              <span className="text-xs font-semibold text-ml-muted text-center">
+                You'll verify your mobile number with a one-time OTP.
+              </span>
+              */}
             </div>
-          </div>
+          </Reveal>
         </div>
-      </div>
+      </section>
 
       {/* Booking Modal */}
       <BookingModal
@@ -488,19 +536,12 @@ const FacultyDetailsPage = () => {
         slotId={isChapterMode ? undefined : selectedSlotId}
         subjectVariantId={isChapterMode ? undefined : activeVariantId || undefined}
         chapterId={chapterId}
-        defaultSyllabusId={syllabusId}
-        defaultClassId={classId}
+        // from the page we came from, or (e.g. opened from the home page) from the subject being booked
+        defaultSyllabusId={syllabusId || selectedOffering?.syllabusId}
+        defaultClassId={classId || selectedOffering?.classId}
       />
     </div>
   );
 };
-
-/** Reusable section heading with red left bar */
-const SectionHeading = ({ label }: { label: string }) => (
-  <div className="flex items-center gap-2 mb-3">
-    <div className="w-1 h-6 bg-[#DB313E] rounded-full" />
-    <h2 className="text-base font-extrabold text-gray-900 uppercase tracking-wide">{label}</h2>
-  </div>
-);
 
 export default FacultyDetailsPage;

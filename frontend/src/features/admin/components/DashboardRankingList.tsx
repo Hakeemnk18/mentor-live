@@ -46,7 +46,7 @@ export default function DashboardRankingList({ title, badgeText, items }: Props)
                   )}
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-gray-800 group-hover:text-[#DB313E] transition-colors">
+                  <p className="text-sm font-bold text-gray-800 group-hover:text-[#6D35D9] transition-colors">
                     {item.name}
                   </p>
                   {item.totalBookings !== undefined && (

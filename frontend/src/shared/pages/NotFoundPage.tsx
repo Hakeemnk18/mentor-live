@@ -9,7 +9,7 @@ export default function NotFoundPage() {
       <div className="w-full max-w-md text-center">
         {/* Logo mark */}
         <div className="flex justify-center mb-8">
-          <div className="h-14 w-14 rounded-xl bg-[#DB313E] text-white flex items-center justify-center font-bold text-xl shadow-lg">
+          <div className="h-14 w-14 rounded-xl bg-[#6D35D9] text-white flex items-center justify-center font-bold text-xl shadow-lg">
             ML
           </div>
         </div>
@@ -21,7 +21,7 @@ export default function NotFoundPage() {
           </p>
           <div className="absolute inset-0 flex items-center justify-center">
             <svg
-              className="w-20 h-20 text-[#DB313E]/20"
+              className="w-20 h-20 text-[#6D35D9]/20"
               fill="currentColor"
               viewBox="0 0 24 24"
             >
@@ -67,7 +67,7 @@ export default function NotFoundPage() {
           </button>
           <button
             onClick={() => navigate("/admin/dashboard")}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#DB313E] rounded-lg hover:bg-[#c02535] transition-colors shadow-sm"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#6D35D9] rounded-lg hover:bg-[#5B2BC0] transition-colors shadow-sm"
           >
             <svg
               className="w-4 h-4"
