@@ -30,7 +30,9 @@ export class GetChaptersForAdminUseCase implements IGetChaptersForAdminUseCase {
     };
 
     if (search && search.trim() !== "") {
-      query.name = { $regex: `^${search.trim()}`, $options: "i" };
+      // Match anywhere in the name ("motion" → "Laws of Motion"); escape regex characters so input like "(" can't break the query
+      const safe = search.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      query.name = { $regex: safe, $options: "i" };
     }
 
    

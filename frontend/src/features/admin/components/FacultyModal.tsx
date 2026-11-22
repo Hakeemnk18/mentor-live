@@ -3,31 +3,19 @@ import toast from "react-hot-toast";
 import SearchableSelect from "../../../shared/components/SearchableSelect";
 import TimeInput from "../../../shared/components/TimeInput";
 import { formatTimeAMPM } from "../../../shared/utils/time.utils";
-import ImageCropModal from "../../../shared/components/ImageCropModal/ImageCropModal";
-import { getSubjectVariants, getChaptersList } from "../../../api/chapter.api";
+import FacultyImageField from "./FacultyImageField";
+import { AdminAsyncMultiSelect, AdminButton, AdminToggle } from "./ui";
+import type { AsyncOption } from "./ui";
+import { CHAPTER_SEARCH_LIMIT, searchChapters } from "./chapterSearch";
+import { getSubjectVariants } from "../../../api/chapter.api";
 import { uploadToCloudinary } from "../../../shared/utils/cloudinary";
-import {
-  addFacultySlotIST,
-  setFacultySlotAvailability,
-  addFacultyChapterSlot,
-  setFacultyChapterSlotAvailability,
-  getFacultyById,
-} from "../../../api/faculty.api";
+import { setFacultyChapterSlotAvailability } from "../../../api/faculty.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
-import type { ImagePayload, SubjectGroup, SubjectVariant, FacultyModalData, FacultyData, SubjectSlotGroup } from "../../../shared/types/faculty.types";
+import type { ImagePayload, SubjectGroup, SubjectVariant, FacultyModalData, SubjectSlotGroup } from "../../../shared/types/faculty.types";
 /* ================================================================== */
 /* TYPES                                                                */
 /* ================================================================== */
-
-type SlotState = {
-  id?: string;
-  /** variantId this slot belongs to */
-  variantId?: string;
-  time: string;
-  isAvailable: boolean;
-  pool?: unknown[];
-};
 
 /**
  * CREATE-mode only: one row per time, with a set of variant IDs
@@ -39,6 +27,24 @@ type TimeRow = {
 };
 
 const DEFAULT_SLOT_TIMES: string[] = ["15:00", "16:00", "17:00", "18:00", "19:00"];
+
+/** Both modes are step-by-step. Edit skips class times & chapters (managed on the detail page). */
+type StepKey = "profile" | "photo" | "subjects" | "times" | "chapters" | "summary";
+
+/** fields = which validate() error keys belong to the step (same keys, same rules) */
+const STEP_META: Record<StepKey, { title: string; hint: string; fields: string[] }> = {
+  profile: { title: "Profile", hint: "Who is this teacher?", fields: ["name", "qualifications", "description", "demoClass"] },
+  photo: { title: "Photo", hint: "Shown on their card and profile page", fields: ["image"] },
+  subjects: { title: "Subjects & fees", hint: "What they teach and the fee per hour", fields: ["subjects"] },
+  times: { title: "Class times", hint: "Times students can book them", fields: ["slots"] },
+  chapters: { title: "Chapter classes", hint: "Optional — book a single chapter", fields: [] },
+  summary: { title: "Summary", hint: "Check everything before saving", fields: [] },
+};
+
+const CREATE_FLOW: StepKey[] = ["profile", "photo", "subjects", "times", "chapters", "summary"];
+const EDIT_FLOW: StepKey[] = ["profile", "photo", "subjects", "summary"];
+/** Edit flow when new subjects were added — they need class times before saving. */
+const EDIT_FLOW_WITH_TIMES: StepKey[] = ["profile", "photo", "subjects", "times", "summary"];
 
 type ChapterSlotState = {
   id?: string;
@@ -83,15 +89,6 @@ export const timeStringToISOSlot = (time: string): { time: string } => {
   const localIsoDate = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
   return { time: localIsoDate.toISOString() };
 };
-const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
-  const h = Math.floor(i / 2);
-  const m = i % 2 === 0 ? "00" : "30";
-  const value = `${String(h).padStart(2, "0")}:${m}`;
-  const period = h >= 12 ? "PM" : "AM";
-  const h12 = h % 12 || 12;
-  return { value, label: `${h12}:${m} ${period}` };
-});
-
 /* ================================================================== */
 /* COMPONENT                                                            */
 /* ================================================================== */
@@ -118,18 +115,11 @@ export default function FacultyModal({
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePayload, setImagePayload] = useState<ImagePayload | null>(null);
-  const [cropOpen, setCropOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   /* ---------- Subject groups ---------- */
   const [subjectGroups, setSubjectGroups] = useState<SubjectGroup[]>([]);
 
-  /* ---------- Time slots (EDIT mode) ---------- */
-  const [timeSlots, setTimeSlots] = useState<SlotState[]>([]);
-  const [newTime, setNewTime] = useState("");
-  const [newSlotVariantId, setNewSlotVariantId] = useState("");
-  const [slotWorking, setSlotWorking] = useState(false);
 
   /* ---------- Time rows (CREATE mode only) ---------- */
   const [timeRows, setTimeRows] = useState<TimeRow[]>(
@@ -140,17 +130,13 @@ export default function FacultyModal({
 
   /* ---------- Chapter slots ---------- */
   const [chapterSlots, setChapterSlots] = useState<ChapterSlotState[]>([]);
-  const [chapterSyllabusId, setChapterSyllabusId] = useState("");
-  const [chapterClassId, setChapterClassId] = useState("");
-  const [chapterOptions, setChapterOptions] = useState<{ _id: string; name: string }[]>([]);
-  const [chapterOptionsLoaded, setChapterOptionsLoaded] = useState(false);
-  const [chapterId, setChapterId] = useState("");
+  const [chapterPicks, setChapterPicks] = useState<AsyncOption[]>([]);
   const [chapterWorking, setChapterWorking] = useState(false);
-  const chapterDropdownRef = useRef<HTMLDivElement>(null);
-  const chapterNoResultsRef = useRef<HTMLParagraphElement>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [slotError, setSlotError] = useState("");
+  const [step, setStep] = useState(0);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const [chapterError, setChapterError] = useState("");
 
   /* ================================================================ */
@@ -171,22 +157,17 @@ export default function FacultyModal({
       setSubjectGroups([makeEmptyGroup()]);
       setTimeRows(DEFAULT_SLOT_TIMES.map((t) => ({ time: t, variantIds: [] })));
       setNewRowTime("");
-      setTimeSlots([]);
-      setNewTime("");
-      setNewSlotVariantId("");
       setChapterSlots([]);
-      setChapterSyllabusId("");
-      setChapterClassId("");
-      setChapterOptions([]);
-      setChapterOptionsLoaded(false);
-      setChapterId("");
+      setChapterPicks([]);
       setChapterError("");
       setErrors({});
+      setStep(0);
       return;
     }
 
     // ---- Edit mode (async so we can fetch variants in parallel) ----
     const init = async () => {
+      setStep(0);
       setName(initialData.name ?? "");
       setQualifications((initialData.qualifications ?? []).join(", "));
       setDescription(initialData.description ?? "");
@@ -205,17 +186,6 @@ export default function FacultyModal({
           : null
       );
 
-      // Time slots — load ALL, preserving isAvailable + variantId
-      setTimeSlots(
-        (initialData.slots ?? []).map((s) => ({
-          id: s.id,
-          variantId: s.variantId,
-          time: toHHMM(s.time),
-          pool: s.pool ?? [],
-          isAvailable: s.isAvailable !== false,
-        }))
-      );
-      setNewSlotVariantId("");
 
       // Chapter slots " load ALL, preserving isAvailable state
       setChapterSlots(
@@ -230,13 +200,11 @@ export default function FacultyModal({
         }))
       );
 
-      setChapterSyllabusId("");
-      setChapterClassId("");
-      setChapterOptions([]);
-      setChapterOptionsLoaded(false);
-      setChapterId("");
+      setChapterPicks([]);
       setChapterError("");
       setErrors({});
+      setTimeRows(DEFAULT_SLOT_TIMES.map((t) => ({ time: t, variantIds: [] })));
+      setNewRowTime("");
 
       // Subject groups grouped by syllabus+class
       const offerings = initialData.subjectOffering ?? [];
@@ -291,34 +259,6 @@ export default function FacultyModal({
 
     init();
   }, [open, mode, initialData]);
-
-  /* ================================================================ */
-  /* Chapter options loader                                             */
-  /* ================================================================ */
-
-  useEffect(() => {
-    if (!chapterSyllabusId || !chapterClassId) {
-      setChapterOptions([]);
-      setChapterOptionsLoaded(false);
-      setChapterId("");
-      return;
-    }
-    setChapterOptionsLoaded(false);
-    getChaptersList({ syllabusId: chapterSyllabusId, classId: chapterClassId })
-      .then((items) => {
-        setChapterOptions(items.map((c) => ({ _id: c._id, name: c.name })));
-        setChapterOptionsLoaded(true);
-      })
-      .catch(handleApiError);
-  }, [chapterSyllabusId, chapterClassId]);
-
-  // Scroll the chapter dropdown (or the "no chapters found" alert) into view once it appears
-  useEffect(() => {
-    if (chapterOptionsLoaded) {
-      const target = chapterOptions.length > 0 ? chapterDropdownRef.current : chapterNoResultsRef.current;
-      target?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
-  }, [chapterOptionsLoaded, chapterOptions]);
 
   if (!open) return null;
 
@@ -438,19 +378,6 @@ export default function FacultyModal({
     const [h, m] = t.split(":").map(Number);
     return h * 60 + m;
   };
-// utils/time.helper.ts
- 
-  /** Convert any time value the API may return to "HH:MM" for display & toMinutes() */
-  const toHHMM = (raw: string): string => {
-    const d = new Date(raw);
-    if (!isNaN(d.getTime())) {
-      // Slot times are stored as UTC digits representing the intended
-      // IST wall-clock time, so read them back via UTC getters
-      return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
-    }
-    // Already "HH:MM" or similar â€" return as-is
-    return raw;
-  };
 
   /* ================================================================ */
   /* CREATE-MODE time row handlers                                     */
@@ -501,147 +428,18 @@ export default function FacultyModal({
   };
 
   /* ================================================================ */
-  /* EDIT-MODE add-slot handler                                        */
-  /* ================================================================ */
-
-  const handleAddTimeSlot = async () => {
-    if (!newSlotVariantId) {
-      setSlotError("Select a subject variant first");
-      return;
-    }
-    if (!newTime) {
-      setSlotError("Pick a time");
-      return;
-    }
-    // Duplicate: same variant + same time
-    if (timeSlots.some((s) => s.variantId === newSlotVariantId && s.time === newTime)) {
-      setSlotError("This slot already exists for the selected subject");
-      return;
-    }
-    // 1-hour gap check within the same variant
-    const mins = toMinutes(newTime);
-    const overlap = timeSlots.find(
-      (s) => s.variantId === newSlotVariantId && Math.abs(toMinutes(s.time) - mins) < 60
-    );
-    if (overlap) {
-      setSlotError(`Overlaps with ${formatTimeAMPM(overlap.time)} for this subject — slots must be 1 hr apart`);
-      return;
-    }
-    setSlotError("");
-
-    if (mode === "edit" && facultyId) {
-      try {
-        setSlotWorking(true);
-        await addFacultySlotIST(facultyId, { time: newTime, variantId: newSlotVariantId });
-        // Re-fetch to get the new slot's real _id from the DB
-        const updated = await getFacultyById(facultyId) as FacultyData;
-        setTimeSlots(
-          (updated.slots ?? []).map((s) => ({
-            id: s.id,
-            variantId: s.variantId,
-            time: toHHMM(s.time),
-            pool: s.pool ?? [],
-            isAvailable: s.isAvailable !== false,
-          }))
-        );
-        toast.success("Slot added");
-        setNewTime("");
-      } catch (err) {
-        handleApiError(err);
-      } finally {
-        setSlotWorking(false);
-      }
-    } else {
-      setTimeSlots((prev) =>
-        [...prev, { variantId: newSlotVariantId, time: newTime, isAvailable: true }].sort(
-          (a, b) => toMinutes(a.time) - toMinutes(b.time)
-        )
-      );
-      setNewTime("");
-    }
-  };
-
-  // Block a time slot (sets isAvailable = false via API in edit mode)
-  const handleBlockTimeSlot = async (slot: SlotState) => {
-    if (mode === "edit" && facultyId && slot.id) {
-      try {
-        setSlotWorking(true);
-        await setFacultySlotAvailability(facultyId, slot.id, false);
-        setTimeSlots((prev) =>
-          prev.map((s) => (s.id === slot.id ? { ...s, isAvailable: false } : s))
-        );
-        toast.success("Slot blocked");
-      } catch (err) {
-        handleApiError(err);
-      } finally {
-        setSlotWorking(false);
-      }
-    } else {
-      // In create mode just remove it from the list
-      setTimeSlots((prev) => prev.filter((s) => s.time !== slot.time));
-    }
-  };
-
-  // Unblock a time slot (sets isAvailable = true via API)
-  const handleUnblockTimeSlot = async (slot: SlotState) => {
-    if (!facultyId || !slot.id) return;
-    try {
-      setSlotWorking(true);
-      await setFacultySlotAvailability(facultyId, slot.id, true);
-      setTimeSlots((prev) =>
-        prev.map((s) => (s.id === slot.id ? { ...s, isAvailable: true } : s))
-      );
-      toast.success("Slot unblocked");
-    } catch (err) {
-      handleApiError(err);
-    } finally {
-      setSlotWorking(false);
-    }
-  };
-
-  /* ================================================================ */
   /* CHAPTER SLOT helpers                                               */
   /* ================================================================ */
 
-  const handleAddChapterSlot = async () => {
-    if (!chapterId) {
-      setChapterError("Select a chapter first");
-      return;
-    }
-    if (chapterSlots.some((c) => c.chapter === chapterId)) {
-      setChapterError("This chapter is already added");
+  const handleAddChapterSlot = () => {
+    const fresh = chapterPicks.filter((p) => !chapterSlots.some((c) => c.chapter === p.value));
+    if (fresh.length === 0) {
+      setChapterError(chapterPicks.length ? "These chapters are already added" : "Pick at least one chapter");
       return;
     }
     setChapterError("");
-
-    const label = chapterOptions.find((c) => c._id === chapterId)?.name;
-
-    if (mode === "edit" && facultyId) {
-      try {
-        setChapterWorking(true);
-        await addFacultyChapterSlot(facultyId, { chapter: chapterId });
-        // Backend returns no slot ID â€" re-fetch to get fresh chapter slots with real IDs
-        const updated = await getFacultyById(facultyId) as FacultyData;
-        setChapterSlots(
-          (updated.chapterSlots ?? []).map((cs) => ({
-            id: cs.id,
-            chapter: typeof cs.chapter === "string" ? cs.chapter : cs.chapter?.id,
-            label: typeof cs.chapter === "object" ? cs.chapter?.name : undefined,
-            pool: cs.pool ?? [],
-            isAvailable: cs.isAvailable !== false,
-          }))
-        );
-        toast.success("Chapter added");
-        setChapterId("");
-      } catch (err) {
-        handleApiError(err);
-      } finally {
-        setChapterWorking(false);
-      }
-    } else {
-      setChapterSlots((prev) => [...prev, { chapter: chapterId, label, isAvailable: true }]);
-      setChapterId("");
-    }
+    setChapterSlots((prev) => [...prev, ...fresh.map((p) => ({ chapter: p.value, label: p.label, isAvailable: true }))]);
+    setChapterPicks([]);
   };
 
   // Block a chapter slot
@@ -685,6 +483,13 @@ export default function FacultyModal({
   /* VALIDATION                                                         */
   /* ================================================================ */
 
+  /** Edit mode: subjects added in this edit (not on the saved faculty). They need class times. */
+  function getNewVariantIds(): Set<string> {
+    if (mode !== "edit") return new Set();
+    const saved = new Set((initialData?.subjectOffering ?? []).map((o) => o.id));
+    return new Set(subjectGroups.flatMap((g) => g.selected).filter((v) => !saved.has(v)));
+  }
+
   const validate = () => {
     const e: Record<string, string> = {};
     if (!name.trim()) {
@@ -701,11 +506,11 @@ export default function FacultyModal({
     }
     if (!description.trim() || description.trim().length < 10) {
       e.description = "Description must be at least 10 characters";
-    } else if (description.trim().length > 1000) {
-      e.description = "Description must be under 1000 characters";
+    } else if (description.trim().length > 500) {
+      e.description = "Description must be under 500 characters";
     }
     if (!demoClass.trim()) {
-      e.demoClass = "Demo class URL is required";
+      e.demoClass = "Demo class video link is required";
     } else {
       try { new URL(demoClass.trim()); } catch {
         e.demoClass = "Must be a valid URL (starting with https://)";
@@ -715,23 +520,24 @@ export default function FacultyModal({
       e.image = "Image is required";
     const allSelected = subjectGroups.flatMap((g) => g.selected);
     if (allSelected.length === 0) {
-      e.subjects = "Select at least one subject variant";
+      e.subjects = "Add at least one subject";
     } else {
       const missingPrice = subjectGroups.some((g) =>
         g.selected.some((id) => !g.prices[id] || g.prices[id] <= 0)
       );
-      if (missingPrice) e.subjects = "Enter a price > 0 for every selected subject";
+      if (missingPrice) e.subjects = "Enter a fee per hour for every subject";
     }
-    if (mode === "create") {
-      const allVariants = subjectGroups.flatMap((g) => g.selected);
+    const newVariants = getNewVariantIds();
+    if (mode === "create" || newVariants.size > 0) {
+      const allVariants = mode === "create" ? subjectGroups.flatMap((g) => g.selected) : [...newVariants];
       if (timeRows.length === 0) {
-        e.slots = "Add at least one time slot";
+        e.slots = "Add at least one class time";
       } else if (allVariants.length > 0) {
         // Every selected variant must appear in at least one row
         const covered = new Set(timeRows.flatMap((r) => r.variantIds));
         const missing = allVariants.filter((v) => !covered.has(v));
         if (missing.length > 0) {
-          e.slots = "Assign each subject to at least one time slot";
+          e.slots = "Every subject needs at least one class time — tick it in a row below";
         }
       }
     }
@@ -752,6 +558,8 @@ export default function FacultyModal({
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
       toast.error("Please check highlighted fields");
+      const first = flow.findIndex((k) => STEP_META[k].fields.some((f) => errs[f]));
+      if (first >= 0) goToStep(first);
       return;
     }
 
@@ -785,7 +593,7 @@ export default function FacultyModal({
       };
 
       // Only include image when the user actually picked a new file.
-      if (imageFile && finalImage) {
+      if (finalImage && (imageFile || mode === "edit")) {
         payload.image = finalImage;
       }
 
@@ -807,6 +615,19 @@ export default function FacultyModal({
           ([variantId, times]) => ({ variantId, times })
         );
         payload.chapterSlots = chapterSlots.map((c) => ({ chapter: c.chapter }));
+      } else {
+        const newVariants = getNewVariantIds();
+        if (newVariants.size > 0) {
+          const byVariant = new Map<string, { time: string }[]>();
+          for (const row of timeRows) {
+            for (const vid of row.variantIds) {
+              if (!newVariants.has(vid)) continue;
+              if (!byVariant.has(vid)) byVariant.set(vid, []);
+              byVariant.get(vid)!.push(timeStringToISOSlot(row.time));
+            }
+          }
+          payload.subjectSlots = Array.from(byVariant.entries()).map(([variantId, times]) => ({ variantId, times }));
+        }
       }
 
       await onSubmit(payload);
@@ -815,7 +636,78 @@ export default function FacultyModal({
     }
   };
 
-  const isLoading = saving || uploading || slotWorking || chapterWorking;
+  const isLoading = saving || uploading || chapterWorking;
+
+  /* ---------- Wizard (create mode) ---------- */
+  const newVariantIdsNow = getNewVariantIds();
+  const flow = mode === "create" ? CREATE_FLOW : newVariantIdsNow.size > 0 ? EDIT_FLOW_WITH_TIMES : EDIT_FLOW;
+  const lastStep = flow.length - 1;
+  const stepKey = flow[Math.min(step, lastStep)];
+  const show = (k: StepKey) => stepKey === k;
+  const stepNo = (k: StepKey) => flow.indexOf(k);
+
+  function goToStep(i: number) {
+    setStep(i);
+    bodyRef.current?.scrollTo({ top: 0 });
+  }
+
+  /** Next: run the existing validation, but only block on this step's fields. */
+  const goNext = () => {
+    const errs = validate();
+    const stepErrs = Object.fromEntries(
+      Object.entries(errs).filter(([k]) => STEP_META[flow[step]].fields.includes(k))
+    );
+    if (Object.keys(stepErrs).length > 0) {
+      setErrors((prev) => ({ ...prev, ...stepErrs }));
+      toast.error("Please fix the highlighted fields");
+      return;
+    }
+    goToStep(Math.min(step + 1, lastStep));
+  };
+
+  /** Stepper click: going back is free; going forward only if every step before the target is valid. */
+  const goToStepChecked = (target: number) => {
+    if (target <= step) {
+      goToStep(target);
+      return;
+    }
+    const errs = validate();
+    for (let i = step; i < target; i++) {
+      const stepErrs = Object.fromEntries(Object.entries(errs).filter(([k]) => STEP_META[flow[i]].fields.includes(k)));
+      if (Object.keys(stepErrs).length > 0) {
+        setErrors((prev) => ({ ...prev, ...stepErrs }));
+        if (i !== step) goToStep(i);
+        toast.error(`Please complete “${STEP_META[flow[i]].title}” first`);
+        return;
+      }
+    }
+    goToStep(target);
+  };
+
+  /* edit summary: what differs from the saved faculty */
+  const qualList = qualifications.split(",").map((q) => q.trim()).filter(Boolean);
+  const profileChanged =
+    mode === "edit" &&
+    !!initialData &&
+    (name.trim() !== (initialData.name ?? "") ||
+      qualList.join("|") !== (initialData.qualifications ?? []).join("|") ||
+      description.trim() !== (initialData.description ?? "") ||
+      demoClass.trim() !== (initialData.demoClass ?? "") ||
+      isFeatured !== (initialData.isFeatured ?? false));
+  const photoChanged = mode === "edit" && !!imageFile;
+  const subjectsChanged =
+    mode === "edit" &&
+    (initialData?.subjectOffering ?? []).map((o) => `${o.id}:${o.price ?? 0}`).sort().join("|") !==
+      subjectGroups.flatMap((g) => g.selected.map((id) => `${id}:${g.prices[id] ?? 0}`)).sort().join("|");
+
+  /* labels for summary */
+  const variantLabel = new Map(
+    subjectGroups.flatMap((g) => {
+      const syllabusName = syllabuses.find((x) => x._id === g.syllabusId)?.name ?? "";
+      const className = classes.find((c) => c._id === g.classId)?.name ?? "";
+      return g.selectedVariants.map((v) => [v._id, [v.subjectName, className, syllabusName].filter(Boolean).join(" · ")] as const);
+    })
+  );
 
   // Variants already picked in ANY group â€" backend rejects duplicate variantIds
   const allSelectedVariantIds = new Set(subjectGroups.flatMap((g) => g.selected));
@@ -832,31 +724,49 @@ export default function FacultyModal({
           onClick={!isLoading ? onClose : undefined}
         />
 
-        <div className="relative w-full max-w-xl mx-4 bg-white rounded-xl shadow-xl flex flex-col max-h-[90vh]">
+        <div className={`relative w-full max-w-2xl mx-3 sm:mx-4 bg-white rounded-2xl shadow-xl flex flex-col max-h-[92dvh]`}>
           {/* Header */}
-          <div className="border-b px-6 py-4">
-            <h2 className="text-base font-semibold text-gray-900">
-              {mode === "create" ? "Create Faculty" : "Edit Faculty"}
+          <div className="flex items-center justify-between gap-3 border-b border-[#EFE9FA] px-4 sm:px-6 py-4">
+            <h2 className="text-base font-semibold text-[#2A1650]">
+              {mode === "create" ? "Add a new faculty" : "Edit faculty"}
             </h2>
+            <button
+              type="button"
+              onClick={!isLoading ? onClose : undefined}
+              aria-label="Close"
+              className="w-9 h-9 -mr-2 rounded-full flex items-center justify-center text-gray-400 hover:text-[#6D35D9] hover:bg-[#F4F1FA] cursor-pointer"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden>
+                <path d="M5 5l10 10M15 5L5 15" />
+              </svg>
+            </button>
           </div>
 
+          {/* Stepper */}
+          <WizardStepper steps={flow.map((k) => STEP_META[k])} step={step} onGo={goToStepChecked} />
+
           {/* Body */}
-          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          <div ref={bodyRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-6">
 
             {/* â"€â"€ Basic Info â"€â"€ */}
-            <Section title="Basic Information">
-              <Field label="Faculty Name" error={errors.name}>
+            {show("profile") && (
+            <Section hideTitle title="Teacher profile">
+              <p className="text-xs text-gray-500">
+                Fields marked <span className="text-[#FF6B5E] ml-0.5">*</span> are required.
+              </p>
+              <Field label="Full name" required error={errors.name}>
                 <input
                   value={name}
                   onChange={(e) => { setName(e.target.value); clearFieldError("name"); }}
                   maxLength={100}
-                  placeholder="Enter faculty name"
+                  placeholder="e.g. Neha Thomas"
                   className={inp(!!errors.name)}
                 />
               </Field>
               <Field
-                label="Qualifications"
-                hint="Comma-separated "
+                label="Degrees & certificates"
+                required
+                hint="Separate each one with a comma"
                 //  e.g. MSc Physics, B.Ed"
                 error={errors.qualifications}
               >
@@ -864,26 +774,26 @@ export default function FacultyModal({
                   value={qualifications}
                   onChange={(e) => { setQualifications(e.target.value); clearFieldError("qualifications"); }}
                   maxLength={300}
-                  placeholder="MSc Physics, B.Ed"
+                  placeholder="e.g. MSc Physics, B.Ed"
                   className={inp(!!errors.qualifications)}
                 />
               </Field>
-              <Field label="Description" error={errors.description}>
+              <Field label="About the teacher" required hint="Shown on their card and profile page" error={errors.description}>
                 <textarea
                   value={description}
                   onChange={(e) => { setDescription(e.target.value); clearFieldError("description"); }}
                   rows={3}
-                  maxLength={1000}
-                  placeholder="Brief teaching background…"
+                  maxLength={500}
+                  placeholder="e.g. 8 years teaching Physics for Class 9–12, focused on concepts and board exam preparation."
                   className={inp(!!errors.description) + " resize-none"}
                 />
                 <div className="flex justify-end mt-0.5">
-                  <span className={`text-xs ${description.length > 950 ? "text-red-500" : "text-gray-400"}`}>
-                    {description.length}/1000
+                  <span className={`text-xs ${description.length > 470 ? "text-red-500" : "text-gray-400"}`}>
+                    {description.length}/500
                   </span>
                 </div>
               </Field>
-              <Field label="Demo Class URL" error={errors.demoClass}>
+              <Field label="Demo class video link" required hint="A YouTube link students can watch before booking" error={errors.demoClass}>
                 <input
                   value={demoClass}
                   onChange={(e) => { setDemoClass(e.target.value); clearFieldError("demoClass"); }}
@@ -891,73 +801,48 @@ export default function FacultyModal({
                   className={inp(!!errors.demoClass)}
                 />
               </Field>
-              <Field
-                label="Featured Faculty"
-                hint="Shown in the landing page's featured section — max 8 faculty can be featured at a time"
-              >
-                <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={isFeatured}
-                    onChange={(e) => setIsFeatured(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-[#6D35D9] focus:ring-[#6D35D9]/30"
-                  />
-                  <span className="text-sm text-gray-700">
-                    Mark this faculty as featured
-                  </span>
-                </label>
-              </Field>
+              <AdminToggle
+                label="Show on home page"
+                description={
+                  isFeatured
+                    ? "Appears in “Meet Our Top Faculty” on the home page (max 8 at a time)"
+                    : "Not shown on the home page — turn on to feature this teacher"
+                }
+                checked={isFeatured}
+                onChange={setIsFeatured}
+              />
             </Section>
+            )}
 
             {/* â"€â"€ Image â"€â"€ */}
-            <Section title="Faculty Image">
-              <div className="flex items-center gap-4">
-                {imageUrl && (
-                  <img
-                    src={imageUrl}
-                    alt="preview"
-                    className="w-16 h-16 rounded-lg object-cover border"
-                  />
-                )}
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => fileRef.current?.click()}
-                    className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50"
-                  >
-                    {imageUrl ? "Change Image" : "Upload Image"}
-                  </button>
-                  <p className="mt-1 text-xs text-gray-400">
-                    Square image, min 300—300 recommended
-                  </p>
-                </div>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  hidden
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    if (file.size > 5 * 1024 * 1024) {
-                      setErrors((prev) => ({ ...prev, image: "Image must be under 5 MB" }));
-                      e.target.value = "";
-                      return;
-                    }
-                    clearFieldError("image");
-                    setImageFile(file);
-                    setImageUrl(URL.createObjectURL(file));
-                    setCropOpen(true);
-                  }}
-                />
-              </div>
-              {errors.image && (
-                <p className="text-xs text-red-500 mt-1">{errors.image}</p>
-              )}
+            {show("photo") && (
+            <Section hideTitle title="Photo">
+              <p className="text-sm font-medium text-gray-700">
+                Faculty photo<span className="text-[#FF6B5E] ml-0.5" aria-hidden>*</span>
+              </p>
+              <FacultyImageField
+                value={imageUrl}
+                name={name}
+                error={errors.image}
+                onChange={(file, url) => {
+                  clearFieldError("image");
+                  setImageFile(file);
+                  setImageUrl(url);
+                }}
+                onError={(message) => setErrors((prev) => ({ ...prev, image: message }))}
+              />
             </Section>
+            )}
 
             {/* â"€â"€ Subjects â"€â"€ */}
-            <Section title="Subjects">
+            {show("subjects") && (
+            <Section hideTitle title="Subjects & fees">
+              <div>
+                <p className="text-sm font-medium text-gray-700">
+                  Subjects you teach<span className="text-[#FF6B5E] ml-0.5" aria-hidden>*</span>
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">Pick a syllabus and class, tap the subjects, then enter the fee per hour.</p>
+              </div>
               {errors.subjects && (
                 <p className="text-xs text-red-500 mb-2">{errors.subjects}</p>
               )}
@@ -976,7 +861,7 @@ export default function FacultyModal({
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-gray-500">
-                          Group {idx + 1}
+                          Syllabus & class {idx + 1}
                         </span>
                         {subjectGroups.length > 1 && (
                           <button
@@ -1009,12 +894,12 @@ export default function FacultyModal({
                       {/* Selected subjects with price input per variant */}
                       {selected.length > 0 && (
                         <div>
-                          <p className="text-xs text-gray-400 mb-1">Selected</p>
+                          <p className="text-xs text-gray-500 mb-1">Subjects and fee per hour<span className="text-[#FF6B5E] ml-0.5" aria-hidden>*</span></p>
                           <div className="space-y-2">
                             {selected.map((v) => (
                               <div
                                 key={v._id}
-                                className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg border border-red-200 bg-red-50"
+                                className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg border border-[#E4DDF2] bg-white"
                               >
                                 <span className="flex-1 font-medium text-[#6D35D9] truncate">
                                   {v.subjectName}
@@ -1033,9 +918,10 @@ export default function FacultyModal({
                                       );
                                       clearFieldError(`subjects`);
                                     }}
-                                    placeholder="Price"
+                                    placeholder="Fee"
                                     className="w-20 px-1.5 py-0.5 border border-gray-300 rounded text-gray-800 text-xs focus:outline-none focus:border-[#6D35D9]"
                                   />
+                                  <span className="text-gray-400 text-xs">/hr</span>
                                 </div>
                                 <button
                                   type="button"
@@ -1055,7 +941,7 @@ export default function FacultyModal({
                       {available.length > 0 && (
                         <div>
                           <p className="text-xs text-gray-400 mb-1">
-                            {selected.length > 0 ? "Add more" : "Select subjects"}
+                            {selected.length > 0 ? "Add more subjects" : "Tap a subject to add it"}
                           </p>
                           <div className="flex flex-wrap gap-2">
                             {available.map((v) => (
@@ -1092,15 +978,20 @@ export default function FacultyModal({
                 + Add another syllabus / class
               </button>
             </Section>
+            )}
 
             {/* ── Time Slots ── */}
-            <Section title="Time Slots">
+            {show("times") && (
+            <Section hideTitle title="Class times">
+              <p className="text-sm font-medium text-gray-700">
+                Class times<span className="text-[#FF6B5E] ml-0.5" aria-hidden>*</span>
+              </p>
               {errors.slots && (
                 <p className="text-xs text-red-500 mb-2">{errors.slots}</p>
               )}
 
-              {mode === "create" ? (
-                /* ── CREATE MODE: time-first table ── */
+              {(
+                /* ── time-first table (create: all subjects · edit: only newly added subjects) ── */
                 (() => {
                   const allVariants = subjectGroups.flatMap((g) => {
                     const syllabusName = syllabuses.find((s) => s._id === g.syllabusId)?.name ?? "";
@@ -1109,9 +1000,14 @@ export default function FacultyModal({
                       variantId: v._id,
                       label: [v.subjectName, className, syllabusName].filter(Boolean).join(" · "),
                     }));
-                  });
+                  }).filter((v) => mode === "create" || newVariantIdsNow.has(v.variantId));
                   return (
                     <div className="space-y-3">
+                      <p className="text-xs text-gray-500 leading-relaxed">
+                        Each time stays open for students to book until you remove it. Tick the subjects taught at each
+                        time. Times must be at least 1 hour apart.
+                        {mode === "edit" && " Only the subjects you just added are shown here — existing subjects keep their times on the faculty page."}
+                      </p>
                       {/* Add-time row */}
                       <div className="flex gap-2">
                         <TimeInput
@@ -1126,7 +1022,7 @@ export default function FacultyModal({
                           disabled={!newRowTime}
                           className="px-3 py-1.5 text-sm bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 disabled:opacity-50"
                         >
-                          + Add
+                          + Add time
                         </button>
                       </div>
                       {slotError && <p className="text-xs text-red-500">{slotError}</p>}
@@ -1140,21 +1036,21 @@ export default function FacultyModal({
                             <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Time</span>
                             <div className="flex items-center justify-between gap-2">
                               <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                                {allVariants.length === 0 ? "Subjects (select subjects above)" : "Subjects"}
+                                {allVariants.length === 0 ? "Subjects (add them in the previous step)" : "Subjects at this time"}
                               </span>
-                              {allVariants.length > 1 && (
-                                <div className="flex items-center gap-2">
+                              {allVariants.length > 0 && (
+                                <div className="flex items-center gap-1.5">
                                   <button
                                     type="button"
-                                    onClick={() => handleSetAllRowsVariants(allVariants.map((v) => v.variantId))}
-                                    className="text-xs text-[#6D35D9] hover:underline"
+                                    onClick={() => { handleSetAllRowsVariants(allVariants.map((v) => v.variantId)); clearFieldError("slots"); }}
+                                    className="h-6 px-2.5 rounded-full bg-[#F4F1FA] text-[11px] font-semibold text-[#6D35D9] hover:bg-[#EDE6FB]"
                                   >
                                     Select all
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => handleSetAllRowsVariants([])}
-                                    className="text-xs text-gray-400 hover:underline"
+                                    className="h-6 px-2.5 rounded-full bg-white border border-[#E4DDF2] text-[11px] font-semibold text-gray-500 hover:text-red-500 hover:border-red-200"
                                   >
                                     Clear all
                                   </button>
@@ -1216,180 +1112,51 @@ export default function FacultyModal({
 
                       {timeRows.length === 0 && (
                         <p className="text-xs text-gray-400 text-center py-2">
-                          No time slots yet — add one above.
+                          No class times yet — add one above.
                         </p>
-                      )}
-                    </div>
-                  );
-                })()
-              ) : (
-                /* ── EDIT MODE: variant-first add + grouped list ── */
-                (() => {
-                  const allVariants = subjectGroups.flatMap((g) => {
-                    const syllabusName = syllabuses.find((s) => s._id === g.syllabusId)?.name ?? "";
-                    const className    = classes.find((c) => c._id === g.classId)?.name ?? "";
-                    return g.selectedVariants.map((v) => ({
-                      variantId: v._id,
-                      label: [v.subjectName, className, syllabusName].filter(Boolean).join(" · "),
-                    }));
-                  });
-                  const nameMap = new Map(allVariants.map((v) => [v.variantId, v.label]));
-                  const variantIds = [...new Set(timeSlots.map((s) => s.variantId).filter(Boolean))];
-
-                  return (
-                    <div className="space-y-3">
-                      {/* Add slot row */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <select
-                          value={newSlotVariantId}
-                          onChange={(e) => { setNewSlotVariantId(e.target.value); setSlotError(""); }}
-                          className={inp(!!slotError) + " text-sm"}
-                          disabled={allVariants.length === 0}
-                        >
-                          <option value="">
-                            {allVariants.length === 0 ? "No subjects yet" : "Subject…"}
-                          </option>
-                          {allVariants.map((v) => (
-                            <option key={v.variantId} value={v.variantId}>{v.label}</option>
-                          ))}
-                        </select>
-                        <div className="flex gap-2">
-                          <select
-                            value={newTime}
-                            onChange={(e) => { setNewTime(e.target.value); setSlotError(""); }}
-                            className={inp(!!slotError) + " flex-1 text-sm"}
-                            disabled={!newSlotVariantId}
-                          >
-                            <option value="">Time…</option>
-                            {TIME_OPTIONS.map((opt) => (
-                              <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            onClick={handleAddTimeSlot}
-                            disabled={slotWorking || !newSlotVariantId || !newTime}
-                            className="px-3 py-1.5 text-sm bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 disabled:opacity-50 whitespace-nowrap"
-                          >
-                            {slotWorking ? "…" : "+ Add"}
-                          </button>
-                        </div>
-                      </div>
-                      {slotError && <p className="text-xs text-red-500">{slotError}</p>}
-
-                      {/* Existing slots grouped by variant */}
-                      {variantIds.length > 0 && (
-                        <div className="space-y-2 mt-1">
-                          {variantIds.map((vid) => {
-                            const label = nameMap.get(vid!) ?? vid;
-                            const active  = timeSlots.filter((s) => s.variantId === vid &&  s.isAvailable);
-                            const blocked = timeSlots.filter((s) => s.variantId === vid && !s.isAvailable);
-                            return (
-                              <div key={vid} className="border border-gray-100 rounded-lg p-2 bg-gray-50">
-                                <p className="text-[11px] font-semibold text-[#6D35D9] uppercase tracking-wide mb-1.5">
-                                  {label}
-                                </p>
-                                {active.length > 0 && (
-                                  <div className="mb-1">
-                                    <p className="text-[10px] text-gray-400 mb-1">Active</p>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {active.map((s) => (
-                                        <span key={s.id ?? `${vid}-${s.time}`}
-                                          className="flex items-center gap-1 px-2 py-0.5 text-xs bg-blue-50 border border-blue-200 rounded-full text-blue-700">
-                                          {formatTimeAMPM(s.time)}
-                                          {(!s.pool || s.pool.length === 0) && (
-                                            <button type="button" onClick={() => handleBlockTimeSlot(s)}
-                                              disabled={slotWorking} title="Block"
-                                              className="ml-0.5 text-blue-400 hover:text-red-500 disabled:opacity-50 leading-none">
-                                              ×
-                                            </button>
-                                          )}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                                {blocked.length > 0 && (
-                                  <div>
-                                    <p className="text-[10px] text-gray-400 mb-1">Blocked</p>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {blocked.map((s) => (
-                                        <span key={s.id ?? `${vid}-${s.time}`}
-                                          className="flex items-center gap-1 px-2 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded-full text-gray-400">
-                                          {formatTimeAMPM(s.time)}
-                                          <button type="button" onClick={() => handleUnblockTimeSlot(s)}
-                                            disabled={slotWorking}
-                                            className="ml-0.5 text-xs text-green-600 hover:text-green-700 font-medium disabled:opacity-50">
-                                            Unblock
-                                          </button>
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
                       )}
                     </div>
                   );
                 })()
               )}
             </Section>
+            )}
 
             {/* â"€â"€ Chapter Slots â"€â"€ */}
-            <Section title="Chapter Slots">
+            {show("chapters") && (
+            <Section hideTitle title="Chapter-wise classes (optional)">
               {errors.chapters && (
                 <p className="text-xs text-red-500 mb-2">{errors.chapters}</p>
               )}
-
-              <div className="grid grid-cols-2 gap-2">
-                <SearchableSelect
-                  value={chapterSyllabusId}
-                  onChange={(v) => {
-                    setChapterSyllabusId(v);
-                    setChapterClassId("");
-                    setChapterError("");
-                  }}
-                  options={syllabuses.map((s) => ({ value: s._id, label: s.name }))}
-                  placeholder="Syllabus"
-                />
-
-                <SearchableSelect
-                  value={chapterClassId}
-                  onChange={(v) => { setChapterClassId(v); setChapterError(""); }}
-                  options={classes.map((c) => ({ value: c._id, label: c.name }))}
-                  placeholder={chapterSyllabusId ? "Class" : "Select syllabus first"}
-                  disabled={!chapterSyllabusId}
-                />
+              <div>
+                <p className="text-sm font-medium text-gray-700">
+                  Chapters<span className="ml-1.5 px-1.5 py-0.5 rounded-md bg-[#F4F1FA] text-[10px] font-semibold uppercase tracking-wide text-[#6D35D9] align-middle">Optional</span>
+                </p>
+                <p className="text-xs text-gray-500 leading-relaxed mt-0.5">
+                  Lets students book this teacher for one chapter at a time. Search any chapter by name, tick as many as you
+                  need, then add them. Nothing here is required. You can skip this step.
+                </p>
               </div>
 
-              {chapterSyllabusId && chapterClassId && chapterOptionsLoaded && chapterOptions.length === 0 && (
-                <p ref={chapterNoResultsRef} className="text-xs text-gray-400 mt-2">
-                  No chapters found for this syllabus & class combination.
-                </p>
-              )}
-
-              {chapterOptions.length > 0 && (
-                <div ref={chapterDropdownRef} className="flex gap-2 mt-2">
-                  <SearchableSelect
-                    value={chapterId}
-                    onChange={(v) => { setChapterId(v); setChapterError(""); }}
-                    options={chapterOptions.map((c) => ({ value: c._id, label: c.name }))}
-                    placeholder="Select chapter"
-                    className="flex-1"
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-start">
+                <div className="flex-1 min-w-0">
+                  <AdminAsyncMultiSelect
+                    label="Chapters"
+                    placeholder="Search by chapter name, e.g. motion"
+                    searchPlaceholder="Type a chapter name…"
+                    selected={chapterPicks}
+                    onChange={(next) => { setChapterPicks(next); setChapterError(""); }}
+                    loadOptions={searchChapters}
+                    pageSize={CHAPTER_SEARCH_LIMIT}
+                    disabledValues={chapterSlots.map((c) => c.chapter)}
+                    disabledHint="Added"
+                    emptyText="No chapters match"
                   />
-                  <button
-                    type="button"
-                    onClick={handleAddChapterSlot}
-                    disabled={chapterWorking}
-                    className="px-3 py-1.5 text-sm bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 disabled:opacity-50"
-                  >
-                    {chapterWorking ? "" : "+ Add"}
-                  </button>
                 </div>
-              )}
+                <AdminButton variant="soft" onClick={handleAddChapterSlot} disabled={chapterPicks.length === 0} className="shrink-0">
+                  {chapterPicks.length > 1 ? `+ Add ${chapterPicks.length} chapters` : "+ Add chapter"}
+                </AdminButton>
+              </div>
               {chapterError && (
                 <p className="text-xs text-red-500 mt-0.5">{chapterError}</p>
               )}
@@ -1397,7 +1164,7 @@ export default function FacultyModal({
               {/* Active chapter slots */}
               {chapterSlots.some((cs) => cs.isAvailable) && (
                 <div className="mt-3">
-                  <p className="text-xs font-medium text-gray-500 mb-1">Active</p>
+                  <p className="text-xs font-medium text-gray-500 mb-1">{mode === "create" ? "Added chapters" : "Active"}</p>
                   <div className="flex flex-wrap gap-2">
                     {chapterSlots
                       .filter((cs) => cs.isAvailable)
@@ -1451,47 +1218,134 @@ export default function FacultyModal({
                 </div>
               )}
             </Section>
+            )}
+            {show("summary") && (
+              <div className="space-y-3">
+                <SummaryCard title="Profile & photo" changed={profileChanged || photoChanged} onEdit={() => goToStep(stepNo("profile"))}>
+                  <div className="flex gap-3">
+                    {imageUrl && (
+                      <img src={imageUrl} alt="" className="w-24 aspect-[7/5] rounded-lg object-cover shrink-0 border border-[#E4DDF2]" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-[#2A1650]">{name}</p>
+                      <p className="text-xs font-semibold text-[#FF6B5E] mt-0.5">
+                        {qualifications.split(",").map((q) => q.trim()).filter(Boolean).join(" · ")}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1 line-clamp-3">{description}</p>
+                      {photoChanged && <p className="mt-1 text-[11px] font-semibold text-[#FF6B5E]">New photo</p>}
+                    </div>
+                  </div>
+                  <div className="mt-3 grid gap-1 text-xs">
+                    <p className="text-gray-500 truncate">
+                      Demo video:{" "}
+                      <a href={demoClass} target="_blank" rel="noreferrer" className="text-[#6D35D9] hover:underline">
+                        {demoClass}
+                      </a>
+                    </p>
+                    <p className="text-gray-500">
+                      Home page: <span className="font-semibold text-[#2A1650]">{isFeatured ? "Shown" : "Not shown"}</span>
+                    </p>
+                  </div>
+                </SummaryCard>
+
+                <SummaryCard title="Subjects & fees" changed={subjectsChanged} onEdit={() => goToStep(stepNo("subjects"))}>
+                  <div className="space-y-2.5">
+                    {subjectGroups
+                      .filter((g) => g.selectedVariants.length > 0)
+                      .map((g) => (
+                        <div key={g.id}>
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                            {[syllabuses.find((x) => x._id === g.syllabusId)?.name, classes.find((c) => c._id === g.classId)?.name]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                          <ul className="mt-1 space-y-1">
+                            {g.selectedVariants.map((v) => (
+                              <li key={v._id} className="flex justify-between gap-3 text-sm">
+                                <span className="text-[#2A1650]">{v.subjectName}</span>
+                                <span className="font-semibold text-[#2A1650]">
+                                  {String.fromCharCode(8377)}
+                                  {g.prices[v._id] ?? 0}
+                                  <span className="text-xs font-normal text-gray-400">/hr</span>
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                  </div>
+                </SummaryCard>
+
+                {(mode === "create" || newVariantIdsNow.size > 0) && (<>
+                <SummaryCard title={mode === "create" ? "Class times" : "New class times"} changed={mode === "edit"} onEdit={() => goToStep(stepNo("times"))}>
+                  <ul className="space-y-1.5">
+                    {timeRows
+                      .filter((r) => r.variantIds.length > 0)
+                      .map((r) => (
+                        <li key={r.time} className="flex gap-3 text-sm">
+                          <span className="w-20 shrink-0 font-semibold text-[#2A1650]">{formatTimeAMPM(r.time)}</span>
+                          <span className="text-gray-600">{r.variantIds.map((v) => variantLabel.get(v) ?? v).join(", ")}</span>
+                        </li>
+                      ))}
+                  </ul>
+                  {timeRows.some((r) => r.variantIds.length === 0) && (
+                    <p className="mt-2 text-xs text-gray-400">
+                      Times with no subjects ticked are not created:{" "}
+                      {timeRows.filter((r) => r.variantIds.length === 0).map((r) => formatTimeAMPM(r.time)).join(", ")}
+                    </p>
+                  )}
+                </SummaryCard>
+
+                {mode === "create" && (
+                <SummaryCard title="Chapter classes" onEdit={() => goToStep(stepNo("chapters"))}>
+                  {chapterSlots.length === 0 ? (
+                    <p className="text-sm text-gray-400">None added (optional)</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {chapterSlots.map((cs) => (
+                        <span key={cs.chapter} className="px-2.5 py-1 rounded-full bg-[#F4F1FA] text-xs font-medium text-[#6D35D9]">
+                          {cs.label ?? cs.chapter}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </SummaryCard>
+                )}
+                </>)}
+              </div>
+            )}
           </div>
 
           {/* Footer */}
-          <div className="border-t px-6 py-4 flex justify-end gap-3 bg-gray-50 rounded-b-xl">
-            <button
-              onClick={onClose}
+          <div className="border-t border-[#EFE9FA] px-4 sm:px-6 py-3.5 flex items-center justify-between gap-3 bg-white rounded-b-2xl">
+            <AdminButton
+              variant="outline"
+              onClick={step === 0 ? onClose : () => goToStep(step - 1)}
               disabled={isLoading}
-              className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50"
             >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className="px-4 py-2 text-sm bg-[#6D35D9] text-white rounded hover:bg-[#5B2BC0] disabled:opacity-50"
-            >
-              {uploading
-                ? "Uploading"
-                : saving
-                ? "Saving"
-                : mode === "create"
-                ? "Create Faculty"
-                : "Save Changes"}
-            </button>
+              {step === 0 ? "Cancel" : "Back"}
+            </AdminButton>
+            <div className="flex items-center gap-2">
+              {/* Edit: save from any step (full validation; jumps to the step with an error) */}
+              {mode === "edit" && step < lastStep && (
+                <AdminButton variant="soft" onClick={handleSubmit} loading={isLoading}>
+                  {uploading ? "Uploading…" : saving ? "Saving…" : "Save changes"}
+                </AdminButton>
+              )}
+              {step < lastStep ? (
+                <AdminButton onClick={goNext} disabled={isLoading}>
+                  {stepKey === "chapters" && chapterSlots.length === 0 ? "Skip" : "Next"}
+                </AdminButton>
+              ) : (
+                <AdminButton onClick={handleSubmit} loading={isLoading}>
+                  {uploading ? "Uploading…" : saving ? "Saving…" : mode === "create" ? "Create faculty" : "Save changes"}
+                </AdminButton>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {cropOpen && imageUrl && (
-        <ImageCropModal
-          open={cropOpen}
-          image={imageUrl}
-          aspect={1}
-          onClose={() => setCropOpen(false)}
-          onCropComplete={(file) => {
-            setImageFile(file);
-            setImageUrl(URL.createObjectURL(file));
-            setCropOpen(false);
-          }}
-        />
-      )}
     </>
   );
 }
@@ -1500,16 +1354,136 @@ export default function FacultyModal({
 /* SMALL HELPERS                                                        */
 /* ================================================================== */
 
-function Section({
+function WizardStepper({
+  steps,
+  step,
+  onGo,
+}: {
+  steps: { title: string; hint: string }[];
+  step: number;
+  onGo: (i: number) => void;
+}) {
+  return (
+    <div className="px-4 sm:px-6 pt-4 pb-3 border-b border-[#EFE9FA]">
+      {/* phones: compact */}
+      <div className="sm:hidden">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="text-sm font-semibold text-[#2A1650]">{steps[step].title}</p>
+          <span className="text-xs text-gray-400 shrink-0">
+            Step {step + 1} of {steps.length}
+          </span>
+        </div>
+        <p className="text-xs text-gray-500 mt-0.5">{steps[step].hint}</p>
+        <div className="mt-2.5 h-1.5 rounded-full bg-[#FFE3DF] overflow-hidden">
+          <div
+            className="h-full rounded-full bg-[#FF6B5E] transition-[width] duration-300"
+            style={{ width: `${((step + 1) / steps.length) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      {/* tablet & laptop: full stepper */}
+      <ol className="hidden sm:flex items-start">
+        {steps.map((st, i) => {
+          const done = i < step;
+          const current = i === step;
+          return (
+            <li key={st.title} className="relative flex-1">
+              {i > 0 && (
+                <span
+                  aria-hidden
+                  className={`absolute top-[11px] right-1/2 w-full h-0.5 transition-colors ${i <= step ? "bg-[#FF6B5E]" : "bg-[#E4DDF2]"}`}
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => onGo(i)}
+                aria-current={current ? "step" : undefined}
+                aria-label={`Go to ${st.title}`}
+                className="group relative z-[1] w-full flex flex-col items-center cursor-pointer focus:outline-none"
+              >
+                <span
+                  className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 group-focus-visible:ring-4 group-focus-visible:ring-[#6D35D9]/20 ${
+                    current
+                      ? "bg-[#FF6B5E] ring-4 ring-[#FFE3DF]"
+                      : done
+                      ? "bg-[#FF6B5E] group-hover:bg-[#F25445]"
+                      : "bg-white border-2 border-[#E4DDF2] group-hover:border-[#FFB3AB]"
+                  }`}
+                >
+                  {done ? (
+                    <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M4.5 10.5l3.5 3.5 7.5-8" />
+                    </svg>
+                  ) : current ? (
+                    <span className="w-2 h-2 rounded-full bg-white" />
+                  ) : null}
+                </span>
+                <span
+                  className={`mt-1.5 px-1 text-[11px] font-semibold text-center leading-tight transition-colors ${
+                    current ? "text-[#2A1650]" : done ? "text-[#2A1650]/70 group-hover:text-[#2A1650]" : "text-gray-400 group-hover:text-[#2A1650]/70"
+                  }`}
+                >
+                  {st.title}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
+function SummaryCard({
   title,
+  onEdit,
+  changed = false,
   children,
 }: {
   title: string;
+  onEdit: () => void;
+  /** edit mode: something in this card differs from the saved faculty */
+  changed?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-[#E4DDF2] bg-[#FAF8FE] p-4">
+      <div className="flex items-center justify-between gap-3 mb-2.5">
+        <p className="text-xs font-semibold uppercase tracking-wide text-[#2A1650]/70">
+          {title}
+          {changed && (
+            <span className="ml-2 px-1.5 py-0.5 rounded-md bg-[#FFE3DF] text-[10px] font-bold tracking-wide text-[#C8372D] align-middle">
+              CHANGED
+            </span>
+          )}
+        </p>
+        <button
+          type="button"
+          onClick={onEdit}
+          className="h-7 px-3 rounded-full bg-white border border-[#E4DDF2] text-xs font-semibold text-[#6D35D9] hover:bg-[#F4F1FA] cursor-pointer"
+        >
+          Edit
+        </button>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Section({
+  title,
+  hideTitle = false,
+  children,
+}: {
+  title: string;
+  /** The wizard stepper already shows the title */
+  hideTitle?: boolean;
   children: ReactNode;
 }) {
   return (
     <div className="space-y-3">
-      <p className="text-sm font-semibold text-gray-800 border-b pb-1">{title}</p>
+      {!hideTitle && <p className="text-sm font-semibold text-gray-800 border-b pb-1">{title}</p>}
       {children}
     </div>
   );
@@ -1519,16 +1493,26 @@ function Field({
   label,
   hint,
   error,
+  required,
+  optional,
   children,
 }: {
   label: string;
   hint?: string;
   error?: string;
+  /** coral * after the label */
+  required?: boolean;
+  /** small "Optional" tag after the label */
+  optional?: boolean;
   children: ReactNode;
 }) {
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label className="block text-sm font-medium text-gray-700">
+        {label}
+        {required && <span className="text-[#FF6B5E] ml-0.5" aria-hidden>*</span>}
+        {optional && <span className="ml-1.5 px-1.5 py-0.5 rounded-md bg-[#F4F1FA] text-[10px] font-semibold uppercase tracking-wide text-[#6D35D9] align-middle">Optional</span>}
+      </label>
       {hint && <p className="text-xs text-gray-400">{hint}</p>}
       {children}
       {error && <p className="text-xs text-red-500">{error}</p>}

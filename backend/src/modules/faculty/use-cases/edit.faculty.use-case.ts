@@ -8,6 +8,7 @@ import type { IChapterRepository } from "../../chapter/repositories/chapter.repo
 import type { ISubjectVariantRepository } from "../../subject-variant/repositories/subject.variant.repository.interface.js";
 import type { IFacultySlotRepository } from "../../faculty-slot/repository/faculty.slot.repository.interface.js";
 import type { EditFacultyRequestDto } from "../dtos/edit.faculty.dto.js";
+import { toMinutes, validateOnCreate } from "../../../core/utils/validate.time.slot.js";
 
 @injectable()
 export class EditFacultyUseCase implements IEditFacultyUseCase {
@@ -74,10 +75,44 @@ export class EditFacultyUseCase implements IEditFacultyUseCase {
       }
     }
 
-    /* ---------- sync slots for removed variants ---------- */
+    /* ---------- subjects added in this edit must come with class times ---------- */
     const oldVariantIds = new Set(faculty.subjectOffering.map((s) => s.variantId));
     const newVariantIds = new Set(dto.subjects.map((s) => s.variantId));
     const removedVariantIds = [...oldVariantIds].filter((id) => !newVariantIds.has(id));
+    const addedVariantIds = [...newVariantIds].filter((id) => !oldVariantIds.has(id));
+
+    const slotGroups = dto.subjectSlots ?? [];
+
+    // times may only be sent for NEW subjects (existing subjects are managed from the faculty page)
+    if (slotGroups.some((g) => !addedVariantIds.includes(g.variantId))) {
+      throw new CustomError(
+        ResponseMessages.SLOTS_ONLY_FOR_NEW_SUBJECTS,
+        HttpStatusCode.BAD_REQUEST,
+      );
+    }
+
+    // every new subject needs at least one class time
+    const coveredVariantIds = new Set(
+      slotGroups.filter((g) => g.times.length > 0).map((g) => g.variantId),
+    );
+    if (addedVariantIds.some((v) => !coveredVariantIds.has(v))) {
+      throw new CustomError(
+        ResponseMessages.NEW_SUBJECT_NEEDS_SLOTS,
+        HttpStatusCode.BAD_REQUEST,
+      );
+    }
+
+    // same time rules as create (1-hr gap, end before midnight)
+    for (const group of slotGroups) {
+      if (!validateOnCreate(group.times)) {
+        throw new CustomError(
+          ResponseMessages.SLOT_TIME_NOT_VALID,
+          HttpStatusCode.BAD_REQUEST,
+        );
+      }
+    }
+
+    /* ---------- sync slots for removed variants ---------- */
 
     if (removedVariantIds.length > 0) {
       const hasBookings = await this._facultySlotRepository.hasActivePooledSlots(
@@ -111,5 +146,15 @@ export class EditFacultyUseCase implements IEditFacultyUseCase {
 
     /* ---------- persist ---------- */
     await this._facultyRepository.save(updateFaculty);
+
+    /* ---------- create class times for the new subjects (same as create) ---------- */
+    const slotsToCreate = slotGroups.flatMap((group) =>
+      [...group.times]
+        .sort((a, b) => toMinutes(a.time) - toMinutes(b.time))
+        .map((s) => ({ facultyId: id, variantId: group.variantId, time: new Date(s.time) })),
+    );
+    if (slotsToCreate.length > 0) {
+      await this._facultySlotRepository.createMany(slotsToCreate);
+    }
   }
 }

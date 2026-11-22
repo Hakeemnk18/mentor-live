@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import SearchableSelect from "../../../shared/components/SearchableSelect";
-import ImageCropModal from "../../../shared/components/ImageCropModal/ImageCropModal";
+import FacultyImageField from "./FacultyImageField";
 import { uploadToCloudinary } from "../../../shared/utils/cloudinary";
 import { getSubjectVariants } from "../../../api/chapter.api";
 import { updateFaculty } from "../../../api/faculty.api";
@@ -75,10 +75,8 @@ export default function EditFacultyBasicModal({
   const [newSubjectPrice, setNewSubjectPrice] = useState<number | "">("");
 
   /* ---------- Misc ---------- */
-  const [cropOpen, setCropOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const fileRef = useRef<HTMLInputElement>(null);
 
   /* ================================================================ */
   /* HYDRATE FROM API                                                   */
@@ -348,49 +346,17 @@ export default function EditFacultyBasicModal({
 
           {/* Image */}
           <Section title="Faculty Image">
-            <div className="flex items-center gap-4">
-              {imageUrl && (
-                <img
-                  src={imageUrl}
-                  alt="preview"
-                  className="w-16 h-16 rounded-lg object-cover border"
-                />
-              )}
-              <div>
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50"
-                >
-                  {imageUrl ? "Change Image" : "Upload Image"}
-                </button>
-                <p className="mt-1 text-xs text-gray-400">
-                  Square image, min 300x300 recommended
-                </p>
-              </div>
-              <input
-                ref={fileRef}
-                type="file"
-                hidden
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  if (file.size > 5 * 1024 * 1024) {
-                    setErrors((prev) => ({ ...prev, image: "Image must be under 5 MB" }));
-                    e.target.value = "";
-                    return;
-                  }
-                  clearFieldError("image");
-                  setImageFile(file);
-                  setImageUrl(URL.createObjectURL(file));
-                  setCropOpen(true);
-                }}
-              />
-            </div>
-            {errors.image && (
-              <p className="text-xs text-red-500 mt-1">{errors.image}</p>
-            )}
+            <FacultyImageField
+              value={imageUrl}
+              name={name}
+              error={errors.image}
+              onChange={(file, url) => {
+                clearFieldError("image");
+                setImageFile(file);
+                setImageUrl(url);
+              }}
+              onError={(message) => setErrors((prev) => ({ ...prev, image: message }))}
+            />
           </Section>
 
           {/* Subjects */}
@@ -552,20 +518,6 @@ export default function EditFacultyBasicModal({
         </div>
       </div>
 
-      {/* Image Crop Modal */}
-      {cropOpen && imageUrl && (
-        <ImageCropModal
-          open={cropOpen}
-          image={imageUrl}
-          aspect={1}
-          onClose={() => setCropOpen(false)}
-          onCropComplete={(file) => {
-            setImageFile(file);
-            setImageUrl(URL.createObjectURL(file));
-            setCropOpen(false);
-          }}
-        />
-      )}
     </div>
   );
 }

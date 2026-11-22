@@ -2,20 +2,11 @@
  * Banner image shapes. The user carousel uses the same shapes
  * (1:1 below 640px, 2:1 from 640px up), so what admins crop is exactly what users see.
  */
+import type { CropShapeSpec } from "./cropShapes";
+
 export type BannerShape = "desktop" | "mobile";
 
-export const BANNER_SHAPES: Record<
-  BannerShape,
-  {
-    name: string;
-    audience: string;
-    aspect: number;
-    ratioLabel: string;
-    outputWidth: number;
-    minSharpWidth: number;
-    recommended: string;
-  }
-> = {
+export const BANNER_SHAPES: Record<BannerShape, CropShapeSpec> = {
   desktop: {
     name: "Desktop image",
     audience: "laptop & tablet users",

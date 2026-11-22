@@ -38,6 +38,8 @@ export type UpdateFacultyPayload = {
   image?: { url: string; publicId: string };
   isFeatured?: boolean;
   subjects?: { variantId: string; price: number }[];
+  /** class times for subjects added in this edit (required by the API for each new subject) */
+  subjectSlots?: SubjectSlotGroup[];
 };
 
 /** Lightweight card shape returned by the dedicated featured-faculty endpoint */

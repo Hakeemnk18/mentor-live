@@ -66,7 +66,7 @@ export default function FacultyPage() {
           <img
             src={typeof f.image === "string" ? f.image : f.image?.url}
             alt={f.name}
-            className="w-10 h-10 rounded-full object-cover border"
+            className="w-14 aspect-[7/5] h-auto max-w-none shrink-0 rounded-lg object-cover border border-[#E4DDF2]"
           />
           <span className="font-medium">{f.name}</span>
         </div>
