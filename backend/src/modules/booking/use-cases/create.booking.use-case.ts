@@ -74,12 +74,13 @@ export class CreateBookingUseCase implements ICreateBookingUseCase {
     }
 
     /* ── Phone verification ── */
-    const verification = await this._phoneVerificationRepo.findByPhoneNumber(
-      user.phoneNumber,
-    );
-    if (!verification || !verification.isVerified) {
-      throw new CustomError(ResponseMessages.PHONE_NOT_VERIFIED, HttpStatusCode.BAD_REQUEST);
-    }
+    // [OTP DISABLED – early stage] Re-enable when phone verification is needed again
+    // const verification = await this._phoneVerificationRepo.findByPhoneNumber(
+    //   user.phoneNumber,
+    // );
+    // if (!verification || !verification.isVerified) {
+    //   throw new CustomError(ResponseMessages.PHONE_NOT_VERIFIED, HttpStatusCode.BAD_REQUEST);
+    // }
 
     const session = await mongoose.startSession();
     let student!: Student;

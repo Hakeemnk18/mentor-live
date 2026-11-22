@@ -18,6 +18,9 @@ type OfferingItem = {
   subjectName: string;
   className: string;
   syllabusName: string;
+  /** ids of the class & syllabus this subject belongs to (used for bookings) */
+  classId?: string;
+  syllabusId?: string;
   price: number;
 };
 
@@ -513,9 +516,11 @@ const FacultyDetailsPage = () => {
                 {bookingType === "oneToOne" ? `Book One-to-One — ₹${slotPrice}/hr` : "Join For Pooling"}
                 <ArrowRight className="w-[18px] h-[18px]" />
               </button>
+              {/* [OTP DISABLED – early stage] Re-enable when phone verification is needed again
               <span className="text-xs font-semibold text-ml-muted text-center">
                 You'll verify your mobile number with a one-time OTP.
               </span>
+              */}
             </div>
           </Reveal>
         </div>
@@ -531,8 +536,9 @@ const FacultyDetailsPage = () => {
         slotId={isChapterMode ? undefined : selectedSlotId}
         subjectVariantId={isChapterMode ? undefined : activeVariantId || undefined}
         chapterId={chapterId}
-        defaultSyllabusId={syllabusId}
-        defaultClassId={classId}
+        // from the page we came from, or (e.g. opened from the home page) from the subject being booked
+        defaultSyllabusId={syllabusId || selectedOffering?.syllabusId}
+        defaultClassId={classId || selectedOffering?.classId}
       />
     </div>
   );

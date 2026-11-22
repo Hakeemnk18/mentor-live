@@ -570,6 +570,9 @@ export class FacultyRepository implements IFacultyRepository {
               subjectName: "$subjectDoc.name",
               className: "$classDoc.name",
               syllabusName: "$syllabusDoc.name",
+              // ids too, so a booking made from this page knows its class & syllabus
+              classId: { $toString: "$classDoc._id" },
+              syllabusId: { $toString: "$syllabusDoc._id" },
               price: "$subjectOffering.price",
             },
           },
