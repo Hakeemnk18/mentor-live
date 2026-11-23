@@ -7,6 +7,7 @@ import {
   getFacultyByChapter,
 } from "../../../api/faculty.api";
 import BookingModal from "../components/BookingModal";
+import SubjectPicker from "../components/SubjectPicker";
 import WaveEdge from "../components/ui/WaveEdge";
 import Reveal from "../components/ui/Reveal";
 import ErrorState from "../components/ui/ErrorState";
@@ -284,33 +285,14 @@ const FacultyDetailsPage = () => {
                 <h2 className={cardTitle}>Choose a subject</h2>
                 <span className="text-[13px] font-bold text-ml-muted">Pick a subject to see available slots</span>
               </div>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,200px),1fr))] gap-2.5">
-                {offerings.map((o) => {
-                  const isActive = activeVariantId === o.variantId;
-                  return (
-                    <button
-                      key={o.variantId}
-                      type="button"
-                      aria-pressed={isActive}
-                      onClick={() => {
-                        setActiveVariantId(o.variantId);
-                        setSelectedSlotId(null); // reset slot on variant change
-                      }}
-                      className={`px-4 py-3.5 rounded-[18px] border-2 text-left flex flex-col gap-1 cursor-pointer transition-all duration-200 ${
-                        isActive
-                          ? "bg-ml-violet border-ml-violet text-white"
-                          : "bg-white border-ml-line text-ml-ink hover:border-ml-violet"
-                      }`}
-                    >
-                      <span className="font-extrabold text-[15px] leading-tight">{o.subjectName}</span>
-                      <span className={`text-xs font-bold ${isActive ? "text-white/80" : "text-ml-muted"}`}>
-                        {o.className} · {o.syllabusName}
-                      </span>
-                      <span className={`text-xs font-extrabold ${isActive ? "text-white" : "text-ml-violet"}`}>₹{o.price} /hr</span>
-                    </button>
-                  );
-                })}
-              </div>
+              <SubjectPicker
+                offerings={offerings}
+                activeVariantId={activeVariantId}
+                onSelect={(id) => {
+                  setActiveVariantId(id);
+                  setSelectedSlotId(null); // reset slot on variant change
+                }}
+              />
             </Reveal>
           )}
 
