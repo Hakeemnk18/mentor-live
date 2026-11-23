@@ -34,7 +34,7 @@ const FacultySection: React.FC = () => {
       ) : faculties.length === 0 ? (
         <p className="text-sm text-ml-muted py-10 text-center">No featured faculty to show right now.</p>
       ) : (
-        <AutoScroller label="Top faculty" itemClassName={CARD} trackClassName="pt-2 px-1 pb-7 -mx-1">
+        <AutoScroller label="Top faculty" itemClassName={CARD} >
           {faculties.map((f, i) => (
             <Reveal key={f.id} delay={(i % 4) * 90} className="h-full">
               <FacultyCard

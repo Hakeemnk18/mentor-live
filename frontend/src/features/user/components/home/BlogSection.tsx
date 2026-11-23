@@ -48,7 +48,7 @@ const BlogSection: React.FC = () => {
           ))}
         </div>
       ) : (
-        <AutoScroller label="Featured blog posts" itemClassName={CARD} trackClassName="pt-2 px-1 pb-7 -mx-1">
+        <AutoScroller label="Featured blog posts" itemClassName={CARD} >
           {blogs.map((b, i) => (
             <Reveal key={b.id} delay={(i % 3) * 100} className="h-full">
               <BlogCard
