@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import Reveal from "../ui/Reveal";
+import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "../../../../shared/constants/contact";
 import Bear from "../ui/Bear";
 
 const CtaSection: React.FC = () => (
@@ -27,10 +28,13 @@ const CtaSection: React.FC = () => (
             >
               Book a Tutor
             </Link>
-            <div className="flex flex-col px-[18px] py-2 rounded-[18px] bg-white text-ml-deep">
+            <a
+              href={`tel:${CONTACT_PHONE_TEL}`}
+              className="flex flex-col px-[18px] py-2 rounded-[18px] bg-white text-ml-deep transition-transform hover:-translate-y-[3px] hover:text-ml-deep"
+            >
               <span className="text-[11px] font-bold text-ml-muted">For More Details:</span>
-              <span className="font-extrabold text-lg tracking-[0.01em]">+91 00000 00000</span>
-            </div>
+              <span className="font-extrabold text-lg tracking-[0.01em]">{CONTACT_PHONE_DISPLAY}</span>
+            </a>
           </div>
         </Reveal>
         <div className="relative flex-[0_1_280px] min-w-[200px] flex justify-center">

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import BrandMark from "./ui/BrandMark";
+import { CONTACT_EMAIL, CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL, WHATSAPP_URL } from "../../../shared/constants/contact";
 import Bear from "./ui/Bear";
 import SnowCanvas from "./ui/SnowCanvas";
 
@@ -88,8 +89,21 @@ const Footer: React.FC = () => {
             </div>
             <div className="flex flex-col gap-3">
               <span className="text-xs font-extrabold tracking-[0.16em] text-ml-peach">CONTACT</span>
-              <span className="font-extrabold text-lg text-white">+91 00000 00000</span>
-              <span className="font-semibold text-[15px] text-ml-ice">info@mentorlive.com</span>
+              <a href={`tel:${CONTACT_PHONE_TEL}`} className="font-extrabold text-lg text-white hover:text-ml-peach transition-colors">
+                {CONTACT_PHONE_DISPLAY}
+              </a>
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 font-semibold text-[15px] text-ml-ice hover:text-white transition-colors"
+              >
+                <span className="w-2 h-2 rounded-full bg-[#25D366]" aria-hidden />
+                Chat on WhatsApp
+              </a>
+              <a href={`mailto:${CONTACT_EMAIL}`} className="font-semibold text-[15px] text-ml-ice hover:text-white transition-colors">
+                {CONTACT_EMAIL}
+              </a>
             </div>
           </div>
         </div>
