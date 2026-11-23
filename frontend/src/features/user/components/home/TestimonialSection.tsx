@@ -38,7 +38,7 @@ const TestimonialSection: React.FC = () => {
         ) : testimonials.length === 0 ? (
           <p className="text-sm text-ml-muted py-10 text-center">No testimonials to show right now.</p>
         ) : (
-          <AutoScroller label="Student and parent testimonials" itemClassName={CARD} interval={5500} trackClassName="pt-2 px-1 pb-3 -mx-1">
+          <AutoScroller label="Student and parent testimonials" itemClassName={CARD} interval={5000}>
             {testimonials.map((t, i) => (
               <Reveal key={t.id ?? i} delay={(i % 3) * 100} className="h-full">
                 <TestimonialCard author={t.author} designation={t.designation} comment={t.comment} index={i} />

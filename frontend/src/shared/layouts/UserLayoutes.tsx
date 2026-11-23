@@ -3,8 +3,7 @@ import Footer from "../../features/user/components/Footer";
 import ScrollProgress from "../../features/user/components/ui/ScrollProgress";
 import { Outlet, ScrollRestoration } from "react-router-dom";
 
-const WA_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER ?? "917994285615";
-const WA_URL = `https://wa.me/${WA_NUMBER}`;
+import { WHATSAPP_URL as WA_URL } from "../constants/contact";
 
 const UserLayout = () => {
   return (

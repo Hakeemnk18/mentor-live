@@ -56,7 +56,7 @@ const FacultyCard: React.FC<FacultyCardProps> = ({
       className="group h-full rounded-[28px] cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ml-violet/30"
     >
       {/* The outer box never moves (stable hover area); only this inner card lifts, so the hover can't flicker */}
-      <div className="h-full bg-white rounded-[28px] overflow-hidden flex flex-col shadow-[0_1px_0_rgba(42,22,80,.04),0_16px_36px_-20px_rgba(42,22,80,.35)] transform-gpu [backface-visibility:hidden] transition-[translate,box-shadow] duration-500 ease-[cubic-bezier(.2,.8,.2,1)] group-hover:-translate-y-1.5 group-hover:shadow-[0_28px_50px_-22px_rgba(42,22,80,.45)] motion-reduce:transition-none motion-reduce:group-hover:translate-y-0">
+      <div className="h-full bg-white rounded-[28px] overflow-hidden flex flex-col shadow-[0_1px_0_rgba(42,22,80,.04),0_16px_36px_-20px_rgba(42,22,80,.35)] transform-gpu [backface-visibility:hidden] transition-[translate,box-shadow] duration-500 ease-[cubic-bezier(.2,.8,.2,1)] group-hover:-translate-y-1.5 group-hover:shadow-[0_26px_44px_-24px_rgba(42,22,80,.45)] motion-reduce:transition-none motion-reduce:group-hover:translate-y-0">
       {/* Photo / initials */}
       <div className="relative aspect-[7/5] flex items-center justify-center overflow-hidden" style={{ background: tint.bg }}>
         {imgUrl && !imgError ? (

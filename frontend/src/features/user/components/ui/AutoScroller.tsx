@@ -17,22 +17,29 @@ type Props = {
 /** Pause auto-play this long after the user swipes / scrolls / clicks. */
 const IDLE_AFTER_TOUCH = 6000;
 /** First start waits for the cards' scroll-reveal animation to finish. */
-const START_DELAY = 1100;
+const START_DELAY = 700;
+
+/** Slide animation: quick start, soft landing (ms scale with distance for the loop-back rewind). */
+const slideDuration = (distance: number) => Math.min(760, 420 + Math.abs(distance) * 0.18);
+const easeOutQuart = (t: number) => 1 - Math.pow(1 - t, 4);
 
 /**
  * Horizontal carousel built on native scroll + CSS scroll-snap:
  * - auto-advances one card at a time and loops; underline pagination shows progress
  * - fully manual too (swipe, trackpad, shift+wheel, clicking a line)
- * - pauses on hover/focus, after manual scrolling, off-screen, in background tabs,
+ * - pauses while the mouse is over a card, on keyboard focus, after manual scrolling, off-screen, in background tabs,
  *   and never auto-plays for "reduce motion" users
- * Uses the browser's own smooth scrolling, so there is no JS animation loop to stutter.
+ * Slides with a short rAF animation (quick start, soft landing) instead of the browser's slow
+ * smooth-scroll; scroll-snap is paused during the slide and restored after.
+ * The track "bleeds" past its box (padding + negative margin) so rounded card shadows
+ * and hover lifts are never clipped into straight edges.
  * The underline fill IS the timer: the next slide comes when it finishes, so the
  * line and the movement can never drift apart; pausing simply freezes the line.
  */
 export default function AutoScroller({
   children,
   itemClassName,
-  interval = 4500,
+  interval = 4000,
   label,
   gapClassName = "gap-[18px]",
   trackClassName = "",
@@ -41,6 +48,7 @@ export default function AutoScroller({
   const rootRef = useRef<HTMLDivElement>(null);
   const positionsRef = useRef<number[]>([0]);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const animRef = useRef(0);
 
   const [count, setCount] = useState(1); // reachable snap positions
   const [active, setActive] = useState(0);
@@ -82,12 +90,39 @@ export default function AutoScroller({
     return best;
   };
 
+  /** stop a running slide (e.g. the user grabbed the carousel) and give scroll-snap back */
+  const stopAnim = () => {
+    if (animRef.current) cancelAnimationFrame(animRef.current);
+    animRef.current = 0;
+    if (trackRef.current) trackRef.current.style.scrollSnapType = "";
+  };
+
   const goTo = useCallback((i: number) => {
     const track = trackRef.current;
     const pos = positionsRef.current;
     if (!track || pos.length === 0) return;
-    track.scrollTo({ left: pos[((i % pos.length) + pos.length) % pos.length], behavior: "smooth" });
+    const target = pos[((i % pos.length) + pos.length) % pos.length];
+    const start = track.scrollLeft;
+    const distance = target - start;
+    stopAnim();
+    if (Math.abs(distance) < 1) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      track.scrollLeft = target;
+      return;
+    }
+    track.style.scrollSnapType = "none"; // snap would fight the animation frame by frame
+    const duration = slideDuration(distance);
+    const t0 = performance.now();
+    const step = (now: number) => {
+      const t = Math.min(1, (now - t0) / duration);
+      track.scrollLeft = start + distance * easeOutQuart(t);
+      if (t < 1) animRef.current = requestAnimationFrame(step);
+      else stopAnim();
+    };
+    animRef.current = requestAnimationFrame(step);
   }, []);
+
+  useEffect(() => () => stopAnim(), []);
 
   /* ── observers: size changes, on-screen, tab visibility ── */
   useEffect(() => {
@@ -133,6 +168,7 @@ export default function AutoScroller({
 
   /* ── manual interaction → hold auto-play for a few seconds ── */
   const hold = () => {
+    stopAnim();
     setHolding(true);
     if (holdTimer.current) clearTimeout(holdTimer.current);
     holdTimer.current = setTimeout(() => setHolding(false), IDLE_AFTER_TOUCH);
@@ -157,9 +193,8 @@ export default function AutoScroller({
       role="region"
       aria-roledescription="carousel"
       aria-label={label}
-      onPointerEnter={(e) => e.pointerType === "mouse" && setHovered(true)}
-      onPointerLeave={(e) => e.pointerType === "mouse" && setHovered(false)}
-      onFocus={() => setFocused(true)}
+      // keyboard focus pauses (mouse clicks on the pagination lines don't)
+      onFocus={(e) => e.target.matches(":focus-visible") && setFocused(true)}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node)) setFocused(false);
       }}
@@ -168,10 +203,17 @@ export default function AutoScroller({
         ref={trackRef}
         onTouchStart={hold}
         onWheel={(e) => Math.abs(e.deltaX) > Math.abs(e.deltaY) && hold()}
-        className={`relative flex overflow-x-auto snap-x snap-mandatory overscroll-x-contain no-scrollbar ${gapClassName} ${trackClassName}`}
+        onPointerDown={(e) => e.pointerType !== "mouse" && stopAnim()}
+        className={`relative flex overflow-x-auto snap-x snap-mandatory overscroll-x-contain no-scrollbar -mx-5 px-5 scroll-px-5 -mt-4 pt-4 -mb-12 pb-14 ${gapClassName} ${trackClassName}`}
       >
         {items.map((child, i) => (
-          <div key={i} className={`snap-start shrink-0 grow-0 ${itemClassName}`}>
+          <div
+            key={i}
+            // pause only while the mouse is over a card — gaps, pagination and empty space keep it moving
+            onPointerEnter={(e) => e.pointerType === "mouse" && setHovered(true)}
+            onPointerLeave={(e) => e.pointerType === "mouse" && setHovered(false)}
+            className={`snap-start shrink-0 grow-0 ${itemClassName}`}
+          >
             {child}
           </div>
         ))}
