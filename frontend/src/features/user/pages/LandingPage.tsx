@@ -10,6 +10,7 @@ import FacultySection from "../components/home/FacultySection";
 import TestimonialSection from "../components/home/TestimonialSection";
 import BlogSection from "../components/home/BlogSection";
 import CtaSection from "../components/home/CtaSection";
+import SocialSection from "../components/home/SocialSection";
 
 const LandingPage: React.FC = () => {
   const { hash } = useLocation();
@@ -35,6 +36,7 @@ const LandingPage: React.FC = () => {
       <FacultySection />
       <TestimonialSection />
       <BlogSection />
+      <SocialSection />
       <CtaSection />
     </div>
   );
