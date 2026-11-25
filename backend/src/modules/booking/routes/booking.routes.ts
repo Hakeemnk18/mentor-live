@@ -115,12 +115,28 @@ router.patch("/pooling/remove-student",
   bookingController.removeStudentFromPooling(req, res),
 );
 
-router.get("/slot/details", (req, res) =>
-  bookingController.getSlotBookingDetails(req, res),
-);
-
-router.get("/chapter/details", (req, res) =>
-  bookingController.getChapterBookingDetails(req, res),
-);
+/* ─────────────────────────────────────────────────────────────────────────────
+ * [DISABLED – security, Nov 2026] Public booking-details endpoints
+ *
+ * Why: these two routes had NO login check, but returned the name + phone number
+ * of every pending student for a slot / chapter (slot & faculty ids are public),
+ * so anyone could collect students' phone numbers.
+ *
+ * Not used anywhere: the website and admin never call them. Admin gets the same
+ * details through protected routes:
+ *   - Pool details (slot + chapter)  → GET /bookings/pooling/students
+ *   - One-on-one (incl. chapter)     → GET /bookings/one-to-one
+ *
+ * To re-enable: uncomment below AND keep the login guard, e.g.
+ *   router.get("/slot/details", authenticate.authenticate, authorizeRoles("admin", "salesPerson"), …)
+ * Controller, use-cases and repository methods are untouched.
+ * ───────────────────────────────────────────────────────────────────────────── */
+// router.get("/slot/details", (req, res) =>
+//   bookingController.getSlotBookingDetails(req, res),
+// );
+//
+// router.get("/chapter/details", (req, res) =>
+//   bookingController.getChapterBookingDetails(req, res),
+// );
 
 export default router;
