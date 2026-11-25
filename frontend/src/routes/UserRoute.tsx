@@ -6,6 +6,7 @@ import ChapterFacultyPage from "../features/user/pages/ChapterFacultyPage";
 import FacultyDetailsPage from "../features/user/pages/FacultyDetailsPage";
 import BlogsPage from "../features/user/pages/BlogsPage";
 import BlogDetailsPage from "../features/user/pages/BlogDetailsPage";
+import JoinPoolPage from "../features/user/pages/JoinPoolPage";
 
 const userRoutes = [
   {
@@ -39,6 +40,11 @@ const userRoutes = [
   {
     path: "/blogs/:id",
     element: <BlogDetailsPage />,
+  },
+  {
+    // "invite a friend" links for pool classes
+    path: "/join/:slotId",
+    element: <JoinPoolPage />,
   },
 ];
 
