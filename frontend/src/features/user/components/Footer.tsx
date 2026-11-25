@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import BrandMark from "./ui/BrandMark";
 import { CONTACT_EMAIL, CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL, WHATSAPP_URL } from "../../../shared/constants/contact";
+import { SocialIconLinks } from "./ui/SocialIcons";
 import Bear from "./ui/Bear";
 import SnowCanvas from "./ui/SnowCanvas";
 
@@ -104,6 +105,8 @@ const Footer: React.FC = () => {
               <a href={`mailto:${CONTACT_EMAIL}`} className="font-semibold text-[15px] text-ml-ice hover:text-white transition-colors">
                 {CONTACT_EMAIL}
               </a>
+              <span className="mt-2 text-xs font-extrabold tracking-[0.16em] text-ml-peach">FOLLOW US</span>
+              <SocialIconLinks />
             </div>
           </div>
         </div>

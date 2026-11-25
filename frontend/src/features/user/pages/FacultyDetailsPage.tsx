@@ -82,20 +82,23 @@ const FacultyDetailsPage = () => {
     syllabusId = "",
     classId = "",
     variantId: initialVariantId = "",
+    joinSlotId,
   } = (location.state ?? {}) as {
     facultyId?: string;
     chapterId?: string;
     syllabusId?: string;
     classId?: string;
     variantId?: string;
+    /** set when arriving from a friend's invite link: open the booking form for this pool */
+    joinSlotId?: string;
   };
 
   const isChapterMode = !!chapterId;
 
   /* ─── Slot mode: which variant is currently selected ─── */
   const [activeVariantId, setActiveVariantId] = useState<string>(initialVariantId);
-  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
-  const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(joinSlotId ?? null);
+  const [bookingModalOpen, setBookingModalOpen] = useState(!!joinSlotId);
   const [bookingType, setBookingType] = useState<"oneToOne" | "pooling">("pooling");
   const [avatarError, setAvatarError] = useState(false);
 
@@ -369,7 +372,13 @@ const FacultyDetailsPage = () => {
             )}
 
             {/* Mode toggle */}
-            <div className="grid grid-cols-2 gap-2 p-1.5 rounded-[20px] bg-ml-mist" role="radiogroup" aria-label="Session type">
+            <div className="relative grid grid-cols-2 gap-2 p-1.5 rounded-[20px] bg-ml-mist" role="radiogroup" aria-label="Session type">
+              {/* sliding pill behind the active option */}
+              <span
+                aria-hidden
+                className="absolute top-1.5 bottom-1.5 left-1.5 w-[calc(50%-10px)] rounded-[15px] bg-ml-deep shadow-md transition-transform duration-[420ms] ease-[cubic-bezier(.22,1,.36,1)] motion-reduce:transition-none"
+                style={{ transform: bookingType === "pooling" ? "translateX(calc(100% + 8px))" : "translateX(0)" }}
+              />
               {([
                 { key: "oneToOne", label: "1-on-1", sub: "Just you" },
                 { key: "pooling", label: "Pool", sub: `Up to ${poolLimit} students` },
@@ -382,12 +391,12 @@ const FacultyDetailsPage = () => {
                     role="radio"
                     aria-checked={on}
                     onClick={() => setBookingType(m.key)}
-                    className={`px-3 py-2.5 rounded-[15px] text-left cursor-pointer transition-all duration-[250ms] ${
-                      on ? "bg-ml-deep text-white shadow-md" : "bg-transparent text-ml-ink hover:bg-white/70"
+                    className={`relative z-[1] px-3 py-2.5 rounded-[15px] text-left cursor-pointer bg-transparent transition-colors duration-300 ${
+                      on ? "text-white" : "text-ml-ink hover:bg-white/60"
                     }`}
                   >
                     <span className="block font-extrabold text-[15px]">{m.label}</span>
-                    <span className={`block text-xs font-semibold mt-0.5 ${on ? "text-white/75" : "text-ml-muted"}`}>{m.sub}</span>
+                    <span className={`block text-xs font-semibold mt-0.5 transition-colors duration-300 ${on ? "text-white/75" : "text-ml-muted"}`}>{m.sub}</span>
                   </button>
                 );
               })}
@@ -521,6 +530,14 @@ const FacultyDetailsPage = () => {
         // from the page we came from, or (e.g. opened from the home page) from the subject being booked
         defaultSyllabusId={syllabusId || selectedOffering?.syllabusId}
         defaultClassId={classId || selectedOffering?.classId}
+        summary={
+          !isChapterMode && selectedOffering
+            ? [selectedOffering.subjectName, `${selectedOffering.className} · ${selectedOffering.syllabusName}`, selectedSlotInfo?.time && formatTime(selectedSlotInfo.time)]
+                .filter(Boolean)
+                .join(" · ")
+            : undefined
+        }
+        facultyName={displayName}
       />
     </div>
   );

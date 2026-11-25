@@ -11,6 +11,7 @@ import ModalShell from "./ui/ModalShell";
 import { errorTextCls, fieldCls, labelCls } from "./ui/formStyles";
 import Bear from "./ui/Bear";
 import { Check, Spinner } from "./ui/Icons";
+import InviteFriendPanel from "./InviteFriendPanel";
 
 type BookingModalProps = {
   isOpen: boolean;
@@ -27,6 +28,9 @@ type BookingModalProps = {
   chapterId?: string;
   defaultSyllabusId?: string;
   defaultClassId?: string;
+  /** what is being booked, e.g. "English · 8th · CBSE · 4:00 PM" (shown in the header and the invite message) */
+  summary?: string;
+  facultyName?: string;
 };
 
 const BookingModal: React.FC<BookingModalProps> = ({
@@ -40,8 +44,12 @@ const BookingModal: React.FC<BookingModalProps> = ({
   chapterId,
   defaultSyllabusId,
   defaultClassId,
+  summary,
+  facultyName,
 }) => {
   const queryClient = useQueryClient();
+  // after joining a slot pool, keep the modal open and offer an invite link
+  const canInvite = bookingType === "pooling" && mode === "slot" && !!slotId;
 
   /* ── Form state ── */
   const [name, setName] = useState("");
@@ -81,10 +89,12 @@ const BookingModal: React.FC<BookingModalProps> = ({
       queryClient.invalidateQueries({ queryKey: ["faculty-slots"] });
       queryClient.invalidateQueries({ queryKey: ["slot-details"] });
 
-      setTimeout(() => {
-        resetForm();
-        onClose();
-      }, 2500);
+      if (!canInvite) {
+        setTimeout(() => {
+          resetForm();
+          onClose();
+        }, 2500);
+      }
     },
     onError: (err: any) => {
       setSuccessMsg(null);
@@ -262,7 +272,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
           {isOneToOne ? "Book One-on-One" : "Join Pooling"}
         </h2>
         <p className="relative m-0 text-sm font-semibold text-[#C9BFDD]">
-          {mode === "chapter" ? "Chapter booking" : "Slot booking"}
+          {summary ?? (mode === "chapter" ? "Chapter booking" : "Slot booking")}
         </p>
         {bookingMutation.isSuccess && (
           <div className="absolute right-5 bottom-0 w-[86px] animate-ml-bob" style={{ animationDuration: "2.4s" }}>
@@ -281,6 +291,11 @@ const BookingModal: React.FC<BookingModalProps> = ({
           </div>
         )}
 
+        {/* After joining a pool: invite a friend instead of the form */}
+        {canInvite && bookingMutation.isSuccess ? (
+          <InviteFriendPanel slotId={slotId!} summary={summary} facultyName={facultyName} onDone={closeModal} />
+        ) : (
+        <>
         {/* Error banner */}
         {apiError && (
           <div className="px-3.5 py-2.5 rounded-[14px] bg-ml-rose text-ml-red text-sm font-bold">{apiError}</div>
@@ -462,6 +477,8 @@ const BookingModal: React.FC<BookingModalProps> = ({
         <span className="text-xs font-semibold text-ml-muted text-center">
           We&apos;ll contact you on this number to confirm your class.
         </span>
+        </>
+        )}
       </div>
     </ModalShell>
   );

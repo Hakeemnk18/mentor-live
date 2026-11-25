@@ -39,7 +39,7 @@ export default function AdminContactActions({ phone, name, whatsappText, onReach
         </svg>
       </a>
       <a
-        href={`https://wa.me/${digits(phone)}?text=${encodeURIComponent(text)}`}
+        href={`https://api.whatsapp.com/send?phone=${digits(phone)}&text=${encodeURIComponent(text)}`}
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => onReachOut?.("whatsapp")}

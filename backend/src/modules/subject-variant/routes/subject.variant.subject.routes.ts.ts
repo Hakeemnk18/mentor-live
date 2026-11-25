@@ -15,12 +15,16 @@ const subjectVariantController = container.resolve(SubjectVariantController);
 
 router.post(
   "/",
+  authenticate.authenticate,
+  authorizeRoles("admin"),
   (req, res) => subjectVariantController.addSubjectVariant(req, res)
 );
 
 
 router.delete(
   "/:id",
+  authenticate.authenticate,
+  authorizeRoles("admin"),
   (req, res) => subjectVariantController.removeSubjectVariant(req, res)
 );
 
