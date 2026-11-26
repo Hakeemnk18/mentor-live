@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AdminTable } from "../components/AdminTable";
 import { AdminPageActions } from "../components/AdminPageActions";
+import { AdminFilter, AdminFilterBar, AdminFilterSelect, AdminSearchInput } from "../components/ui";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
 import TopLoader from "../../../shared/components/TopLoader";
@@ -220,71 +221,39 @@ export default function StudentsPage() {
     }
   };
 
-  const sel =
-    "px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30";
 
   return (
     <AdminPageContainer>
       <AdminPageActions title="Students" actions={[]} />
 
-      {/* ── Filters ── */}
-      <div className="flex flex-col md:flex-row md:items-end gap-3 rounded-2xl border border-[#E4DDF2] bg-[#FAF8FE] p-4 mb-4 flex-wrap">
-        {/* Search */}
-        <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
-          <label className="text-xs font-medium text-gray-600">Search</label>
-          <input
-            type="text"
-            placeholder="Name, school, place…"
-            value={search}
-            onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30"
-          />
-        </div>
-
-        {/* Class */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Class</label>
-          <select
-            value={classId}
-            onChange={(e) => { setPage(1); setClassId(e.target.value); }}
-            className={sel}
-          >
-            <option value="">All Classes</option>
-            {classes.map((c) => (
-              <option key={c._id} value={c._id}>{c.name}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Syllabus */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Syllabus</label>
-          <select
-            value={syllabusId}
-            onChange={(e) => { setPage(1); setSyllabusId(e.target.value); }}
-            className={sel}
-          >
-            <option value="">All Syllabuses</option>
-            {syllabuses.map((s) => (
-              <option key={s._id} value={s._id}>{s.name}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Status */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Status</label>
-          <select
-            value={statusFilter}
-            onChange={(e) => { setPage(1); setStatusFilter(e.target.value as "" | "active" | "blocked"); }}
-            className={sel}
-          >
-            <option value="">All</option>
-            <option value="active">Active</option>
-            <option value="blocked">Blocked</option>
-          </select>
-        </div>
-      </div>
+      <AdminFilterBar
+        canClear={!!search || !!classId || !!syllabusId || !!statusFilter}
+        onClear={() => { setSearch(""); setClassId(""); setSyllabusId(""); setStatusFilter(""); setPage(1); }}
+      >
+        <AdminFilter label="Search" wide>
+          <AdminSearchInput value={search} onChange={(v) => { setPage(1); setSearch(v); }} placeholder="Name, school, place…" />
+        </AdminFilter>
+        <AdminFilterSelect
+          label="Class"
+          value={classId}
+          onChange={(v) => { setPage(1); setClassId(v); }}
+          options={classes.map((x) => ({ value: x._id, label: x.name }))}
+          allLabel="All classes"
+        />
+        <AdminFilterSelect
+          label="Syllabus"
+          value={syllabusId}
+          onChange={(v) => { setPage(1); setSyllabusId(v); }}
+          options={syllabuses.map((x) => ({ value: x._id, label: x.name }))}
+          allLabel="All syllabuses"
+        />
+        <AdminFilterSelect
+          label="Status"
+          value={statusFilter}
+          onChange={(v) => { setPage(1); setStatusFilter(v); }}
+          options={[{ value: "active", label: "Active" }, { value: "blocked", label: "Blocked" }]}
+        />
+      </AdminFilterBar>
 
       {/* ── Table ── */}
       {loading ? (

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AdminTable } from "../components/AdminTable";
 import { AdminPageActions } from "../components/AdminPageActions";
+import { AdminFilter, AdminFilterBar, AdminFilterSelect, AdminPageSize, AdminSearchInput, AdminSelect } from "../components/ui";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
 import TopLoader from "../../../shared/components/TopLoader";
@@ -193,8 +194,6 @@ export default function BlogsPage() {
     }
   };
 
-  const sel =
-    "px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30";
 
   return (
     <AdminPageContainer>
@@ -203,77 +202,37 @@ export default function BlogsPage() {
         actions={[{ label: "New Blog Post", onClick: handleCreate }]}
       />
 
-      {/* ── Filters ── */}
-      <div className="flex flex-col md:flex-row md:items-end gap-3 rounded-2xl border border-[#E4DDF2] bg-[#FAF8FE] p-4 mb-4 flex-wrap">
-        {/* Search */}
-        <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
-          <label className="text-xs font-medium text-gray-600">Search</label>
-          <input
-            type="text"
-            placeholder="Heading, author, topic…"
-            value={search}
-            onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30"
-          />
-        </div>
-
-        {/* Status */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Status</label>
-          <select
-            value={statusFilter}
-            onChange={(e) => { setPage(1); setStatusFilter(e.target.value as "" | "active" | "blocked"); }}
-            className={sel}
-          >
-            <option value="">All</option>
-            <option value="active">Active</option>
-            <option value="blocked">Blocked</option>
-          </select>
-        </div>
-
-        {/* Featured */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Featured</label>
-          <select
-            value={featuredFilter}
-            onChange={(e) => { setPage(1); setFeaturedFilter(e.target.value as "" | "true" | "false"); }}
-            className={sel}
-          >
-            <option value="">All</option>
-            <option value="true">Featured</option>
-            <option value="false">Not Featured</option>
-          </select>
-        </div>
-
-        {/* Sort */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Sort</label>
-          <select
+      <AdminFilterBar
+        canClear={!!search || !!statusFilter || !!featuredFilter || sortValue !== "newest"}
+        onClear={() => { setSearch(""); setStatusFilter(""); setFeaturedFilter(""); setSortValue("newest"); setPage(1); }}
+      >
+        <AdminFilter label="Search" wide>
+          <AdminSearchInput value={search} onChange={(v) => { setPage(1); setSearch(v); }} placeholder="Heading, author, topic…" />
+        </AdminFilter>
+        <AdminFilterSelect
+          label="Status"
+          value={statusFilter}
+          onChange={(v) => { setPage(1); setStatusFilter(v); }}
+          options={[{ value: "active", label: "Active" }, { value: "blocked", label: "Blocked" }]}
+        />
+        <AdminFilterSelect
+          label="Featured"
+          value={featuredFilter}
+          onChange={(v) => { setPage(1); setFeaturedFilter(v); }}
+          options={[{ value: "true", label: "Featured" }, { value: "false", label: "Not featured" }]}
+        />
+        <AdminFilter label="Sort" width="sm:w-48">
+          <AdminSelect
             value={sortValue}
-            onChange={(e) => { setPage(1); setSortValue(e.target.value); }}
-            className={sel}
-          >
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-            <option value="featured">Featured + Priority</option>
-          </select>
-        </div>
-
-        {/* Per Page */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Per Page</label>
-          <select
-            value={limit}
-            onChange={(e) => { setPage(1); setLimit(Number(e.target.value)); }}
-            className={sel}
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-          </select>
-        </div>
-      </div>
+            onChange={(v) => { setPage(1); setSortValue(v); }}
+            label="Sort"
+            options={[{ value: "newest", label: "Newest first" }, { value: "oldest", label: "Oldest first" }, { value: "featured", label: "Featured + priority" }]}
+          />
+        </AdminFilter>
+        <AdminFilter label="Rows per page" width="sm:w-32">
+          <AdminPageSize value={limit} onChange={(n) => { setPage(1); setLimit(n); }} />
+        </AdminFilter>
+      </AdminFilterBar>
 
       {/* ── Table ── */}
       {loading ? (

@@ -1,3 +1,6 @@
+import AdminModal from "./ui/AdminModal";
+import AdminButton from "./ui/AdminButton";
+
 type Props = {
   open: boolean;
   title: string;
@@ -9,6 +12,7 @@ type Props = {
   onClose: () => void;
 };
 
+/** "Are you sure?" dialog in the admin design. Same props as before, so every page using it is updated. */
 export default function ConfirmModal({
   open,
   title,
@@ -19,40 +23,50 @@ export default function ConfirmModal({
   onConfirm,
   onClose,
 }: Props) {
-  if (!open) return null;
-
-  const confirmCls =
-    confirmVariant === "danger"
-      ? "bg-red-600 hover:bg-red-700 text-white"
-      : "bg-amber-500 hover:bg-amber-600 text-white";
+  const danger = confirmVariant === "danger";
+  const close = () => {
+    if (!loading) onClose();
+  };
 
   return (
-    <div className="fixed inset-0 z-[1100] flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/30"
-        onClick={!loading ? onClose : undefined}
-      />
-      <div className="relative w-full max-w-sm mx-4 rounded-lg bg-white p-6 shadow-lg">
-        <h2 className="text-base font-semibold text-gray-800 mb-2">{title}</h2>
-        <p className="text-sm text-gray-600 mb-6">{message}</p>
-
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            disabled={loading}
-            className="px-4 py-2 text-sm rounded border border-gray-300 text-gray-700 cursor-pointer hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+    <AdminModal
+      open={open}
+      onClose={close}
+      size="sm"
+      zIndex={1100}
+      title={
+        <span className="flex items-center gap-3">
+          <span
+            className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center ${
+              danger ? "bg-[#FFE3DF] text-[#C8372D]" : "bg-[#FFF1D6] text-[#8A5A00]"
+            }`}
+            aria-hidden
           >
+            <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 9v4M12 17h.01" />
+              <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+            </svg>
+          </span>
+          {title}
+        </span>
+      }
+      footer={
+        <>
+          <AdminButton variant="outline" onClick={close} disabled={loading}>
             Cancel
-          </button>
-          <button
+          </AdminButton>
+          <AdminButton
+            variant="danger"
             onClick={onConfirm}
-            disabled={loading}
-            className={`px-4 py-2 text-sm rounded cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${confirmCls}`}
+            loading={loading}
+            className={danger ? "" : "!bg-[#E0A100] hover:!bg-[#C78F00]"}
           >
-            {loading ? "Processing..." : confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
+            {confirmLabel}
+          </AdminButton>
+        </>
+      }
+    >
+      <p className="m-0 text-sm leading-relaxed text-[#655B7E]">{message}</p>
+    </AdminModal>
   );
 }

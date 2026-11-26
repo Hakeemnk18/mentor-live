@@ -1,8 +1,10 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createPortal } from "react-dom";
+import { STATUS_TONES } from "./styles";
+import type { StatusTone } from "./styles";
 
-export type StatusTone = "info" | "success" | "warning" | "danger" | "neutral";
+export type { StatusTone };
 
 export type StatusOption<V extends string> = {
   value: V;
@@ -29,13 +31,7 @@ type Props<V extends string> = {
   confirm?: (next: V) => StatusConfirm | null;
 };
 
-const TONES: Record<StatusTone, { pill: string; dot: string }> = {
-  info: { pill: "bg-[#EAF1FF] text-[#2F5BD8] border-[#D3E1FF]", dot: "bg-[#3B6FF0]" },
-  success: { pill: "bg-[#DDF3E6] text-[#1E7A4B] border-[#C3EAD3]", dot: "bg-[#22A060]" },
-  warning: { pill: "bg-[#FFF1D6] text-[#8A5A00] border-[#FBE2AE]", dot: "bg-[#E0A100]" },
-  danger: { pill: "bg-[#FFE3DF] text-[#C8372D] border-[#FFCBC4]", dot: "bg-[#FF6B5E]" },
-  neutral: { pill: "bg-gray-100 text-gray-600 border-gray-200", dot: "bg-gray-400" },
-};
+const TONES = STATUS_TONES;
 
 const SHEET_QUERY = "(max-width: 639px)";
 type Pos = { left: number; top?: number; bottom?: number };

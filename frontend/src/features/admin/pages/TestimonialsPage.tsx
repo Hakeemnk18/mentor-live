@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AdminTable } from "../components/AdminTable";
 import { AdminPageActions } from "../components/AdminPageActions";
+import { AdminFilter, AdminFilterBar, AdminFilterSelect, AdminSearchInput } from "../components/ui";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
@@ -14,6 +15,7 @@ import {
   deleteTestimonial,
 } from "../../../api/testimonial.api";
 import TestimonialModal from "../components/TestimonialModal";
+import ConfirmModal from "../components/ConfirmModal";
 
 import type { Testimonial, TestimonialPayload } from "../../../shared/types/testimonial.types";
 /* ── columns ─────────────────────────────────────────────── */
@@ -117,14 +119,24 @@ export default function TestimonialsPage() {
     setModalOpen(true);
   };
 
-  const handleDelete = async (t: Testimonial) => {
-    if (!window.confirm(`Delete testimonial by "${t.author}"?`)) return;
+  /* delete asks first in a confirm dialog (was the browser's grey confirm box) */
+  const [deleting, setDeleting] = useState<Testimonial | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const handleDelete = (t: Testimonial) => setDeleting(t);
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
     try {
-      await deleteTestimonial(t.id);
+      setDeleteLoading(true);
+      await deleteTestimonial(deleting.id);
       toast.success("Testimonial deleted");
+      setDeleting(null);
       fetchAll();
     } catch (err: unknown) {
       handleApiError(err);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -148,8 +160,6 @@ export default function TestimonialsPage() {
     }
   };
 
-  const sel =
-    "px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30";
 
   return (
     <AdminPageContainer>
@@ -158,31 +168,20 @@ export default function TestimonialsPage() {
         actions={[{ label: "Add Testimonial", onClick: handleCreate }]}
       />
 
-      {/* ── Filters ── */}
-      <div className="flex flex-col md:flex-row md:items-center gap-3 rounded-2xl border border-[#E4DDF2] bg-[#FAF8FE] p-4 mb-4">
-        <div className="flex flex-col gap-1 flex-1">
-          <label className="text-xs font-medium text-gray-600">Search</label>
-          <input
-            type="text"
-            placeholder="Search by author, designation, comment…"
-            value={search}
-            onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Status</label>
-          <select
-            value={statusFilter}
-            onChange={(e) => { setPage(1); setStatusFilter(e.target.value as "" | "active" | "deleted"); }}
-            className={sel}
-          >
-            <option value="">All</option>
-            <option value="active">Active</option>
-            <option value="deleted">Deleted</option>
-          </select>
-        </div>
-      </div>
+      <AdminFilterBar
+        canClear={!!search || !!statusFilter}
+        onClear={() => { setSearch(""); setStatusFilter(""); setPage(1); }}
+      >
+        <AdminFilter label="Search" wide>
+          <AdminSearchInput value={search} onChange={(v) => { setPage(1); setSearch(v); }} placeholder="Author, designation, comment…" />
+        </AdminFilter>
+        <AdminFilterSelect
+          label="Status"
+          value={statusFilter}
+          onChange={(v) => { setPage(1); setStatusFilter(v); }}
+          options={[{ value: "active", label: "Active" }, { value: "deleted", label: "Deleted" }]}
+        />
+      </AdminFilterBar>
 
       {/* ── Table ── */}
       {loading ? (
@@ -215,6 +214,15 @@ export default function TestimonialsPage() {
         loading={submitting}
         onClose={() => setModalOpen(false)}
         onSubmit={handleSubmit}
+      />
+      <ConfirmModal
+        open={!!deleting}
+        title="Delete testimonial?"
+        message={deleting ? `The testimonial by "${deleting.author}" will be removed from the website.` : ""}
+        confirmLabel="Delete"
+        loading={deleteLoading}
+        onConfirm={confirmDelete}
+        onClose={() => setDeleting(null)}
       />
     </AdminPageContainer>
   );

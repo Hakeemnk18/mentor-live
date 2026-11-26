@@ -28,7 +28,7 @@ export default function ExportButton({ onExport, label = "Export CSV", className
       type="button"
       onClick={handleClick}
       disabled={loading}
-      className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${className}`}
+      className={`inline-flex items-center justify-center gap-2 h-11 sm:h-10 px-4 whitespace-nowrap text-sm font-semibold bg-white border border-[#E4DDF2] rounded-full text-[#2A1650] cursor-pointer hover:bg-[#F4F1FA] hover:border-[#CBB9F0] transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${className}`}
     >
       {loading ? (
         <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
