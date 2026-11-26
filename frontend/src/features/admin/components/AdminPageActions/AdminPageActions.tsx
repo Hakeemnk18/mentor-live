@@ -1,3 +1,4 @@
+import AdminButton from "../ui/AdminButton";
 import type { PageAction } from "./types";
 
 type Props = {
@@ -6,45 +7,33 @@ type Props = {
   children?: React.ReactNode; // filters/search slot
 };
 
-export default function AdminPageHeader({
-  title,
-  actions,
-  children,
-}: Props) {
+/** Page title + main buttons (e.g. "Create Faculty") at the top of every admin page. */
+export default function AdminPageHeader({ title, actions, children }: Props) {
   return (
-    <div className="border-b border-gray-200 pb-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        
-        {/* Left */}
-        <div>
-          <h1 className="text-lg font-semibold text-gray-900">
-            {title}
-          </h1>
-
-          {children && (
-            <div className="mt-3">
-              {children}
-            </div>
-          )}
+    <div className="pt-1 pb-4 sm:pb-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="m-0 text-xl sm:text-2xl font-bold tracking-[-0.02em] text-[#2A1650]">{title}</h1>
+          {children && <div className="mt-3">{children}</div>}
         </div>
 
-        {/* Right: Actions */}
-        {actions && (
-          <div className="flex gap-2">
+        {actions && actions.length > 0 && (
+          <div className="flex flex-wrap gap-2">
             {actions.map((action) => (
-              <button
+              <AdminButton
                 key={action.label}
                 onClick={action.onClick}
-                className={`px-4 py-2 text-sm rounded-md font-medium transition
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D35D9]/40
-                  ${
-                    action.variant === "secondary"
-                      ? "border border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer"
-                      : "bg-[#6D35D9] text-white hover:opacity-90 cursor-pointer"
-                  }`}
+                variant={action.variant === "secondary" ? "outline" : "primary"}
+                icon={
+                  action.variant === "secondary" ? undefined : (
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden>
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                  )
+                }
               >
                 {action.label}
-              </button>
+              </AdminButton>
             ))}
           </div>
         )}

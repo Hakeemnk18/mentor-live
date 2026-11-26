@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { AdminTable } from "../components/AdminTable";
 import { AdminPageActions } from "../components/AdminPageActions";
+import { AdminFilter, AdminFilterBar, AdminFilterSelect, AdminSearchInput } from "../components/ui";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
 import TopLoader from "../../../shared/components/TopLoader";
@@ -84,6 +85,9 @@ function SortIcon({ active, desc }: { active: boolean; desc: boolean }) {
 }
 
 /* ── component ────────────────────────────────────────────────── */
+/** default table order (also what "Clear filters" goes back to) */
+const DEFAULT_SORT = "createdAt";
+
 export default function UsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(false);
@@ -104,7 +108,7 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<UserRole | "">("");
   const [statusFilter, setStatusFilter] = useState<"" | "active" | "blocked">("");
-  const [sort, setSort] = useState("createdAt");
+  const [sort, setSort] = useState(DEFAULT_SORT);
 
   /* pagination */
   const [page, setPage] = useState(1);
@@ -212,8 +216,6 @@ export default function UsersPage() {
     setPage(1);
   };
 
-  const sel =
-    "px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30";
 
   return (
     <AdminPageContainer>
@@ -222,64 +224,41 @@ export default function UsersPage() {
         actions={[{ label: "Create User", onClick: handleCreate }]}
       />
 
-      {/* ── Filters ── */}
-      <div className="flex flex-col md:flex-row md:items-end gap-3 rounded-2xl border border-[#E4DDF2] bg-[#FAF8FE] p-4 mb-4 flex-wrap">
-        {/* Search */}
-        <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
-          <label className="text-xs font-medium text-gray-600">Search</label>
-          <input
-            type="text"
-            placeholder="Name or email…"
-            value={search}
-            onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30"
-          />
-        </div>
-
-        {/* Role */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Role</label>
-          <select
-            value={roleFilter}
-            onChange={(e) => { setPage(1); setRoleFilter(e.target.value as UserRole | ""); }}
-            className={sel}
-          >
-            <option value="">All Roles</option>
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
-            <option value="salesPerson">Sales Person</option>
-          </select>
-        </div>
-
-        {/* Status */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Status</label>
-          <select
-            value={statusFilter}
-            onChange={(e) => { setPage(1); setStatusFilter(e.target.value as "" | "active" | "blocked"); }}
-            className={sel}
-          >
-            <option value="">All</option>
-            <option value="active">Active</option>
-            <option value="blocked">Blocked</option>
-          </select>
-        </div>
-
-        {/* Sort */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Sort by</label>
-          <div className="flex gap-1">
+      <AdminFilterBar
+        canClear={!!search || !!roleFilter || !!statusFilter || sort !== DEFAULT_SORT}
+        onClear={() => { setSearch(""); setRoleFilter(""); setStatusFilter(""); setSort(DEFAULT_SORT); setPage(1); }}
+      >
+        <AdminFilter label="Search" wide>
+          <AdminSearchInput value={search} onChange={(v) => { setPage(1); setSearch(v); }} placeholder="Name or email…" />
+        </AdminFilter>
+        <AdminFilterSelect
+          label="Role"
+          value={roleFilter}
+          onChange={(v) => { setPage(1); setRoleFilter(v); }}
+          allLabel="All roles"
+          options={[{ value: "user" as UserRole, label: "User" }, { value: "admin" as UserRole, label: "Admin" }, { value: "salesPerson" as UserRole, label: "Sales person" }]}
+        />
+        <AdminFilterSelect
+          label="Status"
+          value={statusFilter}
+          onChange={(v) => { setPage(1); setStatusFilter(v); }}
+          options={[{ value: "active", label: "Active" }, { value: "blocked", label: "Blocked" }]}
+        />
+        <AdminFilter label="Sort by" width="sm:w-auto" fixed className="col-span-2 sm:col-span-1">
+          <div className="flex gap-1.5">
             {(["name", "email", "role"] as SortField[]).map((field) => {
               const isActive = sort === field || sort === `-${field}`;
               const isDesc = sort === `-${field}`;
               return (
                 <button
                   key={field}
+                  type="button"
                   onClick={() => handleSort(field)}
-                  className={`px-3 py-2 text-xs rounded border transition ${
+                  aria-pressed={isActive}
+                  className={`h-[42px] px-3.5 inline-flex items-center gap-1 text-sm font-semibold rounded-full border cursor-pointer transition-colors ${
                     isActive
                       ? "bg-[#6D35D9] text-white border-[#6D35D9]"
-                      : "border-gray-300 text-gray-600 hover:border-[#6D35D9] hover:text-[#6D35D9]"
+                      : "bg-white border-[#E4DDF2] text-[#655B7E] hover:border-[#CBB9F0] hover:text-[#6D35D9]"
                   }`}
                 >
                   {field.charAt(0).toUpperCase() + field.slice(1)}
@@ -288,8 +267,8 @@ export default function UsersPage() {
               );
             })}
           </div>
-        </div>
-      </div>
+        </AdminFilter>
+      </AdminFilterBar>
 
       {/* ── Table ── */}
       {loading ? (

@@ -15,7 +15,7 @@ import {
   toggleBannerShow,
 } from "../../../api/banner.api";
 import BannerModal from "../components/BannerModal";
-import { AdminButton, AdminField, AdminModal, AdminSelect, adminInputCls } from "../components/ui";
+import { AdminBadge, AdminButton, AdminField, AdminFilter, AdminFilterBar, AdminModal, AdminSearchInput, AdminSelect } from "../components/ui";
 import type { SelectOption } from "../components/ui";
 import { priorityOptions } from "../components/bannerPriority";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
@@ -76,13 +76,7 @@ const columns: Column<Banner>[] = [
     key: "isShow",
     label: "Visibility",
     render: (b) => (
-      <span
-        className={`px-2 py-1 rounded text-xs font-medium ${
-          b.isShow ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
-        }`}
-      >
-        {b.isShow ? "Visible" : "Hidden"}
-      </span>
+      <AdminBadge tone={b.isShow ? "success" : "neutral"}>{b.isShow ? "Visible" : "Hidden"}</AdminBadge>
     ),
   },
 ];
@@ -269,30 +263,22 @@ export default function BannersPage() {
       />
 
       {/* ── Filters ── */}
-      <div className="flex flex-col md:flex-row md:items-end gap-3 rounded-2xl border border-[#E4DDF2] bg-[#FAF8FE] p-4 mb-4">
-        <div className="flex-1">
-          <AdminField label="Search" htmlFor="banner-search">
-            <input
-              id="banner-search"
-              type="text"
-              placeholder="Search by title…"
-              value={search}
-              onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-              className={adminInputCls() + " h-11 sm:h-10 py-0"}
-            />
-          </AdminField>
-        </div>
-        <div className="md:w-48">
-          <AdminField label="Visibility">
-            <AdminSelect
-              label="Visibility"
-              value={visibilityFilter}
-              options={VISIBILITY_OPTIONS}
-              onChange={(v) => { setPage(1); setVisibilityFilter(v); }}
-            />
-          </AdminField>
-        </div>
-      </div>
+      <AdminFilterBar
+        canClear={!!search || !!visibilityFilter}
+        onClear={() => { setSearch(""); setVisibilityFilter(""); setPage(1); }}
+      >
+        <AdminFilter label="Search" wide>
+          <AdminSearchInput value={search} onChange={(v) => { setPage(1); setSearch(v); }} placeholder="Search by title…" />
+        </AdminFilter>
+        <AdminFilter label="Visibility">
+          <AdminSelect
+            label="Visibility"
+            value={visibilityFilter}
+            options={VISIBILITY_OPTIONS}
+            onChange={(v) => { setPage(1); setVisibilityFilter(v); }}
+          />
+        </AdminFilter>
+      </AdminFilterBar>
 
       {/* ── Table ── */}
       {loading ? (

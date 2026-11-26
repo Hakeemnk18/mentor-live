@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { AdminTable } from "../components/AdminTable";
-import SearchableSelect from "../../../shared/components/SearchableSelect";
 import { formatTimeAMPM } from "../../../shared/utils/time.utils";
 import { AdminPageActions } from "../components/AdminPageActions";
+
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
 import TopLoader from "../../../shared/components/TopLoader";
@@ -18,7 +18,7 @@ import {
   markBookingContacted,
 } from "../../../api/booking.api";
 import toast from "react-hot-toast";
-import { AdminContactActions, AdminStatusSelect } from "../components/ui";
+import { AdminContactActions, AdminFilter, AdminFilterBar, AdminFilterSelect, AdminPageSize, AdminSearchInput, AdminStatusSelect, AdminTabs } from "../components/ui";
 import type { StatusOption } from "../components/ui";
 import ExportButton from "../../../shared/components/ExportButton";
 import { downloadBlob } from "../../../shared/utils/download.util";
@@ -39,8 +39,6 @@ const fmtDate = (iso: string) =>
     year: "numeric",
   });
 
-const sel =
-  "w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30";
 
 /* ─── status options (only the changes the API supports: Pending → Confirmed, Pending → Contacted) ─── */
 type BookingStatusValue = "interested" | "confirmed" | "cancelled" | "expired";
@@ -500,170 +498,84 @@ export default function BookingsPage() {
     <AdminPageContainer>
       <AdminPageActions title="Bookings" actions={[]} />
 
-      {/* ── Toggle ─────────────────────────────────────── */}
-      <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg w-fit mb-4">
-        <button
-          onClick={() => switchType("one-on-one")}
-          className={`px-5 py-2 text-sm font-medium rounded-md transition-all ${
-            bookingType === "one-on-one"
-              ? "bg-white text-[#6D35D9] shadow-sm"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          One-on-One
-        </button>
-        <button
-          onClick={() => switchType("pool")}
-          className={`px-5 py-2 text-sm font-medium rounded-md transition-all ${
-            bookingType === "pool"
-              ? "bg-white text-[#6D35D9] shadow-sm"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          Pool Bookings
-        </button>
-        <button
-          onClick={() => switchType("all")}
-          className={`px-5 py-2 text-sm font-medium rounded-md transition-all ${
-            bookingType === "all"
-              ? "bg-white text-[#6D35D9] shadow-sm"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          All Bookings
-        </button>
-      </div>
+      {/* ── Booking type switch ── */}
+      <AdminTabs
+        label="Booking type"
+        value={bookingType}
+        onChange={switchType}
+        className="mb-4"
+        tabs={[
+          { value: "one-on-one", label: "One-on-One" },
+          { value: "pool", label: "Pool Bookings" },
+          { value: "all", label: "All Bookings" },
+        ]}
+      />
 
-      {/* ── Filters ────────────────────────────────────── */}
-      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-[#E4DDF2] bg-[#FAF8FE] p-4 mb-4">
-        {/* Search */}
-        <div className="flex flex-col gap-1 min-w-[180px]">
-          <label className="text-xs font-medium text-gray-600">Search</label>
-          <input
-            type="text"
+      <AdminFilterBar
+        canClear={!!search || !!mode || !!syllabusId || !!classId || !!bookingTypeFilter || !!status || !!isContacted}
+        onClear={() => { setSearch(""); setMode(""); setSyllabusId(""); setClassId(""); setBookingTypeFilter(""); setStatus(""); setIsContacted(""); resetPage(); }}
+      >
+        <AdminFilter label="Search" wide>
+          <AdminSearchInput
             value={search}
-            onChange={(e) => { setSearch(e.target.value); resetPage(); }}
-            placeholder={
-              bookingType === "pool" ? "Faculty…" : "Student / faculty…"
-            }
-            className={sel}
+            onChange={(v) => { setSearch(v); resetPage(); }}
+            placeholder={bookingType === "pool" ? "Faculty…" : "Student / faculty…"}
           />
-        </div>
-
-        {/* Mode */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Mode</label>
-          <select
-            value={mode}
-            onChange={(e) => { setMode(e.target.value as "" | "chapter" | "slot"); resetPage(); }}
-            className={`${sel} w-36`}
-          >
-            <option value="">All</option>
-            <option value="chapter">Chapter</option>
-            <option value="slot">Slot</option>
-          </select>
-        </div>
-
-        {/* Syllabus */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Syllabus</label>
-          <SearchableSelect
-            value={syllabusId}
-            onChange={(v) => { setSyllabusId(v); resetPage(); }}
-            options={[
-              { value: "", label: "All" },
-              ...syllabusList.map((s) => ({ value: s._id, label: s.name })),
-            ]}
-            placeholder="All"
-            className="w-44"
-          />
-        </div>
-
-        {/* Class */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Class</label>
-          <SearchableSelect
-            value={classId}
-            onChange={(v) => { setClassId(v); resetPage(); }}
-            options={[
-              { value: "", label: "All" },
-              ...classesList.map((c) => ({ value: c._id, label: c.name })),
-            ]}
-            placeholder="All"
-            className="w-36"
-          />
-        </div>
-
-        {/* Booking Type (all bookings only) */}
+        </AdminFilter>
+        <AdminFilterSelect
+          label="Mode"
+          value={mode}
+          onChange={(v) => { setMode(v); resetPage(); }}
+          options={[{ value: "chapter", label: "Chapter" }, { value: "slot", label: "Slot" }]}
+        />
+        <AdminFilterSelect
+          label="Syllabus"
+          value={syllabusId}
+          onChange={(v) => { setSyllabusId(v); resetPage(); }}
+          options={syllabusList.map((x) => ({ value: x._id, label: x.name }))}
+        />
+        <AdminFilterSelect
+          label="Class"
+          value={classId}
+          onChange={(v) => { setClassId(v); resetPage(); }}
+          options={classesList.map((x) => ({ value: x._id, label: x.name }))}
+        />
         {bookingType === "all" && (
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Type</label>
-            <select
-              value={bookingTypeFilter}
-              onChange={(e) => { setBookingTypeFilter(e.target.value as "" | "oneToOne" | "pooling"); resetPage(); }}
-              className={`${sel} w-36`}
-            >
-              <option value="">All</option>
-              <option value="oneToOne">One-to-One</option>
-              <option value="pooling">Pooling</option>
-            </select>
-          </div>
+          <AdminFilterSelect
+            label="Type"
+            value={bookingTypeFilter}
+            onChange={(v) => { setBookingTypeFilter(v); resetPage(); }}
+            options={[{ value: "oneToOne", label: "One-to-One" }, { value: "pooling", label: "Pooling" }]}
+          />
         )}
-
-        {/* Status (all bookings only) */}
         {bookingType === "all" && (
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Status</label>
-            <select
-              value={status}
-              onChange={(e) => { setStatus(e.target.value as "" | "interested" | "confirmed" | "cancelled" | "expired"); resetPage(); }}
-              className={`${sel} w-36`}
-            >
-              <option value="">All</option>
-              <option value="interested">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="cancelled">Cancelled</option>
-              <option value="expired">Expired</option>
-            </select>
-          </div>
+          <AdminFilterSelect
+            label="Status"
+            value={status}
+            onChange={(v) => { setStatus(v); resetPage(); }}
+            options={[
+              { value: "interested", label: "Pending" },
+              { value: "confirmed", label: "Confirmed" },
+              { value: "cancelled", label: "Cancelled" },
+              { value: "expired", label: "Expired" },
+            ]}
+          />
         )}
-
-        {/* Contacted (one-on-one + all bookings) */}
         {(bookingType === "one-on-one" || bookingType === "all") && (
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Contacted</label>
-            <select
-              value={isContacted}
-              onChange={(e) => { setIsContacted(e.target.value as "" | "true" | "false"); resetPage(); }}
-              className={`${sel} w-36`}
-            >
-              <option value="">All</option>
-              <option value="true">Yes</option>
-              <option value="false">Pending</option>
-            </select>
-          </div>
+          <AdminFilterSelect
+            label="Contacted"
+            value={isContacted}
+            onChange={(v) => { setIsContacted(v); resetPage(); }}
+            options={[{ value: "true", label: "Yes" }, { value: "false", label: "Pending" }]}
+          />
         )}
-
-        {/* Per page */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Per Page</label>
-          <select
-            value={limit}
-            onChange={(e) => { setLimit(Number(e.target.value)); resetPage(); }}
-            className={`${sel} w-28`}
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-          </select>
-        </div>
-
-        {/* Export */}
-        <div className="ml-auto">
+        <AdminFilter label="Rows per page" width="sm:w-32">
+          <AdminPageSize value={limit} onChange={(n) => { setLimit(n); resetPage(); }} />
+        </AdminFilter>
+        <AdminFilter end width="sm:w-auto">
           <ExportButton onExport={handleExport} />
-        </div>
-      </div>
+        </AdminFilter>
+      </AdminFilterBar>
 
       {/* ── Table ──────────────────────────────────────── */}
       {loading ? (

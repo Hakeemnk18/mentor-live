@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AdminTable } from "../components/AdminTable";
 import { AdminPageActions } from "../components/AdminPageActions";
+import { AdminBadge, AdminFilter, AdminFilterBar, AdminPageSize, AdminSearchInput } from "../components/ui";
 import NameFormModal from "../components/NameFormModal/NameFormModal";
 import {
   getSyllabus,
@@ -38,15 +39,7 @@ export default function SyllabusPage() {
       key: "status",
       label: "Status",
       render: (s) => (
-        <span
-          className={`px-2 py-1 rounded text-xs ${
-            s.isDeleted
-              ? "bg-red-100 text-red-600"
-              : "bg-green-100 text-green-600"
-          }`}
-        >
-          {s.isDeleted ? "Inactive" : "Active"}
-        </span>
+        <AdminBadge tone={s.isDeleted ? "danger" : "success"}>{s.isDeleted ? "Inactive" : "Active"}</AdminBadge>
       ),
     },
   ];
@@ -124,22 +117,21 @@ export default function SyllabusPage() {
           },
         ]}
       />
-      <div className="flex flex-col md:flex-row md:items-center gap-3 rounded-2xl border border-[#E4DDF2] bg-[#FAF8FE] p-4 mb-4">
+      <AdminFilterBar
+        canClear={!!search}
+        onClear={() => { setSearch(""); setPage(1); }}
+      >
         {/* Search */}
-        <div className="flex flex-col gap-1 w-full md:w-auto">
-          <label className="text-xs font-medium text-gray-600">Search</label>
-          <input
-            type="text"
-            placeholder="Search syllabuses..."
+        <AdminFilter label="Search" wide>
+          <AdminSearchInput
             value={search}
-            onChange={(e) => {
+            onChange={(v) => {
               setPage(1);
-              setSearch(e.target.value);
+              setSearch(v);
             }}
-            className="w-full md:w-64 px-3 py-2 text-sm border border-gray-300 rounded
-                 focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30"
+            placeholder="Search syllabuses…"
           />
-        </div>
+        </AdminFilter>
 
         {/* Filter */}
         {/* <div className="flex flex-col gap-1 w-full md:w-auto">
@@ -163,26 +155,16 @@ export default function SyllabusPage() {
         </div> */}
 
         {/* Entries per page */}
-        <div className="flex flex-col gap-1 w-full md:w-auto">
-          <label className="text-xs font-medium text-gray-600">
-            Entries Per Page
-          </label>
-          <select
+        <AdminFilter label="Rows per page" width="sm:w-32">
+          <AdminPageSize
             value={limit}
-            onChange={(e) => {
+            onChange={(n) => {
               setPage(1);
-              setLimit(Number(e.target.value));
+              setLimit(n);
             }}
-            className="w-full md:w-32 px-3 py-2 text-sm border border-gray-300 rounded
-                 focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30"
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-          </select>
-        </div>
-      </div>
+          />
+        </AdminFilter>
+      </AdminFilterBar>
       {loading ? (
         <TopLoader loading={loading} />
       ) : (

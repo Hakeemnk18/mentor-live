@@ -1,5 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { NameFormData, NameFormMode } from "./types";
+import AdminModal from "../ui/AdminModal";
+import AdminField from "../ui/AdminField";
+import AdminButton from "../ui/AdminButton";
+import { adminInputCls } from "../ui/styles";
 
 type Props = {
   open: boolean;
@@ -19,6 +23,7 @@ type Props = {
   maxLength?: number;
 };
 
+/** Create / edit a record that only has a name (Class, Syllabus). */
 export default function NameFormModal({
   open,
   mode,
@@ -34,16 +39,19 @@ export default function NameFormModal({
 }: Props) {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
+  const inputId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setName(initialData?.name ?? "");
       setError("");
+      // put the cursor in the field once the dialog is on screen
+      const t = window.setTimeout(() => inputRef.current?.focus(), 60);
+      return () => window.clearTimeout(t);
     }
   }, [open, initialData]);
-
-  if (!open) return null;
 
   const validate = (): boolean => {
     const trimmed = name.trim();
@@ -63,88 +71,67 @@ export default function NameFormModal({
   };
 
   const handleSubmit = () => {
-    if (!validate()) return;
+    if (!validate()) {
+      // send the cursor back to the field so the admin can fix it straight away
+      inputRef.current?.focus();
+      return;
+    }
     onSubmit({ _id: initialData?._id, name: name.trim() });
   };
 
+  // don't close while saving
+  const close = () => {
+    if (!loading) onClose();
+  };
+
+  const isCreate = mode === "create";
+  const nearLimit = name.length > maxLength * 0.9;
+
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center">
-      {/* Overlay */}
-      <div
-        className="absolute inset-0 bg-black/30"
-        onClick={!loading ? onClose : undefined}
-      />
-
-      {/* Modal */}
-      <div className="relative w-full max-w-md mx-4 rounded-lg bg-white p-6 shadow-lg">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">
-          {mode === "create" ? `Create ${title}` : `Edit ${title}`}
-        </h2>
-
-        {/* Form */}
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {label} *
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => { setName(e.target.value); setError(""); }}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSubmit(); } }}
-              placeholder={placeholder ?? `Enter ${label.toLowerCase()}`}
-              maxLength={maxLength}
-              disabled={loading}
-              className={`w-full rounded border px-3 py-2 text-sm focus:outline-none disabled:bg-gray-100 ${
-                error
-                  ? "border-red-400 focus:border-red-400"
-                  : "border-gray-300 focus:border-[#6D35D9]"
-              }`}
-            />
-            {error && (
-              <p className="mt-0.5 text-xs text-red-500">{error}</p>
-            )}
-            <p className={`mt-0.5 text-xs text-right ${
-              name.length > maxLength * 0.9 ? "text-red-500" : "text-gray-400"
-            }`}>
-              {name.length}/{maxLength}
-            </p>
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            disabled={loading}
-            className="px-4 py-2 text-sm rounded border border-gray-300 text-gray-700
-               cursor-pointer transition-colors
-               hover:bg-gray-100
-               disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+    <AdminModal
+      open={open}
+      onClose={close}
+      size="sm"
+      zIndex={1000}
+      title={isCreate ? `Create ${title}` : `Edit ${title}`}
+      description={isCreate ? `Add a new ${title.toLowerCase()} to the list.` : `Rename this ${title.toLowerCase()}.`}
+      footer={
+        <>
+          <AdminButton variant="outline" onClick={close} disabled={loading}>
             Cancel
-          </button>
-
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="px-4 py-2 text-sm rounded
-               bg-[#6D35D9] text-white
-               cursor-pointer transition-colors
-               hover:bg-[#5B2BC0]
-               disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading
-              ? mode === "create"
-                ? "Creating..."
-                : "Updating..."
-              : mode === "create"
-              ? "Create"
-              : "Update"}
-          </button>
-        </div>
-      </div>
-    </div>
+          </AdminButton>
+          <AdminButton onClick={handleSubmit} loading={loading}>
+            {loading ? (isCreate ? "Creating…" : "Saving…") : isCreate ? `Create ${title}` : "Save changes"}
+          </AdminButton>
+        </>
+      }
+    >
+      <AdminField label={label} required htmlFor={inputId} error={error}>
+        <input
+          ref={inputRef}
+          id={inputId}
+          type="text"
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            setError("");
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleSubmit();
+            }
+          }}
+          placeholder={placeholder ?? `Enter ${label.toLowerCase()}`}
+          maxLength={maxLength}
+          disabled={loading}
+          aria-invalid={!!error}
+          className={`${adminInputCls(error)} h-11 sm:h-10 !py-0 disabled:bg-[#F4F1FA] disabled:text-[#8A80A3]`}
+        />
+      </AdminField>
+      <p className={`m-0 mt-1.5 text-xs text-right tabular-nums ${nearLimit ? "text-[#C8372D]" : "text-[#8A80A3]"}`}>
+        {name.length}/{maxLength}
+      </p>
+    </AdminModal>
   );
 }
-
