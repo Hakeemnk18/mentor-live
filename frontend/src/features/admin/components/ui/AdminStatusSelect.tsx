@@ -160,17 +160,20 @@ export default function AdminStatusSelect<V extends string>({
 
   const pill = (
     <span
-      className={`inline-flex items-center gap-1.5 h-7 pl-2.5 ${canChange ? "pr-1.5" : "pr-2.5"} rounded-full border text-xs font-semibold whitespace-nowrap ${tone.pill}`}
+      // fixed minimum width + fixed icon slot: switching status or showing the spinner never changes the size
+      className={`inline-flex items-center gap-1.5 h-7 min-w-[104px] pl-2.5 ${canChange ? "pr-1.5" : "pr-2.5"} rounded-full border text-xs font-semibold whitespace-nowrap ${tone.pill}`}
     >
+      <span className="w-3 h-3 shrink-0 inline-flex items-center justify-center" aria-hidden>
       {busy ? (
         <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
           <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity=".3" strokeWidth="3" />
           <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
         </svg>
       ) : (
-        <span className={`w-1.5 h-1.5 rounded-full ${tone.dot}`} aria-hidden />
+        <span className={`w-1.5 h-1.5 rounded-full ${tone.dot}`} />
       )}
-      {current.label}
+      </span>
+      <span className="flex-1">{current.label}</span>
       {canChange && (
         <svg className={`w-3.5 h-3.5 opacity-70 transition-transform ${open ? "rotate-180" : ""}`} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
           <path d="M5.5 7.75 10 12.25l4.5-4.5" />
@@ -187,14 +190,15 @@ export default function AdminStatusSelect<V extends string>({
     <div className="p-3.5">
       <p className="text-sm font-semibold text-[#2A1650]">{confirmCfg.title}</p>
       <p className="mt-1 text-xs text-gray-500 leading-relaxed">{confirmCfg.message}</p>
-      <div className="mt-3 flex justify-end gap-2">
+      {/* phone sheet: big, full-width buttons for fingers; laptop popover: compact */}
+      <div className={`mt-3 flex gap-2 ${sheet ? "pt-1" : "justify-end"}`}>
         <button
           type="button"
           onClick={() => {
             setPending(null);
             triggerRef.current?.focus(); // keep keyboard focus so Esc / arrows keep working
           }}
-          className="h-9 px-3.5 rounded-full border border-[#E4DDF2] bg-white text-xs font-semibold text-gray-700 hover:bg-[#F4F1FA] cursor-pointer"
+          className={`${sheet ? "flex-1 h-12 text-sm" : "h-9 px-3.5 text-xs"} rounded-full border border-[#E4DDF2] bg-white font-semibold text-gray-700 hover:bg-[#F4F1FA] cursor-pointer`}
         >
           Cancel
         </button>
@@ -202,7 +206,7 @@ export default function AdminStatusSelect<V extends string>({
           type="button"
           autoFocus
           onClick={() => pending && void apply(pending)}
-          className="h-9 px-3.5 rounded-full bg-[#6D35D9] text-xs font-semibold text-white hover:bg-[#5B2BC0] cursor-pointer"
+          className={`${sheet ? "flex-1 h-12 text-sm" : "h-9 px-3.5 text-xs"} rounded-full bg-[#6D35D9] font-semibold text-white hover:bg-[#5B2BC0] cursor-pointer`}
         >
           {confirmCfg.confirmLabel}
         </button>
@@ -255,7 +259,7 @@ export default function AdminStatusSelect<V extends string>({
         disabled={busy}
         onClick={() => (open ? closeMenu() : openMenu())}
         onKeyDown={onKeyDown}
-        className="rounded-full cursor-pointer transition-transform hover:scale-[1.03] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#6D35D9]/25 disabled:cursor-wait"
+        className="rounded-full cursor-pointer transition-[filter] hover:brightness-[0.97] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#6D35D9]/25 disabled:cursor-wait"
       >
         {pill}
       </button>

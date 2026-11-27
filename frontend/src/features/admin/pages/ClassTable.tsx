@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { AdminTable } from "../components/AdminTable";
 import { AdminPageActions } from "../components/AdminPageActions";
-import { AdminBadge, AdminFilter, AdminFilterBar, AdminPageSize, AdminSearchInput } from "../components/ui";
-import { createClass, updateClass, getClasses } from "../../../api/class.api";
+import { AdminActiveStatus, AdminFilter, AdminFilterBar, AdminPageSize, AdminSearchInput } from "../components/ui";
+import { createClass, updateClass, getClasses, blockClass, unblockClass } from "../../../api/class.api";
 import toast from "react-hot-toast";
-import TopLoader from "../../../shared/components/TopLoader";
 import Pagination from "../../../shared/components/Pagination";
 import type { Column } from "../components/AdminTable";
 import NameFormModal from "../components/NameFormModal/NameFormModal";
@@ -13,7 +12,7 @@ import { handleApiError } from "../../../shared/utils/handle.api.error";
 import type { ClassRow } from "../../../shared/types/class.types";
 export default function ClassPage() {
   const [classes, setClasses] = useState<ClassRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // starts loading: shows placeholder rows, not "No records found"
   const [modalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState<"create" | "edit">("create");
   const [editingClass, setEditingClass] = useState<ClassRow | undefined>();
@@ -35,7 +34,20 @@ export default function ClassPage() {
       key: "status",
       label: "Status",
       render: (c) => (
-        <AdminBadge tone={c.isDeleted ? "danger" : "success"}>{c.isDeleted ? "Inactive" : "Active"}</AdminBadge>
+        <AdminActiveStatus
+          active={!c.isDeleted}
+          confirmInactive={{ title: `Make "${c.name}" inactive?`, message: "It will be removed from the website lists, so students won't be able to pick this class until made active again.", confirmLabel: "Make inactive" }}
+          confirmActive={{ title: `Make "${c.name}" active?`, message: "It will show in the website lists again.", confirmLabel: "Make active" }}
+          onChange={async (on) => {
+            try {
+              await (on ? unblockClass(c._id) : blockClass(c._id));
+              toast.success(`${c.name} is now ${on ? "active" : "inactive"}`);
+              fetchClasses();
+            } catch (err: unknown) {
+              handleApiError(err);
+            }
+          }}
+        />
       ),
     },
   ];
@@ -162,21 +174,19 @@ export default function ClassPage() {
         </AdminFilter>
       </AdminFilterBar>
 
-      {loading ? (
-        <TopLoader loading={loading} />
-      ) : (
-        <AdminTable
-          data={classes}
-          columns={columns}
-          actions={[
-            {
-              label: "Edit",
-              onClick: handleEdit,
-            },
-          ]}
-          getRowId={(row) => row._id}
-        />
-      )}
+      {/* table stays on screen while loading, so it never jumps */}
+      <AdminTable
+        loading={loading}
+        data={classes}
+        columns={columns}
+        actions={[
+          {
+            label: "Edit",
+            onClick: handleEdit,
+          },
+        ]}
+        getRowId={(row) => row._id}
+      />
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       <NameFormModal
         open={modalOpen}

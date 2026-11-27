@@ -64,7 +64,8 @@ export default function DashboardKpiCard({ data }: KpiCardProps) {
         {data.action ? (
           <button 
             onClick={() => navigate(data.action!.href)}
-            className="w-full bg-gray-50 hover:bg-[#6D35D9]/10 text-gray-600 hover:text-[#6D35D9] border border-gray-100 hover:border-[#6D35D9]/20 text-sm font-bold py-2.5 px-4 rounded-xl flex justify-between items-center transition-all duration-200"
+            type="button"
+            className="w-full bg-[#FAF8FE] hover:bg-[#F4F1FA] text-[#655B7E] hover:text-[#6D35D9] border border-[#E4DDF2] hover:border-[#CBB9F0] text-sm font-semibold h-10 px-4 rounded-full flex justify-between items-center cursor-pointer transition-colors duration-200"
           >
             {data.action.label}
             <span className="text-lg leading-none">&rarr;</span>

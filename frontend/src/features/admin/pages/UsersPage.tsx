@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
+import type { StatusTone } from "../components/ui";
 import toast from "react-hot-toast";
 import { AdminTable } from "../components/AdminTable";
 import { AdminPageActions } from "../components/AdminPageActions";
-import { AdminFilter, AdminFilterBar, AdminFilterSelect, AdminSearchInput } from "../components/ui";
+import { AdminFilter, AdminFilterBar, AdminFilterSelect, AdminSearchInput, AdminActiveStatus, AdminBadge } from "../components/ui";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
-import TopLoader from "../../../shared/components/TopLoader";
 import UserFormModal from "../components/UserFormModal";
-import ConfirmModal from "../components/ConfirmModal";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 import { getUsers, createUser, editUser, blockUser, unblockUser } from "../../../api/user.api";
 import type { Column } from "../components/AdminTable";
@@ -20,10 +19,10 @@ const ROLE_LABELS: Record<UserRole, string> = {
   salesPerson: "Sales Person",
 };
 
-const ROLE_COLORS: Record<UserRole, string> = {
-  user: "bg-blue-100 text-blue-700",
-  admin: "bg-purple-100 text-purple-700",
-  salesPerson: "bg-amber-100 text-amber-700",
+const ROLE_TONES: Record<UserRole, StatusTone> = {
+  user: "info",
+  admin: "violet",
+  salesPerson: "warning",
 };
 
 /* ── columns ──────────────────────────────────────────────────── */
@@ -42,27 +41,21 @@ const columns: Column<AdminUser>[] = [
     key: "role",
     label: "Role",
     render: (u) => (
-      <span className={`px-2 py-1 rounded text-xs font-medium ${ROLE_COLORS[u.role]}`}>
-        {ROLE_LABELS[u.role]}
-      </span>
+      <AdminBadge tone={ROLE_TONES[u.role]}>{ROLE_LABELS[u.role]}</AdminBadge>
     ),
   },
   {
     key: "verified",
     label: "Verified",
     render: (u) => (
-      <span className={`px-2 py-1 rounded text-xs font-medium ${u.isVerified ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-        {u.isVerified ? "Yes" : "No"}
-      </span>
+      <AdminBadge tone={u.isVerified ? "success" : "neutral"}>{u.isVerified ? "Yes" : "No"}</AdminBadge>
     ),
   },
   {
     key: "status",
     label: "Status",
     render: (u) => (
-      <span className={`px-2 py-1 rounded text-xs font-medium ${u.isBlocked ? "bg-red-100 text-red-600" : "bg-green-100 text-green-600"}`}>
-        {u.isBlocked ? "Blocked" : "Active"}
-      </span>
+      <AdminBadge tone={u.isBlocked ? "danger" : "success"}>{u.isBlocked ? "Blocked" : "Active"}</AdminBadge>
     ),
   },
 ];
@@ -90,7 +83,7 @@ const DEFAULT_SORT = "createdAt";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // starts loading: shows placeholder rows, not "No records found"
   const [submitting, setSubmitting] = useState(false);
 
   /* form modal */
@@ -99,10 +92,6 @@ export default function UsersPage() {
   const [editing, setEditing] = useState<AdminUser | undefined>();
 
   /* confirm modal */
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmTarget, setConfirmTarget] = useState<AdminUser | null>(null);
-  const [confirmAction, setConfirmAction] = useState<"block" | "unblock">("block");
-  const [confirmLoading, setConfirmLoading] = useState(false);
 
   /* filters */
   const [search, setSearch] = useState("");
@@ -178,44 +167,35 @@ export default function UsersPage() {
     }
   };
 
-  const openBlockConfirm = (u: AdminUser) => {
-    setConfirmTarget(u);
-    setConfirmAction("block");
-    setConfirmOpen(true);
-  };
 
-  const openUnblockConfirm = (u: AdminUser) => {
-    setConfirmTarget(u);
-    setConfirmAction("unblock");
-    setConfirmOpen(true);
-  };
 
-  const handleConfirm = async () => {
-    if (!confirmTarget) return;
-    try {
-      setConfirmLoading(true);
-      if (confirmAction === "block") {
-        await blockUser(confirmTarget.id);
-        toast.success(`${confirmTarget.name} blocked`);
-      } else {
-        await unblockUser(confirmTarget.id);
-        toast.success(`${confirmTarget.name} unblocked`);
-      }
-      setConfirmOpen(false);
-      setConfirmTarget(null);
-      fetchUsers();
-    } catch (err: unknown) {
-      handleApiError(err);
-    } finally {
-      setConfirmLoading(false);
-    }
-  };
 
   const handleSort = (field: SortField) => {
     setSort((prev) => nextSort(prev, field));
     setPage(1);
   };
 
+
+  /* status can be changed straight from the table */
+  const tableColumns: typeof columns = columns.map((col) =>
+    col.key === "status" ? { ...col, render: (u) => (
+        <AdminActiveStatus
+          active={!u.isBlocked}
+          inactiveLabel="Blocked"
+          confirmInactive={{ title: `Block ${u.name}?`, message: "They won't be able to log in to the admin panel until unblocked.", confirmLabel: "Block" }}
+          confirmActive={{ title: `Unblock ${u.name}?`, message: "They will be able to log in to the admin panel again.", confirmLabel: "Unblock" }}
+          onChange={async (on) => {
+            try {
+              await (on ? unblockUser(u.id) : blockUser(u.id));
+              toast.success(`${u.name} ${on ? "unblocked" : "blocked"}`);
+              fetchUsers();
+            } catch (err: unknown) {
+              handleApiError(err);
+            }
+          }}
+        />
+      ) } : col,
+  );
 
   return (
     <AdminPageContainer>
@@ -271,30 +251,20 @@ export default function UsersPage() {
       </AdminFilterBar>
 
       {/* ── Table ── */}
-      {loading ? (
-        <TopLoader loading={loading} />
-      ) : (
-        <AdminTable
-          data={users}
-          columns={columns}
-          actions={[
-            {
-              label: "Edit",
-              onClick: handleEdit,
-              className: "text-sm font-medium cursor-pointer text-gray-600 hover:text-[#6D35D9]",
-            },
-            {
-              label: (u) => (u.isBlocked ? "Unblock" : "Block"),
-              onClick: (u) => (u.isBlocked ? openUnblockConfirm(u) : openBlockConfirm(u)),
-              className: (u) =>
-                u.isBlocked
-                  ? "text-sm font-medium cursor-pointer text-green-600 hover:opacity-80"
-                  : "text-sm font-medium cursor-pointer text-red-500 hover:opacity-80",
-            },
-          ]}
-          getRowId={(u) => u.id}
-        />
-      )}
+      {/* table stays on screen while loading, so it never jumps */}
+      <AdminTable
+        loading={loading}
+        data={users}
+        columns={tableColumns}
+        actions={[
+          {
+            label: "Edit",
+            onClick: handleEdit,
+            className: "text-sm font-medium cursor-pointer text-gray-600 hover:text-[#6D35D9]",
+          },
+        ]}
+        getRowId={(u) => u.id}
+      />
 
       {/* ── Pagination ── */}
       <Pagination
@@ -315,20 +285,6 @@ export default function UsersPage() {
       />
 
       {/* ── Confirm Modal ── */}
-      <ConfirmModal
-        open={confirmOpen}
-        title={confirmAction === "block" ? "Block User" : "Unblock User"}
-        message={
-          confirmAction === "block"
-            ? `Are you sure you want to block ${confirmTarget?.name}? They will not be able to log in.`
-            : `Are you sure you want to unblock ${confirmTarget?.name}? They will regain access.`
-        }
-        confirmLabel={confirmAction === "block" ? "Block" : "Unblock"}
-        confirmVariant={confirmAction === "block" ? "danger" : "warning"}
-        loading={confirmLoading}
-        onConfirm={handleConfirm}
-        onClose={() => { setConfirmOpen(false); setConfirmTarget(null); }}
-      />
     </AdminPageContainer>
   );
 }

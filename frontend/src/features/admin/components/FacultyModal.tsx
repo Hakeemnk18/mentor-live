@@ -4,7 +4,7 @@ import SearchableSelect from "../../../shared/components/SearchableSelect";
 import TimeInput from "../../../shared/components/TimeInput";
 import { formatTimeAMPM } from "../../../shared/utils/time.utils";
 import FacultyImageField from "./FacultyImageField";
-import { AdminAsyncMultiSelect, AdminButton, AdminToggle } from "./ui";
+import { AdminAsyncMultiSelect, AdminButton, AdminToggle, adminInputCls } from "./ui";
 import type { AsyncOption } from "./ui";
 import { CHAPTER_SEARCH_LIMIT, searchChapters } from "./chapterSearch";
 import { getSubjectVariants } from "../../../api/chapter.api";
@@ -919,15 +919,16 @@ export default function FacultyModal({
                                       clearFieldError(`subjects`);
                                     }}
                                     placeholder="Fee"
-                                    className="w-20 px-1.5 py-0.5 border border-gray-300 rounded text-gray-800 text-xs focus:outline-none focus:border-[#6D35D9]"
+                                    className="w-20 h-8 px-2 border border-[#E4DDF2] rounded-lg bg-white text-[#2A1650] text-xs tabular-nums focus:outline-none focus:border-[#6D35D9] focus:ring-[3px] focus:ring-[#6D35D9]/15"
                                   />
                                   <span className="text-gray-400 text-xs">/hr</span>
                                 </div>
                                 <button
                                   type="button"
                                   onClick={() => toggleVariant(group.id, v._id)}
-                                  className="text-red-400 hover:text-red-600 leading-none"
+                                  className="w-7 h-7 rounded-full inline-flex items-center justify-center text-[#C8372D] cursor-pointer hover:bg-[#FFE3DF] leading-none"
                                   title="Remove"
+                                  aria-label="Remove subject"
                                 >
                                   {String.fromCharCode(215)}
                                 </button>
@@ -949,7 +950,7 @@ export default function FacultyModal({
                                 key={v._id}
                                 type="button"
                                 onClick={() => toggleVariant(group.id, v._id)}
-                                className="px-3 py-1 text-xs rounded-full border border-gray-300 bg-white text-gray-700 hover:border-[#6D35D9] hover:text-[#6D35D9] transition-colors"
+                                className="h-8 px-3 text-xs font-semibold rounded-full border border-[#E4DDF2] bg-white text-[#655B7E] cursor-pointer hover:border-[#6D35D9] hover:text-[#6D35D9] transition-colors"
                               >
                                 + {v.subjectName}
                               </button>
@@ -1020,7 +1021,7 @@ export default function FacultyModal({
                           type="button"
                           onClick={handleAddTimeRow}
                           disabled={!newRowTime}
-                          className="px-3 py-1.5 text-sm bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 disabled:opacity-50"
+                          className="shrink-0 h-10 px-4 inline-flex items-center rounded-full text-sm font-semibold text-[#6D35D9] bg-[#F4F1FA] cursor-pointer hover:bg-[#EDE6FB] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           + Add time
                         </button>
@@ -1087,7 +1088,7 @@ export default function FacultyModal({
                                       className={`px-2.5 py-0.5 text-xs rounded-full border font-medium transition-colors ${
                                         checked
                                           ? "bg-[#6D35D9] border-[#6D35D9] text-white"
-                                          : "bg-white border-gray-300 text-gray-500 hover:border-[#6D35D9] hover:text-[#6D35D9]"
+                                          : "bg-white border-[#E4DDF2] text-[#655B7E] hover:border-[#6D35D9] hover:text-[#6D35D9]"
                                       }`}
                                     >
                                       {checked ? "✓ " : ""}{v.label}
@@ -1201,7 +1202,7 @@ export default function FacultyModal({
                       .map((cs) => (
                         <span
                           key={cs.id ?? cs.chapter}
-                          className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-50 border border-gray-300 rounded-full text-gray-400"
+                          className="flex items-center gap-1 h-7 px-2.5 text-xs bg-[#FAF8FE] border border-[#E4DDF2] rounded-full text-[#8A80A3]"
                         >
                           {cs.label ?? cs.chapter}
                           <button
@@ -1520,8 +1521,6 @@ function Field({
   );
 }
 
-const inp = (hasError: boolean) =>
-  `w-full px-3 py-2 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30 ${
-    hasError ? "border-red-400" : "border-gray-300"
-  }`;
+/** text input style — same as every other admin form */
+const inp = (hasError: boolean) => adminInputCls(hasError);
 

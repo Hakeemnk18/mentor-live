@@ -18,6 +18,9 @@ import { GetAllQuerySchema } from "../../../core/shared/dtos/get.all.doc.dto.js"
 import { parseReq } from "../../../core/utils/parse.query.helper.js";
 
 
+import type { IBlockClassUseCase } from "../use-cases/interfaces/block.class.use-case.interface.js";
+import type { IUnblockClassUseCase } from "../use-cases/interfaces/unblock.class.use-case.interface.js";
+
 @injectable()
 export class ClassController implements IClassController {
   constructor(
@@ -31,7 +34,13 @@ export class ClassController implements IClassController {
     private readonly _getClassesForUserUseCase: IGetClassesForUserUseCase,
 
     @inject("IGetClassesForAdminUseCase")
-    private readonly _getClassesForAdminUseCase: IGetClassesForAdminUseCase
+    private readonly _getClassesForAdminUseCase: IGetClassesForAdminUseCase,
+
+    @inject("IBlockClassUseCase")
+    private readonly _blockClassUseCase: IBlockClassUseCase,
+
+    @inject("IUnblockClassUseCase")
+    private readonly _unblockClassUseCase: IUnblockClassUseCase
   ) {}
 
   /** 🏗️ Create class (Admin) */
@@ -103,6 +112,30 @@ export class ClassController implements IClassController {
       
     } catch (error) {
       console.log("Error in getClassesForAdmin:", error);
+      handleError(res, error);
+    }
+  }
+
+  /** Make a class inactive (admin) */
+  async blockClass(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      validateObjectId(id);
+      await this._blockClassUseCase.execute(id!);
+      res.status(HttpStatusCode.OK).json({ success: true, message: ResponseMessages.CLASS_DELETED });
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  /** Make a class active again (admin) */
+  async unblockClass(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      validateObjectId(id);
+      await this._unblockClassUseCase.execute(id!);
+      res.status(HttpStatusCode.OK).json({ success: true, message: ResponseMessages.CLASS_RESTORED });
+    } catch (error) {
       handleError(res, error);
     }
   }

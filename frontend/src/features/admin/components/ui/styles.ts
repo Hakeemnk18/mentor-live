@@ -25,7 +25,7 @@ export const adminInputCls = (error?: string | boolean) =>
       : "border-[#E4DDF2] hover:border-[#CBB9F0] focus:border-[#6D35D9] focus:ring-[#6D35D9]/15",
   ].join(" ");
 
-export type StatusTone = "info" | "success" | "warning" | "danger" | "neutral";
+export type StatusTone = "info" | "success" | "warning" | "danger" | "neutral" | "violet";
 
 /** Status colours shared by AdminBadge and AdminStatusSelect. */
 export const STATUS_TONES: Record<StatusTone, { pill: string; dot: string }> = {
@@ -34,4 +34,5 @@ export const STATUS_TONES: Record<StatusTone, { pill: string; dot: string }> = {
   warning: { pill: "bg-[#FFF1D6] text-[#8A5A00] border-[#FBE2AE]", dot: "bg-[#E0A100]" },
   danger: { pill: "bg-[#FFE3DF] text-[#C8372D] border-[#FFCBC4]", dot: "bg-[#FF6B5E]" },
   neutral: { pill: "bg-[#F4F1FA] text-[#655B7E] border-[#E4DDF2]", dot: "bg-[#A39CB5]" },
+  violet: { pill: "bg-[#EFE7FD] text-[#5B2BC0] border-[#DCCDF8]", dot: "bg-[#6D35D9]" },
 };

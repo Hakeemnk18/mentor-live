@@ -2,10 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AdminTable } from "../components/AdminTable";
 import { AdminPageActions } from "../components/AdminPageActions";
-import { AdminFilter, AdminFilterBar, AdminFilterSelect, AdminSearchInput } from "../components/ui";
+import { AdminFilter, AdminFilterBar, AdminFilterSelect, AdminSearchInput, AdminActiveStatus, AdminBadge } from "../components/ui";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
-import TopLoader from "../../../shared/components/TopLoader";
 import toast from "react-hot-toast";
 import type { Column } from "../components/AdminTable";
 import { getStudents, blockStudent, unblockStudent } from "../../../api/student.api";
@@ -132,13 +131,7 @@ function buildColumns(openId: string | null, setOpenId: (id: string | null) => v
     key: "status",
     label: "Status",
     render: (s) => (
-      <span
-        className={`px-2 py-1 rounded text-xs font-medium ${
-          s.isDeleted ? "bg-red-100 text-red-600" : "bg-green-100 text-green-600"
-        }`}
-      >
-        {s.isDeleted ? "Blocked" : "Active"}
-      </span>
+      <AdminBadge tone={s.isDeleted ? "danger" : "success"}>{s.isDeleted ? "Blocked" : "Active"}</AdminBadge>
     ),
   },
   ];
@@ -147,7 +140,7 @@ function buildColumns(openId: string | null, setOpenId: (id: string | null) => v
 /* ── component ────────────────────────────────────────────── */
 export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // starts loading: shows placeholder rows, not "No records found"
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [syllabuses, setSyllabuses] = useState<SyllabusOption[]>([]);
   const [contactOpenId, setContactOpenId] = useState<string | null>(null);
@@ -206,21 +199,28 @@ export default function StudentsPage() {
   }, [page, search, classId, syllabusId, statusFilter]);
 
   /* ── handlers ── */
-  const handleToggleBlock = async (s: Student) => {
-    try {
-      if (s.isDeleted) {
-        await unblockStudent(s.id);
-        toast.success(`${s.name} unblocked`);
-      } else {
-        await blockStudent(s.id);
-        toast.success(`${s.name} blocked`);
-      }
-      fetchStudents();
-    } catch (err: unknown) {
-      handleApiError(err);
-    }
-  };
 
+
+  /* status can be changed straight from the table */
+  const tableColumns: typeof columns = columns.map((col) =>
+    col.key === "status" ? { ...col, render: (s) => (
+        <AdminActiveStatus
+          active={!s.isDeleted}
+          inactiveLabel="Blocked"
+          confirmInactive={{ title: `Block ${s.name}?`, message: "This student won't be able to book classes until unblocked.", confirmLabel: "Block" }}
+          confirmActive={{ title: `Unblock ${s.name}?`, message: "This student will be able to book classes again.", confirmLabel: "Unblock" }}
+          onChange={async (on) => {
+            try {
+              await (on ? unblockStudent(s.id) : blockStudent(s.id));
+              toast.success(`${s.name} ${on ? "unblocked" : "blocked"}`);
+              fetchStudents();
+            } catch (err: unknown) {
+              handleApiError(err);
+            }
+          }}
+        />
+      ) } : col,
+  );
 
   return (
     <AdminPageContainer>
@@ -256,25 +256,13 @@ export default function StudentsPage() {
       </AdminFilterBar>
 
       {/* ── Table ── */}
-      {loading ? (
-        <TopLoader loading={loading} />
-      ) : (
-        <AdminTable
-          data={students}
-          columns={columns}
-          actions={[
-            {
-              label: (s) => (s.isDeleted ? "Unblock" : "Block"),
-              onClick: handleToggleBlock,
-              className: (s) =>
-                s.isDeleted
-                  ? "text-sm font-medium cursor-pointer text-green-600 hover:opacity-80"
-                  : "text-sm font-medium cursor-pointer text-red-500 hover:opacity-80",
-            },
-          ]}
-          getRowId={(s) => s.id}
-        />
-      )}
+      {/* table stays on screen while loading, so it never jumps */}
+      <AdminTable
+        loading={loading}
+        data={students}
+        columns={tableColumns}
+        getRowId={(s) => s.id}
+      />
 
       {/* ── Pagination ── */}
       <Pagination

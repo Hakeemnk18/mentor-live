@@ -16,3 +16,4 @@ export { default as AdminBadge } from "./AdminBadge";
 export { AdminFilterBar, AdminFilter, AdminFilterSelect, AdminSearchInput, AdminPageSize } from "./AdminFilterBar";
 export { default as AdminTabs } from "./AdminTabs";
 export { STATUS_TONES } from "./styles";
+export { default as AdminActiveStatus } from "./AdminActiveStatus";

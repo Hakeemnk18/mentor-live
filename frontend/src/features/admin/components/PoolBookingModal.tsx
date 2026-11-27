@@ -9,6 +9,7 @@ import {
 import { getFacultyAvailableSlots } from "../../../api/faculty.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 import ConfirmModal from "./ConfirmModal";
+import { AdminBadge, AdminButton, AdminContactActions, AdminModal } from "./ui";
 
 import type { PoolBooking, PoolStudent, PoolStudentsResponse } from "../../../shared/types/booking.types";
 /* ───── helpers ─────────────────────────────────────────── */
@@ -31,9 +32,9 @@ const fmtDate = (iso: string) =>
   });
 
 const Detail = ({ label, value }: { label: string; value: React.ReactNode }) => (
-  <div className="flex flex-col gap-0.5">
-    <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">{label}</span>
-    <span className="text-sm text-gray-800">{value}</span>
+  <div className="flex flex-col gap-0.5 min-w-0">
+    <span className="text-[11px] font-semibold uppercase tracking-wider text-[#8A80A3]">{label}</span>
+    <span className="text-sm text-[#2A1650] break-words">{value}</span>
   </div>
 );
 
@@ -174,160 +175,143 @@ export default function PoolBookingModal({ booking, onClose, onConfirmed, readOn
     }
   };
 
+  const busy = confirming || !!removingId;
+  const close = () => {
+    if (!busy) onClose();
+  };
+
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-[1000]" onClick={onClose}>
-        <div className="absolute inset-0 bg-black/40" />
-      </div>
-
-      {/* Panel */}
-      <div className="fixed inset-0 z-[1001] flex items-center justify-center pointer-events-none">
-        <div
-          className="pointer-events-auto relative w-full max-w-xl mx-4 bg-white rounded-xl shadow-xl flex flex-col max-h-[90vh]"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b px-6 py-4">
-            <div className="flex items-center gap-2">
-              <div>
-                <h2 className="text-base font-semibold text-gray-900">Pool Booking</h2>
-                <p className="text-xs text-gray-400 mt-0.5 capitalize">{booking.mode} mode</p>
-              </div>
-              {isConfirmed && (
-                <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
-                  Confirmed
-                </span>
-              )}
-            </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+      <AdminModal
+        open
+        onClose={close}
+        size="lg"
+        zIndex={1000}
+        closeOnEsc={!removeTarget}
+        closeOnBackdrop={!removeTarget}
+        title={
+          <span className="flex flex-wrap items-center gap-2">
+            Pool Booking
+            {isConfirmed && <AdminBadge tone="success">Confirmed</AdminBadge>}
+          </span>
+        }
+        description={<span className="capitalize">{booking.mode} mode</span>}
+        footer={
+          <>
+            <AdminButton variant="outline" onClick={close} disabled={busy}>
+              Close
+            </AdminButton>
+            {!readOnly && !isConfirmed && (
+              <AdminButton
+                onClick={handleConfirm}
+                loading={confirming}
+                disabled={booking.mode === "chapter" && selectedTimes.length === 0}
+              >
+                {confirming ? "Confirming…" : "Confirm Booking"}
+              </AdminButton>
+            )}
+          </>
+        }
+      >
+        <div className="space-y-5">
+          {/* Booking info */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-4">
+            <Detail label="Faculty" value={booking.faculty.name} />
+            <Detail label="Class" value={booking.class.name} />
+            <Detail label="Syllabus" value={booking.syllabus.name} />
+            <Detail label="Mode" value={<span className="capitalize">{booking.mode}</span>} />
+            {booking.chapter && <Detail label="Chapter" value={booking.chapter.name} />}
+            {booking.slot && <Detail label="Slot" value={fmtTime(booking.slot.time)} />}
+            <Detail label="Total Students" value={<span className="tabular-nums">{booking.totalStudents}</span>} />
+            <Detail label="Booked On" value={fmtDate(booking.createdAt)} />
+            <Detail
+              label="Pending Contact"
+              value={
+                <AdminBadge tone={booking.hasPendingContact ? "warning" : "success"}>
+                  {booking.hasPendingContact ? "Yes" : "No"}
+                </AdminBadge>
+              }
+            />
           </div>
 
-          {/* Body */}
-          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-
-            {/* Booking info */}
-            <div className="grid grid-cols-2 gap-4">
-              <Detail label="Faculty" value={booking.faculty.name} />
-              <Detail label="Class" value={booking.class.name} />
-              <Detail label="Syllabus" value={booking.syllabus.name} />
-              <Detail label="Mode" value={booking.mode} />
-              {booking.chapter && <Detail label="Chapter" value={booking.chapter.name} />}
-              {booking.slot && <Detail label="Slot" value={fmtTime(booking.slot.time)} />}
-              <Detail label="Total Students" value={booking.totalStudents} />
-              <Detail label="Booked On" value={fmtDate(booking.createdAt)} />
-              <Detail
-                label="Pending Contact"
-                value={
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                    booking.hasPendingContact ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-700"
-                  }`}>
-                    {booking.hasPendingContact ? "Yes" : "No"}
-                  </span>
-                }
-              />
-            </div>
-
-            {/* Students list */}
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                Enrolled Students
-              </p>
-              {loadingDetail ? (
-                <p className="text-sm text-gray-400">Loading students…</p>
-              ) : !detail || !detail.students || detail.students.length === 0 ? (
-                <p className="text-sm text-gray-400">No students found.</p>
-              ) : (
-                <div className="divide-y divide-gray-100 rounded-lg border border-gray-200 overflow-hidden">
-                  {detail.students.map((s) => (
-                    <div key={s.id} className="flex items-center justify-between px-4 py-2.5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600">
-                          {s.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-800">{s.name}</p>
-                          <p className="text-xs text-gray-400">{s.phone}</p>
-                          <span className={`text-xs px-1.5 py-0.5 rounded ${
-                            s.isContacted ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
-                          }`}>
-                            {s.isContacted ? "Contacted" : "Not Contacted"}
-                          </span>
-                        </div>
+          {/* Students */}
+          <div>
+            <p className="m-0 mb-2 text-xs font-semibold text-[#2A1650]/80">Enrolled students</p>
+            {loadingDetail ? (
+              <p className="m-0 text-sm text-[#8A80A3]">Loading students…</p>
+            ) : !detail || !detail.students || detail.students.length === 0 ? (
+              <p className="m-0 text-sm text-[#8A80A3]">No students found.</p>
+            ) : (
+              <ul className="m-0 p-0 list-none rounded-2xl border border-[#E4DDF2] overflow-hidden divide-y divide-[#EFE9FA]">
+                {detail.students.map((s) => (
+                  <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 px-3.5 sm:px-4 py-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 shrink-0 rounded-full bg-[#F4F1FA] text-[#6D35D9] flex items-center justify-center text-sm font-bold">
+                        {s.name.charAt(0).toUpperCase()}
                       </div>
+                      <div className="min-w-0">
+                        <p className="m-0 text-sm font-semibold text-[#2A1650] truncate">{s.name}</p>
+                        <p className="m-0 text-xs text-[#8A80A3] tabular-nums">{s.phone}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 ml-auto">
+                      <AdminBadge tone={s.isContacted ? "success" : "warning"}>
+                        {s.isContacted ? "Contacted" : "Not contacted"}
+                      </AdminBadge>
+                      <AdminContactActions phone={s.phone} name={s.name} />
                       {!isConfirmed && !readOnly && (
                         <button
+                          type="button"
                           onClick={() => setRemoveTarget(s)}
                           disabled={removingId === s.id}
-                          className="text-xs px-2.5 py-1 text-red-600 border border-red-200 rounded-md hover:bg-red-50 disabled:opacity-50 transition-colors"
+                          className="h-8 px-3 rounded-full text-xs font-semibold text-[#C8372D] border border-[#FFCBC4] bg-white cursor-pointer hover:bg-[#FFE3DF] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {removingId === s.id ? "Removing…" : "Remove"}
                         </button>
                       )}
                     </div>
-                  ))}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Slot picker — chapter mode confirm, hidden for read-only roles */}
+          {booking.mode === "chapter" && !readOnly && !isConfirmed && (
+            <div>
+              <p className="m-0 mb-2 text-xs font-semibold text-[#2A1650]/80">
+                Assign time slot(s) to confirm <span className="text-[#FF6B5E]">*</span>
+              </p>
+              {loadingSlots ? (
+                <p className="m-0 text-sm text-[#8A80A3]">Loading slots…</p>
+              ) : availableSlots.length === 0 ? (
+                <p className="m-0 text-sm text-[#8A80A3]">No available slots for this faculty.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {availableSlots.map((s) => {
+                    const selected = selectedTimes.includes(s.time);
+                    return (
+                      <button
+                        key={s.time}
+                        type="button"
+                        onClick={() => toggleSlot(s.time)}
+                        aria-pressed={selected}
+                        className={`h-9 px-3.5 text-sm font-semibold rounded-full border cursor-pointer transition-colors tabular-nums ${
+                          selected
+                            ? "bg-[#6D35D9] border-[#6D35D9] text-white"
+                            : "bg-white border-[#E4DDF2] text-[#2A1650] hover:border-[#6D35D9] hover:text-[#6D35D9]"
+                        }`}
+                      >
+                        {s.time}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
-
-            {/* Slot picker — chapter mode confirm, hidden for read-only roles */}
-            {booking.mode === "chapter" && !readOnly && !isConfirmed && (
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                  Assign Time Slot(s) to Confirm
-                </p>
-                {loadingSlots ? (
-                  <p className="text-sm text-gray-400">Loading slots…</p>
-                ) : availableSlots.length === 0 ? (
-                  <p className="text-sm text-gray-400">No available slots for this faculty.</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {availableSlots.map((s) => {
-                      const selected = selectedTimes.includes(s.time);
-                      return (
-                        <button
-                          key={s.time}
-                          type="button"
-                          onClick={() => toggleSlot(s.time)}
-                          className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-                            selected
-                              ? "bg-[#6D35D9] border-[#6D35D9] text-white"
-                              : "border-gray-300 text-gray-700 hover:border-[#6D35D9] hover:text-[#6D35D9]"
-                          }`}
-                        >
-                          {s.time}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="border-t px-6 py-4 flex items-center justify-end gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              Close
-            </button>
-            {!readOnly && !isConfirmed && (
-              <button
-                onClick={handleConfirm}
-                disabled={
-                  confirming ||
-                  (booking.mode === "chapter" && selectedTimes.length === 0)
-                }
-                className="px-4 py-2 text-sm font-medium bg-[#6D35D9] text-white rounded-md hover:bg-[#5B2BC0] disabled:opacity-50 transition-colors"
-              >
-                {confirming ? "Confirming…" : "Confirm Booking"}
-              </button>
-            )}
-          </div>
+          )}
         </div>
-      </div>
+      </AdminModal>
 
       <ConfirmModal
         open={!!removeTarget}

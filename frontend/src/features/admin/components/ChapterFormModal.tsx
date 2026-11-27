@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import SearchableSelect from "../../../shared/components/SearchableSelect";
+import AdminModal from "./ui/AdminModal";
+import AdminField from "./ui/AdminField";
+import AdminButton from "./ui/AdminButton";
+import AdminSelect from "./ui/AdminSelect";
+import { adminInputCls } from "./ui/styles";
 import ImageCropModal from "../../../shared/components/ImageCropModal/ImageCropModal";
 import { getSubjectVariants } from "../../../api/chapter.api";
 import { uploadToCloudinary } from "../../../shared/utils/cloudinary";
@@ -250,111 +254,116 @@ export default function ChapterFormModal({
       setIsSubmitting(false); // 🔓 unlock only at the very end
     }
   };
-  /* ---------------- UI ---------------- */
+  const busy = uploading || isSubmitting || !!loading;
+  const close = () => {
+    if (!busy) onClose();
+  };
+  const err = (key: keyof typeof validationErrors, msg: string) =>
+    submitAttempted && validationErrors[key] ? msg : undefined;
 
   return (
     <>
-      <div className="fixed inset-0 z-1000 flex items-center justify-center">
-        <div
-          className="absolute inset-0 bg-black/30"
-          onClick={!loading ? onClose : undefined}
-        />
+      <AdminModal
+        open={open}
+        onClose={close}
+        size="md"
+        zIndex={1000}
+        closeOnEsc={!cropOpen}
+        closeOnBackdrop={!cropOpen}
+        title={mode === "create" ? "Create Chapter" : "Edit Chapter"}
+        description={mode === "create" ? "Add a chapter students can book a class for." : "Update the chapter details."}
+        footer={
+          <>
+            <AdminButton variant="outline" onClick={close} disabled={busy}>
+              Cancel
+            </AdminButton>
+            <AdminButton onClick={handleSubmit} loading={uploading || isSubmitting}>
+              {uploading || isSubmitting ? "Saving…" : mode === "create" ? "Create Chapter" : "Save changes"}
+            </AdminButton>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px] gap-4">
+            <AdminField label="Chapter Name" required htmlFor="chapter-name" error={err("name", "Chapter name is required")}>
+              <input
+                id="chapter-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Algebra"
+                className={`${adminInputCls(err("name", "x"))} h-11 sm:h-10 !py-0`}
+              />
+            </AdminField>
+            <AdminField label="Price (₹)" required htmlFor="chapter-price" error={err("price", "Must be more than 0")}>
+              <input
+                id="chapter-price"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                value={price}
+                onChange={(e) => setPrice(Number(e.target.value))}
+                onFocus={() => {
+                  if (price === 0) setPrice("");
+                }}
+                onBlur={(e) => {
+                  if (e.target.value === "") setPrice(0);
+                }}
+                placeholder="Price"
+                className={`${adminInputCls(err("price", "x"))} h-11 sm:h-10 !py-0 tabular-nums`}
+              />
+            </AdminField>
+          </div>
 
-        <div className="relative w-full max-w-lg mx-4 bg-white rounded-lg p-6 shadow-lg">
-          <h2 className="text-lg font-semibold mb-4">
-            {mode === "create" ? "Create Chapter" : "Edit Chapter"}
-          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <AdminField label="Syllabus" required error={err("syllabus", "Please select a syllabus")}>
+              <AdminSelect
+                value={syllabusId}
+                onChange={setSyllabusId}
+                options={syllabuses.map((s) => ({ value: s._id, label: s.name }))}
+                placeholder="Select syllabus"
+                label="Syllabus"
+                searchable={syllabuses.length > 8}
+                error={!!err("syllabus", "x")}
+              />
+            </AdminField>
+            <AdminField label="Class" required error={err("class", "Please select a class")}>
+              <AdminSelect
+                value={classId}
+                onChange={setClassId}
+                options={classes.map((c) => ({ value: c._id, label: c.name }))}
+                placeholder="Select class"
+                label="Class"
+                searchable={classes.length > 8}
+                error={!!err("class", "x")}
+              />
+            </AdminField>
+          </div>
 
-          <div className="space-y-4">
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Chapter name"
-              className={`w-full px-3 py-2 text-sm border rounded
-    ${submitAttempted && validationErrors.name ? "border-red-400" : ""}
-  `}
-            />
-
-            {submitAttempted && validationErrors.name && (
-              <p className="text-xs text-red-500">Chapter name is required</p>
-            )}
-
-           <input
-  type="number"
-  value={price}
-  onChange={(e) => setPrice(Number(e.target.value))}
-  onFocus={() => { if (price === 0) setPrice("") }}
-  onBlur={(e) => { if (e.target.value === '') setPrice(0) }}
-  placeholder="Price"
-  className={`w-full px-3 py-2 text-sm border rounded
-    ${submitAttempted && validationErrors.price ? "border-red-400" : ""}
-  `}
-/>
-
-            {submitAttempted && validationErrors.price && (
-              <p className="text-xs text-red-500">
-                Price must be greater than 0
-              </p>
-            )}
-
-            <SearchableSelect
-              value={syllabusId}
-              onChange={setSyllabusId}
-              options={syllabuses.map((s) => ({ value: s._id, label: s.name }))}
-              placeholder="Select syllabus"
-              hasError={submitAttempted && validationErrors.syllabus}
-            />
-
-            {submitAttempted && validationErrors.syllabus && (
-              <p className="text-xs text-red-500">Please select a syllabus</p>
-            )}
-
-            <SearchableSelect
-              value={classId}
-              onChange={setClassId}
-              options={classes.map((c) => ({ value: c._id, label: c.name }))}
-              placeholder="Select class"
-              hasError={submitAttempted && validationErrors.class}
-            />
-
-            {submitAttempted && validationErrors.class && (
-              <p className="text-xs text-red-500">Please select a class</p>
-            )}
-
-            <SearchableSelect
+          <AdminField label="Subject" required error={err("subject", "Please select a subject")}>
+            <AdminSelect
               value={subjectVariantId}
               onChange={setSubjectVariantId}
               options={subjectVariants.map((sv) => ({ value: sv._id, label: sv.subjectName }))}
               placeholder={!syllabusId || !classId ? "Select syllabus & class first" : "Select subject"}
+              label="Subject"
+              searchable={subjectVariants.length > 8}
               disabled={!syllabusId || !classId}
-              hasError={submitAttempted && validationErrors.subject}
+              emptyText="No subjects for this syllabus & class"
+              error={!!err("subject", "x")}
             />
+          </AdminField>
 
-            {submitAttempted && validationErrors.subject && (
-              <p className="text-xs text-red-500">Please select a subject</p>
-            )}
-          </div>
-
-          {/* IMAGE */}
-          <div className="mt-6 space-y-2">
-            <label className="text-xs font-medium text-gray-600">
-              Chapter Icon
-            </label>
-            {submitAttempted && validationErrors.icon && (
-              <p className="text-xs text-red-500">Chapter icon is required</p>
-            )}
-
+          {/* Icon */}
+          <AdminField label="Chapter Icon" required={mode === "create"} error={err("icon", "Chapter icon is required")}>
             {iconPreview ? (
-              <div className="flex items-start gap-4">
-                <div className="w-24 h-24 rounded border overflow-hidden bg-gray-50">
-                  <img
-                    src={iconPreview}
-                    className="w-full h-full object-cover"
-                  />
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-20 rounded-2xl border border-[#E4DDF2] overflow-hidden bg-[#FAF8FE] shrink-0">
+                  <img src={iconPreview} alt="Chapter icon" className="w-full h-full object-cover" />
                 </div>
-
-                <button
-                  type="button"
+                <AdminButton
+                  variant="outline"
+                  size="sm"
+                  disabled={busy}
                   onClick={() => {
                     setIcon(null);
                     setIconPreview(null);
@@ -364,125 +373,88 @@ export default function ChapterFormModal({
                       fileInputRef.current?.click();
                     });
                   }}
-                  className="px-3 py-1.5 text-xs rounded border border-gray-300"
                 >
                   Change image
-                </button>
+                </AdminButton>
               </div>
             ) : (
-              <label className="inline-flex items-center gap-2 px-4 py-2 text-sm border border-dashed rounded cursor-pointer">
-                📷 Choose image
+              <label
+                className={`flex flex-col items-center justify-center gap-1.5 h-28 rounded-2xl border-2 border-dashed cursor-pointer transition-colors ${
+                  err("icon", "x")
+                    ? "border-red-300 bg-red-50/40"
+                    : "border-[#CBB9F0] bg-[#FAF8FE] hover:bg-[#F4F1FA] hover:border-[#6D35D9]"
+                }`}
+              >
+                <svg className="w-6 h-6 text-[#6D35D9]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <rect x="3" y="3" width="18" height="18" rx="4" />
+                  <circle cx="9" cy="9" r="2" />
+                  <path d="m21 15-5-5L5 21" />
+                </svg>
+                <span className="text-sm font-semibold text-[#6D35D9]">Choose image</span>
+                <span className="text-xs text-[#8A80A3]">Square, cropped after you pick it</span>
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) =>
-                    e.target.files && handleImageSelect(e.target.files[0])
-                  }
+                  onChange={(e) => e.target.files && handleImageSelect(e.target.files[0])}
                 />
               </label>
             )}
-          </div>
+          </AdminField>
 
           {uploading && (
-            <div className="mt-4">
-              <div className="text-xs">{uploadProgress}%</div>
-              <div className="h-2 bg-gray-200 rounded">
-                <div
-                  className="h-full bg-[#6D35D9]"
-                  style={{ width: `${uploadProgress}%` }}
-                />
+            <div>
+              <div className="flex justify-between text-xs text-[#655B7E] mb-1">
+                <span>Uploading icon…</span>
+                <span className="tabular-nums">{uploadProgress}%</span>
+              </div>
+              <div className="h-2 rounded-full bg-[#F4F1FA] overflow-hidden">
+                <div className="h-full rounded-full bg-[#6D35D9] transition-[width] duration-200" style={{ width: `${uploadProgress}%` }} />
               </div>
             </div>
           )}
 
-          {/* Assigned Faculties — edit mode only */}
+          {/* Assigned faculties — edit only */}
           {mode === "edit" && (
-            <div className="mt-6">
-              <p className="text-sm font-medium text-gray-700 mb-2">
-                Assigned Faculties
-              </p>
-
+            <div>
+              <p className="m-0 mb-2 text-xs font-semibold text-[#2A1650]/80">Assigned faculties</p>
               {facultiesLoading ? (
-                <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <div className="flex items-center gap-2 text-sm text-[#8A80A3] py-2">
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden>
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                   </svg>
                   Loading faculties…
                 </div>
               ) : faculties.length === 0 ? (
-                <p className="text-sm text-gray-400 italic">
-                  No faculty assigned to this chapter yet.
-                </p>
+                <p className="m-0 text-sm text-[#8A80A3]">No faculty assigned to this chapter yet.</p>
               ) : (
                 <div className="space-y-2">
                   {faculties.map((f) => (
-                    <div
-                      key={f.id}
-                      className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2"
-                    >
+                    <div key={f.id} className="flex items-center gap-3 rounded-xl border border-[#E4DDF2] bg-[#FAF8FE] px-3 py-2.5">
                       {f.image ? (
-                        <img
-                          src={f.image}
-                          alt={f.name}
-                          className="w-9 h-9 rounded-full object-cover shrink-0 border border-gray-200"
-                        />
+                        <img src={f.image} alt={f.name} className="w-9 h-9 rounded-full object-cover shrink-0 border border-[#E4DDF2]" />
                       ) : (
-                        <div className="w-9 h-9 rounded-full bg-[#6D35D9]/10 text-[#6D35D9] flex items-center justify-center text-sm font-semibold shrink-0">
+                        <div className="w-9 h-9 rounded-full bg-[#F4F1FA] text-[#6D35D9] flex items-center justify-center text-sm font-semibold shrink-0">
                           {f.name.charAt(0).toUpperCase()}
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800 truncate">{f.name}</p>
+                        <p className="m-0 text-sm font-semibold text-[#2A1650] truncate">{f.name}</p>
                         {f.qualifications.length > 0 && (
-                          <p className="text-xs text-gray-500 truncate">
-                            {f.qualifications.join(", ")}
-                          </p>
+                          <p className="m-0 text-xs text-[#8A80A3] truncate">{f.qualifications.join(", ")}</p>
                         )}
                       </div>
-                      <span className="text-sm font-semibold text-[#6D35D9] shrink-0">
-                        ₹{f.price}
-                      </span>
+                      <span className="text-sm font-semibold text-[#6D35D9] shrink-0 tabular-nums">₹{f.price}</span>
                     </div>
                   ))}
                 </div>
               )}
             </div>
           )}
-
-          <div className="mt-6 flex justify-end gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm border rounded hover:bg-gray-100"
-            >
-              Cancel
-            </button>
-
-            <button
-              disabled={uploading || isSubmitting}
-              onClick={handleSubmit}
-              className={`
-    px-4 py-2 text-sm rounded text-white
-    bg-[#6D35D9]
-    transition
-    ${
-      uploading || isSubmitting
-        ? "opacity-50 cursor-not-allowed"
-        : "hover:bg-[#5B2BC0]"
-    }
-  `}
-            >
-              {uploading
-                ? "Saving..."
-                : mode === "create"
-                  ? "Create"
-                  : "Update"}
-            </button>
-          </div>
         </div>
-      </div>
+      </AdminModal>
 
       {cropOpen && iconPreview && isNewImage && (
         <ImageCropModal

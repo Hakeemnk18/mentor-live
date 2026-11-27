@@ -2,10 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AdminTable } from "../components/AdminTable";
 import { AdminPageActions } from "../components/AdminPageActions";
-import { AdminFilter, AdminFilterBar, AdminFilterSelect, AdminPageSize, AdminSearchInput } from "../components/ui";
+import { AdminFilter, AdminFilterBar, AdminFilterSelect, AdminPageSize, AdminSearchInput, AdminActiveStatus, AdminBadge } from "../components/ui";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
-import TopLoader from "../../../shared/components/TopLoader";
 import toast from "react-hot-toast";
 import type { Column } from "../components/AdminTable";
 
@@ -16,11 +15,11 @@ import { handleApiError } from "../../../shared/utils/handle.api.error";
 import {
   createFaculty,
   getFaculties,
+  blockFaculty,
+  unblockFaculty,
 } from "../../../api/faculty.api";
 
 import FacultyModal from "../components/FacultyModal";
-import { AddTimeSlotModal } from "../components/AddTimeSlotModal";
-import { AddChapterSlotModal } from "../components/AddChapterSlotModal";
 
 import type { FacultyRow } from "../../../shared/types/faculty.types";
 import type { FacultySubmitPayload } from "../components/FacultyModal";
@@ -31,7 +30,7 @@ import type { FacultySubmitPayload } from "../components/FacultyModal";
 export default function FacultyPage() {
   const navigate = useNavigate();
   const [faculties, setFaculties] = useState<FacultyRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // starts loading: shows placeholder rows, not "No records found"
 
   /* Filters */
   const [page, setPage] = useState(1);
@@ -53,8 +52,6 @@ export default function FacultyPage() {
   const [saving, setSaving] = useState(false);
 
   /* Slot modals */
-  const [slotFacultyId, setSlotFacultyId] = useState<string | null>(null);
-  const [chapterFacultyId, setChapterFacultyId] = useState<string | null>(null);
 
   /* ---------------- TABLE COLUMNS ---------------- */
 
@@ -113,15 +110,7 @@ export default function FacultyPage() {
       key: "status",
       label: "Status",
       render: (f) => (
-        <span
-          className={`px-2 py-1 rounded text-xs ${
-            f.isDeleted
-              ? "bg-red-100 text-red-600"
-              : "bg-green-100 text-green-600"
-          }`}
-        >
-          {f.isDeleted ? "Inactive" : "Active"}
-        </span>
+        <AdminBadge tone={f.isDeleted ? "danger" : "success"}>{f.isDeleted ? "Inactive" : "Active"}</AdminBadge>
       ),
     },
   ];
@@ -191,6 +180,26 @@ export default function FacultyPage() {
 
   /* ---------------- RENDER ---------------- */
 
+  /* status can be changed straight from the table */
+  const tableColumns: typeof columns = columns.map((col) =>
+    col.key === "status" ? { ...col, render: (f) => (
+        <AdminActiveStatus
+          active={!f.isDeleted}
+          confirmInactive={{ title: `Make ${f.name} inactive?`, message: "This faculty will be hidden from the website and students can't book them until made active again.", confirmLabel: "Make inactive" }}
+          confirmActive={{ title: `Make ${f.name} active?`, message: "This faculty will show on the website again and students can book them.", confirmLabel: "Make active" }}
+          onChange={async (on) => {
+            try {
+              await (on ? unblockFaculty(f.id) : blockFaculty(f.id));
+              toast.success(`${f.name} is now ${on ? "active" : "inactive"}`);
+              fetchFaculties();
+            } catch (err: unknown) {
+              handleApiError(err);
+            }
+          }}
+        />
+      ) } : col,
+  );
+
   return (
     <AdminPageContainer>
       <AdminPageActions
@@ -235,18 +244,16 @@ export default function FacultyPage() {
       </AdminFilterBar>
 
       {/* TABLE */}
-      {loading ? (
-        <TopLoader loading />
-      ) : (
-        <AdminTable
-          data={faculties}
-          columns={columns}
-          actions={[
-            { label: "View", onClick: (row) => navigate(`/admin/faculty/${row.id}`) },
-          ]}
-          getRowId={(row) => row.id}
-        />
-      )}
+      {/* table stays on screen while loading, so it never jumps */}
+      <AdminTable
+        loading={loading}
+        data={faculties}
+        columns={tableColumns}
+        actions={[
+          { label: "View", onClick: (row) => navigate(`/admin/faculty/${row.id}`) },
+        ]}
+        getRowId={(row) => row.id}
+      />
 
       {/* PAGINATION */}
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
@@ -262,29 +269,6 @@ export default function FacultyPage() {
         onSubmit={handleSubmit}
       />
 
-      {/* SLOT MODAL */}
-      {slotFacultyId && (
-        <AddTimeSlotModal
-          facultyId={slotFacultyId}
-          onSuccess={() => {
-            fetchFaculties();
-            setSlotFacultyId(null);
-          }}
-        />
-      )}
-
-      {/* CHAPTER MODAL */}
-      {chapterFacultyId && (
-        <AddChapterSlotModal
-          facultyId={chapterFacultyId}
-          syllabuses={syllabusList}
-          classes={classesList}
-          onSuccess={() => {
-            fetchFaculties();
-            setChapterFacultyId(null);
-          }}
-        />
-      )}
     </AdminPageContainer>
   );
 }

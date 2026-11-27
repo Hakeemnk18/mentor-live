@@ -5,6 +5,7 @@ import { logout } from "../../../shared/utils/logout";
 import { useLogout } from "../../auth/hooks/useLogout";
 import toast from "react-hot-toast";
 import type { AuthUser } from "../../auth/type/auth.type";
+import BrandMark from "../../user/components/ui/BrandMark";
 
 const ALL_NAV_ITEMS = [
   { label: "Faculty",      path: "/admin/faculty" },
@@ -61,21 +62,14 @@ const AdminNavbar: React.FC = () => {
 
         {/* Brand - Added shrink-0 and min-w-max so it never squishes */}
         <Link to="/admin/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity shrink-0">
-          <div className="h-9 w-9 rounded bg-[#6D35D9] text-white flex items-center justify-center font-bold">
-            ML
-          </div>
-          <div className="leading-tight min-w-max">
-            <p className="text-sm font-semibold text-gray-900">
-              Mentor Live
-            </p>
-            <p className="text-xs text-gray-500">
-              Admin Panel
-            </p>
-          </div>
+          <BrandMark className="h-7 sm:h-8 lg:h-6 xl:h-8" />
+          <span className="hidden sm:inline-flex lg:hidden xl:inline-flex items-center h-6 px-2.5 rounded-full bg-[#F4F1FA] border border-[#E4DDF2] text-[11px] font-semibold uppercase tracking-wider text-[#6D35D9]">
+            Admin
+          </span>
         </Link>
 
         {/* Desktop Nav - Changed hidden md:flex to hidden lg:flex */}
-        <nav className="hidden lg:flex items-center gap-4 xl:gap-6 text-sm font-medium overflow-x-auto no-scrollbar pl-4">
+        <nav className="hidden lg:flex items-center gap-3 xl:gap-6 text-sm font-medium overflow-x-auto no-scrollbar pl-4">
           {navItems.map((item) => (
             <NavLink
               key={item.path}

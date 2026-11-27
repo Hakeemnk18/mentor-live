@@ -93,3 +93,11 @@ export const getSubjectsForUser = async (
   const res = await axiosInstance.get("/subjects/list", { params });
   return res.data.data ?? [];
 };
+
+/** Make a subject inactive / active again */
+export const blockSubject = async (id: string): Promise<void> => {
+  await axiosInstance.patch(`/subjects/${id}/block`);
+};
+export const unblockSubject = async (id: string): Promise<void> => {
+  await axiosInstance.patch(`/subjects/${id}/unblock`);
+};

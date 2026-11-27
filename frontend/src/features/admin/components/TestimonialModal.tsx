@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import type { Testimonial, TestimonialPayload } from "../../../shared/types/testimonial.types";
+import AdminModal from "./ui/AdminModal";
+import AdminField from "./ui/AdminField";
+import AdminButton from "./ui/AdminButton";
+import { adminInputCls } from "./ui/styles";
 interface Props {
   open: boolean;
   mode: "create" | "edit";
@@ -75,103 +79,81 @@ export default function TestimonialModal({
     await onSubmit({ author: author.trim(), designation: designation.trim(), comment: comment.trim() });
   };
 
-  const inp = (err?: string) =>
-    `w-full px-3 py-2 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-[#6D35D9]/30 ${
-      err ? "border-red-400" : "border-gray-300"
-    }`;
+  const close = () => {
+    if (!loading) onClose();
+  };
+  const formId = "testimonial-form";
+  const field = (err?: string) => `${adminInputCls(err)} h-11 sm:h-10 !py-0`;
 
   return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-[1000] bg-black/40" onClick={onClose} />
-
-      {/* Panel */}
-      <div className="fixed inset-0 z-[1001] flex items-center justify-center pointer-events-none">
-        <div
-          className="pointer-events-auto w-full max-w-lg bg-white rounded-xl shadow-xl"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b px-6 py-4">
-            <h2 className="text-base font-semibold text-gray-900">
-              {mode === "create" ? "Add Testimonial" : "Edit Testimonial"}
-            </h2>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">
-              ×
-            </button>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-            {/* Author */}
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Author Name *</label>
-              <input
-                value={author}
-                onChange={(e) => { setAuthor(e.target.value); clearFieldError("author"); }}
-                maxLength={100}
-                placeholder="e.g. Ananya Sharma"
-                className={inp(errors.author)}
-              />
-              {errors.author && <p className="text-xs text-red-500 mt-0.5">{errors.author}</p>}
-            </div>
-
-            {/* Designation */}
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Designation *</label>
-              <input
-                value={designation}
-                onChange={(e) => { setDesignation(e.target.value); clearFieldError("designation"); }}
-                maxLength={100}
-                placeholder="e.g. Class 10 CBSE Student"
-                className={inp(errors.designation)}
-              />
-              {errors.designation && <p className="text-xs text-red-500 mt-0.5">{errors.designation}</p>}
-            </div>
-
-            {/* Comment */}
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Comment *</label>
-              <textarea
-                rows={4}
-                value={comment}
-                onChange={(e) => { setComment(e.target.value); clearFieldError("comment"); }}
-                maxLength={500}
-                placeholder="Write the testimonial comment…"
-                className={inp(errors.comment) + " resize-none"}
-              />
-              <div className="flex items-center justify-between mt-0.5">
-                {errors.comment
-                  ? <p className="text-xs text-red-500">{errors.comment}</p>
-                  : <span />}
-                <span className={`text-xs ${
-                  comment.length > 480 ? "text-red-500" : "text-gray-400"
-                }`}>
-                  {comment.length}/500
-                </span>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-4 py-2 text-sm font-medium bg-[#6D35D9] text-white rounded-md hover:bg-[#5B2BC0] disabled:opacity-50 transition-colors"
-              >
-                {loading ? "Saving…" : mode === "create" ? "Add Testimonial" : "Save Changes"}
-              </button>
-            </div>
-          </form>
+    <AdminModal
+      open={open}
+      onClose={close}
+      size="md"
+      zIndex={1000}
+      title={mode === "create" ? "Add Testimonial" : "Edit Testimonial"}
+      description="Shown in the testimonials section on the website."
+      footer={
+        <>
+          <AdminButton variant="outline" onClick={close} disabled={loading}>
+            Cancel
+          </AdminButton>
+          <AdminButton type="submit" form={formId} loading={loading}>
+            {loading ? "Saving…" : mode === "create" ? "Add Testimonial" : "Save changes"}
+          </AdminButton>
+        </>
+      }
+    >
+      <form id={formId} onSubmit={handleSubmit} noValidate className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <AdminField label="Author Name" required htmlFor="t-author" error={errors.author}>
+            <input
+              id="t-author"
+              value={author}
+              onChange={(e) => {
+                setAuthor(e.target.value);
+                clearFieldError("author");
+              }}
+              maxLength={100}
+              placeholder="e.g. Ananya Sharma"
+              className={field(errors.author)}
+            />
+          </AdminField>
+          <AdminField label="Designation" required htmlFor="t-designation" error={errors.designation}>
+            <input
+              id="t-designation"
+              value={designation}
+              onChange={(e) => {
+                setDesignation(e.target.value);
+                clearFieldError("designation");
+              }}
+              maxLength={100}
+              placeholder="e.g. Class 10 CBSE Student"
+              className={field(errors.designation)}
+            />
+          </AdminField>
         </div>
-      </div>
-    </>
+
+        <div>
+          <AdminField label="Comment" required hint="(20–500 characters)" htmlFor="t-comment" error={errors.comment}>
+            <textarea
+              id="t-comment"
+              rows={5}
+              value={comment}
+              onChange={(e) => {
+                setComment(e.target.value);
+                clearFieldError("comment");
+              }}
+              maxLength={500}
+              placeholder="Write the testimonial comment…"
+              className={`${adminInputCls(errors.comment)} resize-none leading-relaxed`}
+            />
+          </AdminField>
+          <p className={`m-0 mt-1 text-xs text-right tabular-nums ${comment.length > 480 ? "text-[#C8372D]" : "text-[#8A80A3]"}`}>
+            {comment.length}/500
+          </p>
+        </div>
+      </form>
+    </AdminModal>
   );
 }

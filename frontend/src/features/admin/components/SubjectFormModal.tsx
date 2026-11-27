@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
-import SearchableSelect from "../../../shared/components/SearchableSelect";
+import AdminModal from "./ui/AdminModal";
+import AdminField from "./ui/AdminField";
+import AdminButton from "./ui/AdminButton";
+import AdminSelect from "./ui/AdminSelect";
+import { adminInputCls } from "./ui/styles";
 import type {
   CreateSubjectPayload,
   SubjectFormVariant,
@@ -157,260 +161,218 @@ export default function SubjectFormModal({
 
   // ── Render ────────────────────────────────────────────────────────────────
 
+  const close = () => {
+    if (!loading) onClose();
+  };
+  const busy = !!loading;
+
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/30"
-        onClick={!loading ? onClose : undefined}
-      />
-
-      <div className="relative w-full max-w-lg mx-4 rounded-lg bg-white shadow-lg flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
-          <h2 className="text-lg font-semibold text-gray-800">
-            {mode === "create" ? "Create Subject" : "Edit Subject"}
-          </h2>
-        </div>
-
-        {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
-          {/* Subject Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Subject Name
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={!!loading}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm
-                focus:border-[#6D35D9] focus:outline-none disabled:bg-gray-100"
-            />
-          </div>
-
-          {/* ── Existing Variants (edit mode) ─────────────────────────── */}
-          {mode === "edit" && existingGrouped.length > 0 && (
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">
-                Existing Variants
-              </p>
-              <div className="space-y-2">
-                {existingGrouped.map(({ syllabusId, classIds }) => (
-                  <div
-                    key={syllabusId}
-                    className="rounded border border-gray-200 bg-gray-50 p-3"
-                  >
-                    <p className="text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
-                      {syllabuses.find((s) => s._id === syllabusId)?.name ??
-                        syllabusId}
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {classIds.map((cid) => (
-                        <span
-                          key={cid}
-                          className="px-2 py-0.5 rounded-full border border-gray-300 bg-white text-xs text-gray-600"
-                        >
-                          {classes.find((c) => c._id === cid)?.name ?? cid}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── New Variant Groups ────────────────────────────────────── */}
-          <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">
-              {mode === "edit" ? "Add New Variants" : "Subject Variants"}
-            </p>
-
-            <div className="space-y-3">
-              {syllabusGroups.map((group, idx) => {
-                // Syllabuses available for this slot = all minus those used in OTHER new groups
-                const syllabusOptions = syllabuses
-                  .filter(
-                    (s) =>
-                      s._id === group.syllabusId ||
-                      !newGroupSyllabusIds.has(s._id)
-                  )
-                  .map((s) => ({ value: s._id, label: s.name }));
-
-                // Classes available = all classes minus those already saved for this syllabus
-                const alreadySaved = group.syllabusId
-                  ? existingClassesBySyllabus[group.syllabusId] ?? new Set<string>()
-                  : new Set<string>();
-
-                const availableClasses = classes.filter(
-                  (c) => !alreadySaved.has(c._id)
-                );
-
-                const allSelected =
-                  availableClasses.length > 0 &&
-                  availableClasses.every((c) => group.classIds.includes(c._id));
-
-                return (
-                  <div
-                    key={idx}
-                    className="rounded-lg border border-gray-200 p-3 space-y-2.5"
-                  >
-                    {/* Syllabus select row */}
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1">
-                        <SearchableSelect
-                          value={group.syllabusId}
-                          onChange={(val) => updateGroupSyllabus(idx, val)}
-                          options={syllabusOptions}
-                          placeholder="Select syllabus…"
-                          disabled={!!loading}
-                        />
-                      </div>
-                      {syllabusGroups.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeGroup(idx)}
-                          disabled={!!loading}
-                          className="text-sm text-red-500 hover:text-red-700 disabled:opacity-40 shrink-0"
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Classes */}
-                    {!group.syllabusId ? (
-                      <p className="text-xs text-gray-400 italic">
-                        Select a syllabus to pick classes.
-                      </p>
-                    ) : availableClasses.length === 0 ? (
-                      <p className="text-xs text-amber-600 italic">
-                        All classes are already added for this syllabus.
-                      </p>
-                    ) : (
-                      <>
-                        {/* Select-all / Clear row */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-400">
-                            {group.classIds.length} / {availableClasses.length} selected
-                          </span>
-                          <div className="flex gap-3">
-                            {!allSelected && (
-                              <button
-                                type="button"
-                                onClick={() => selectAll(idx, availableClasses)}
-                                disabled={!!loading}
-                                className="text-xs text-[#6D35D9] hover:underline disabled:opacity-40"
-                              >
-                                Select all
-                              </button>
-                            )}
-                            {group.classIds.length > 0 && (
-                              <button
-                                type="button"
-                                onClick={() => clearAll(idx)}
-                                disabled={!!loading}
-                                className="text-xs text-gray-500 hover:underline disabled:opacity-40"
-                              >
-                                Clear
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Checkbox grid */}
-                        <div className="grid grid-cols-2 gap-1.5">
-                          {availableClasses.map((cls) => {
-                            const checked = group.classIds.includes(cls._id);
-                            return (
-                              <label
-                                key={cls._id}
-                                className={`flex items-center gap-2 px-2.5 py-1.5 rounded border text-sm cursor-pointer select-none transition-colors ${
-                                  checked
-                                    ? "border-[#6D35D9]/40 bg-[#6D35D9]/5 text-[#6D35D9] font-medium"
-                                    : "border-gray-200 hover:bg-gray-50 text-gray-700"
-                                } ${loading ? "opacity-50 pointer-events-none" : ""}`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={checked}
-                                  onChange={() => toggleClass(idx, cls._id)}
-                                  className="accent-[#6D35D9] shrink-0"
-                                  disabled={!!loading}
-                                />
-                                <span className="truncate">{cls.name}</span>
-                              </label>
-                            );
-                          })}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-
-              <button
-                type="button"
-                onClick={addGroup}
-                disabled={!!loading}
-                className="text-sm text-[#6D35D9] font-medium hover:underline disabled:opacity-40"
-              >
-                + Add another syllabus
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 shrink-0">
-          <button
-            onClick={onClose}
-            disabled={!!loading}
-            className="px-4 py-2 text-sm border rounded hover:bg-gray-100 disabled:opacity-50"
-          >
+    <AdminModal
+      open={open}
+      onClose={close}
+      size="md"
+      zIndex={1000}
+      title={mode === "create" ? "Create Subject" : "Edit Subject"}
+      description={
+        mode === "create"
+          ? "Name the subject and choose the syllabus and classes it is taught in."
+          : "Rename the subject or add it to more syllabus / classes."
+      }
+      footer={
+        <>
+          <AdminButton variant="outline" onClick={close} disabled={busy}>
             Cancel
-          </button>
-
+          </AdminButton>
           {mode === "create" && (
-            <button
-              disabled={!canCreate || !!loading}
-              onClick={() => onCreate(buildCreatePayload())}
-              className="px-4 py-2 text-sm rounded bg-[#6D35D9] text-white
-                hover:bg-[#5B2BC0] disabled:opacity-50"
-            >
-              {loading ? "Creating…" : "Create Subject"}
-            </button>
+            <AdminButton disabled={!canCreate} loading={busy} onClick={() => onCreate(buildCreatePayload())}>
+              {busy ? "Creating…" : "Create Subject"}
+            </AdminButton>
           )}
-
           {mode === "edit" && (
             <>
-              <button
-                disabled={!canUpdateName || !!loading}
-                onClick={() =>
-                  onUpdateName({ _id: initialData!._id!, name: name.trim() })
-                }
-                className="px-4 py-2 text-sm rounded border hover:bg-gray-100 disabled:opacity-50"
+              <AdminButton
+                variant="soft"
+                disabled={!canUpdateName || busy}
+                onClick={() => onUpdateName({ _id: initialData!._id!, name: name.trim() })}
               >
                 Update Name
-              </button>
-              <button
-                disabled={!canAddVariants || !!loading}
-                onClick={() =>
-                  onAddVariants({
-                    _id: initialData!._id!,
-                    variants: buildFlatVariants(),
-                  })
-                }
-                className="px-4 py-2 text-sm rounded bg-[#6D35D9] text-white
-                  hover:bg-[#5B2BC0] disabled:opacity-50"
+              </AdminButton>
+              <AdminButton
+                disabled={!canAddVariants}
+                loading={busy}
+                onClick={() => onAddVariants({ _id: initialData!._id!, variants: buildFlatVariants() })}
               >
-                {loading ? "Saving…" : "Add Variants"}
-              </button>
+                {busy ? "Saving…" : "Add Variants"}
+              </AdminButton>
             </>
           )}
+        </>
+      }
+    >
+      <div className="space-y-5">
+        {/* Subject name */}
+        <AdminField label="Subject Name" required htmlFor="subject-name">
+          <input
+            id="subject-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={busy}
+            placeholder="e.g. Mathematics"
+            className={`${adminInputCls()} h-11 sm:h-10 !py-0 disabled:bg-[#F4F1FA]`}
+          />
+        </AdminField>
+
+        {/* Existing variants (edit) */}
+        {mode === "edit" && existingGrouped.length > 0 && (
+          <div>
+            <p className="m-0 mb-2 text-xs font-semibold text-[#2A1650]/80">Already added</p>
+            <div className="space-y-2">
+              {existingGrouped.map(({ syllabusId, classIds }) => (
+                <div key={syllabusId} className="rounded-xl border border-[#E4DDF2] bg-[#FAF8FE] p-3">
+                  <p className="m-0 mb-2 text-[11px] font-semibold uppercase tracking-wider text-[#8A80A3]">
+                    {syllabuses.find((s) => s._id === syllabusId)?.name ?? syllabusId}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {classIds.map((cid) => (
+                      <span
+                        key={cid}
+                        className="px-2.5 py-1 rounded-full border border-[#E4DDF2] bg-white text-xs font-medium text-[#655B7E]"
+                      >
+                        {classes.find((c) => c._id === cid)?.name ?? cid}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* New syllabus groups */}
+        <div>
+          <p className="m-0 mb-2 text-xs font-semibold text-[#2A1650]/80">
+            {mode === "edit" ? "Add new syllabus / classes" : "Syllabus & classes"}
+            {mode === "create" && <span className="text-[#FF6B5E] ml-0.5">*</span>}
+          </p>
+
+          <div className="space-y-3">
+            {syllabusGroups.map((group, idx) => {
+              // syllabuses for this group = all minus those used in OTHER new groups
+              const syllabusOptions = syllabuses
+                .filter((s) => s._id === group.syllabusId || !newGroupSyllabusIds.has(s._id))
+                .map((s) => ({ value: s._id, label: s.name }));
+
+              // classes = all minus those already saved for this syllabus
+              const alreadySaved = group.syllabusId
+                ? existingClassesBySyllabus[group.syllabusId] ?? new Set<string>()
+                : new Set<string>();
+              const availableClasses = classes.filter((c) => !alreadySaved.has(c._id));
+              const allSelected =
+                availableClasses.length > 0 && availableClasses.every((c) => group.classIds.includes(c._id));
+
+              return (
+                <div key={idx} className="rounded-2xl border border-[#E4DDF2] p-3 sm:p-3.5 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <AdminSelect
+                        value={group.syllabusId}
+                        onChange={(val) => updateGroupSyllabus(idx, val)}
+                        options={syllabusOptions}
+                        placeholder="Select syllabus…"
+                        label={`Syllabus ${idx + 1}`}
+                        searchable={syllabusOptions.length > 8}
+                        disabled={busy}
+                      />
+                    </div>
+                    {syllabusGroups.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeGroup(idx)}
+                        disabled={busy}
+                        aria-label={`Remove syllabus ${idx + 1}`}
+                        className="shrink-0 h-10 px-3 rounded-full text-sm font-semibold text-[#C8372D] cursor-pointer hover:bg-[#FFE3DF] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+
+                  {!group.syllabusId ? (
+                    <p className="m-0 text-xs text-[#8A80A3]">Select a syllabus to pick classes.</p>
+                  ) : availableClasses.length === 0 ? (
+                    <p className="m-0 text-xs font-medium text-[#8A5A00]">All classes are already added for this syllabus.</p>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-[#8A80A3] tabular-nums">
+                          {group.classIds.length} / {availableClasses.length} selected
+                        </span>
+                        <div className="flex gap-1">
+                          {!allSelected && (
+                            <button
+                              type="button"
+                              onClick={() => selectAll(idx, availableClasses)}
+                              disabled={busy}
+                              className="px-2.5 py-1 rounded-full text-xs font-semibold text-[#6D35D9] cursor-pointer hover:bg-[#F4F1FA] disabled:opacity-40"
+                            >
+                              Select all
+                            </button>
+                          )}
+                          {group.classIds.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => clearAll(idx)}
+                              disabled={busy}
+                              className="px-2.5 py-1 rounded-full text-xs font-semibold text-[#655B7E] cursor-pointer hover:bg-[#F4F1FA] disabled:opacity-40"
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {availableClasses.map((cls) => {
+                          const checked = group.classIds.includes(cls._id);
+                          return (
+                            <label
+                              key={cls._id}
+                              className={`flex items-center gap-2 h-10 px-3 rounded-xl border text-sm cursor-pointer select-none transition-colors ${
+                                checked
+                                  ? "border-[#6D35D9] bg-[#F4F1FA] text-[#6D35D9] font-semibold"
+                                  : "border-[#E4DDF2] bg-white text-[#2A1650] hover:border-[#CBB9F0]"
+                              } ${busy ? "opacity-50 pointer-events-none" : ""}`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => toggleClass(idx, cls._id)}
+                                className="w-4 h-4 accent-[#6D35D9] shrink-0"
+                                disabled={busy}
+                              />
+                              <span className="truncate">{cls.name}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={addGroup}
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-sm font-semibold text-[#6D35D9] bg-[#F4F1FA] cursor-pointer hover:bg-[#EDE6FB] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <span aria-hidden className="text-base leading-none">+</span> Add another syllabus
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </AdminModal>
   );
 }

@@ -39,4 +39,19 @@ router.get(
   (req,res) => syllabusController.getSyllabusesForUser(req,res)
 )
 
+// make a syllabus inactive / active again (admin)
+router.patch(
+  "/:id/block",
+  authenticate.authenticate,
+  authorizeRoles("admin"),
+  (req, res) => syllabusController.blockSyllabus(req, res)
+);
+
+router.patch(
+  "/:id/unblock",
+  authenticate.authenticate,
+  authorizeRoles("admin"),
+  (req, res) => syllabusController.unblockSyllabus(req, res)
+);
+
 export default router;

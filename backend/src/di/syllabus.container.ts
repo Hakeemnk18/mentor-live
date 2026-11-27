@@ -15,6 +15,11 @@ import type { IEditSyllabusUseCase } from "../modules/syllabus/use-cases/interfa
 import type { IGetSyllabusesForUserUseCase } from "../modules/syllabus/use-cases/interfaces/get.all.for.user.interface.js";
 import type { IGetSyllabusesForAdminUseCase } from "../modules/syllabus/use-cases/interfaces/get.all.for.admin.interface.js";
 
+import type { IBlockSyllabusUseCase } from "../modules/syllabus/use-cases/interfaces/block.syllabus.use-case.interface.js";
+import { BlockSyllabusUseCase } from "../modules/syllabus/use-cases/block.syllabus.use-case.js";
+import type { IUnblockSyllabusUseCase } from "../modules/syllabus/use-cases/interfaces/unblock.syllabus.use-case.interface.js";
+import { UnblockSyllabusUseCase } from "../modules/syllabus/use-cases/unblock.syllabus.use-case.js";
+
 export const registerSyllabusDependencies = () => {
   container.register<ISyllabusRepository>("ISyllabusRepository", {
     useClass: SyllabusRepository,
@@ -34,5 +39,13 @@ export const registerSyllabusDependencies = () => {
 
   container.register<IGetSyllabusesForAdminUseCase>("IGetSyllabusesForAdminUseCase", {
     useClass: GetSyllabusesForAdminUseCase,
+  });
+
+  container.register<IBlockSyllabusUseCase>("IBlockSyllabusUseCase", {
+    useClass: BlockSyllabusUseCase,
+  });
+
+  container.register<IUnblockSyllabusUseCase>("IUnblockSyllabusUseCase", {
+    useClass: UnblockSyllabusUseCase,
   });
 };

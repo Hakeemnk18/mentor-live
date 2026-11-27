@@ -5,4 +5,6 @@ export interface ISyllabusController {
   editSyllabus(req: Request, res: Response): Promise<void>;
   getSyllabusesForUser(req: Request, res: Response): Promise<void>;
   getSyllabusesForAdmin(req: Request, res: Response): Promise<void>;
+  blockSyllabus(req: Request, res: Response): Promise<void>;
+  unblockSyllabus(req: Request, res: Response): Promise<void>;
 }

@@ -64,15 +64,17 @@ export default function DashboardBookingChart() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-gray-800">Booking Trend</h3>
-          <div className="flex gap-0.5 bg-gray-50 p-0.5 rounded-lg border border-gray-100">
+          <div className="flex gap-0.5 bg-[#F4F1FA] p-0.5 rounded-full border border-[#E4DDF2]">
             {RANGES.map((r) => (
               <button
                 key={r}
                 onClick={() => setRange(r)}
-                className={`text-[9px] px-1.5 py-0.5 rounded font-medium transition-colors ${
+                type="button"
+                aria-pressed={range === r}
+                className={`text-[11px] h-6 px-2.5 rounded-full font-semibold cursor-pointer transition-colors ${
                   range === r
                     ? "bg-[#6D35D9] text-white shadow-sm"
-                    : "text-gray-400 hover:text-gray-600"
+                    : "text-[#8A80A3] hover:text-[#6D35D9]"
                 }`}
               >
                 {r}

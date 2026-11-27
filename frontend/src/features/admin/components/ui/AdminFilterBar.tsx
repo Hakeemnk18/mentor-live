@@ -25,7 +25,7 @@ export function AdminFilterBar({
         <button
           type="button"
           onClick={onClear}
-          className="col-span-2 sm:col-span-1 shrink-0 whitespace-nowrap h-11 sm:h-10 px-4 lg:px-3.5 inline-flex items-center justify-center gap-1.5 rounded-full text-sm font-semibold text-[#6D35D9] bg-white border border-[#E4DDF2] cursor-pointer transition-colors hover:bg-[#F4F1FA] hover:border-[#CBB9F0] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#6D35D9]/25"
+          className="col-span-1 shrink-0 whitespace-nowrap h-11 sm:h-10 px-4 lg:px-3.5 inline-flex items-center justify-center gap-1.5 rounded-full text-sm font-semibold text-[#6D35D9] bg-white border border-[#E4DDF2] cursor-pointer transition-colors hover:bg-[#F4F1FA] hover:border-[#CBB9F0] focus:outline-none focus-visible:ring-[3px] focus-visible:ring-[#6D35D9]/25"
         >
           <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden>
             <path d="M5 5l10 10M15 5L5 15" />

@@ -35,3 +35,11 @@ export const updateSyllabus = async (id: string, payload: { name: string }) => {
   const res = await axiosInstance.put(`/syllabuses/${id}`, payload);
   return res.data;
 };
+
+/** Make a syllabus inactive / active again */
+export const blockSyllabus = async (id: string): Promise<void> => {
+  await axiosInstance.patch(`/syllabuses/${id}/block`);
+};
+export const unblockSyllabus = async (id: string): Promise<void> => {
+  await axiosInstance.patch(`/syllabuses/${id}/unblock`);
+};

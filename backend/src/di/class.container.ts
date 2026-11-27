@@ -15,6 +15,11 @@ import { GetClassesForAdminUseCase } from "../modules/class/use-cases/get.all.fo
 
 
 
+import type { IBlockClassUseCase } from "../modules/class/use-cases/interfaces/block.class.use-case.interface.js";
+import { BlockClassUseCase } from "../modules/class/use-cases/block.class.use-case.js";
+import type { IUnblockClassUseCase } from "../modules/class/use-cases/interfaces/unblock.class.use-case.interface.js";
+import { UnblockClassUseCase } from "../modules/class/use-cases/unblock.class.use-case.js";
+
 export const registerClassDependencies = () => {
   container.register<IClassRepository>("IClassRepository", {
     useClass: ClassRepository,
@@ -34,5 +39,13 @@ export const registerClassDependencies = () => {
 
   container.register<IGetClassesForAdminUseCase>("IGetClassesForAdminUseCase", {
     useClass: GetClassesForAdminUseCase,
+  });
+
+  container.register<IBlockClassUseCase>("IBlockClassUseCase", {
+    useClass: BlockClassUseCase,
+  });
+
+  container.register<IUnblockClassUseCase>("IUnblockClassUseCase", {
+    useClass: UnblockClassUseCase,
   });
 };
