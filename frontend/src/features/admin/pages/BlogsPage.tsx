@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { AdminTable } from "../components/AdminTable";
 import { AdminPageActions } from "../components/AdminPageActions";
-import { AdminFilter, AdminFilterBar, AdminFilterSelect, AdminPageSize, AdminSearchInput, AdminSelect } from "../components/ui";
+import { AdminFilter, AdminFilterBar, AdminFilterSelect, AdminPageSize, AdminSearchInput, AdminSelect, AdminActiveStatus, AdminBadge } from "../components/ui";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
-import TopLoader from "../../../shared/components/TopLoader";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 import toast from "react-hot-toast";
 import type { Column } from "../components/AdminTable";
@@ -65,26 +64,14 @@ const columns: Column<Blog>[] = [
     key: "featured",
     label: "Featured",
     render: (b) => (
-      <span
-        className={`px-2 py-1 rounded text-xs font-medium ${
-          b.isFeatured ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-500"
-        }`}
-      >
-        {b.isFeatured ? `⭐ #${b.priority ?? "—"}` : "No"}
-      </span>
+      <AdminBadge tone={b.isFeatured ? "warning" : "neutral"} dot={false}>{b.isFeatured ? `⭐ #${b.priority ?? "—"}` : "No"}</AdminBadge>
     ),
   },
   {
     key: "status",
     label: "Status",
     render: (b) => (
-      <span
-        className={`px-2 py-1 rounded text-xs font-medium ${
-          b.isDeleted ? "bg-red-100 text-red-600" : "bg-green-100 text-green-600"
-        }`}
-      >
-        {b.isDeleted ? "Blocked" : "Active"}
-      </span>
+      <AdminBadge tone={b.isDeleted ? "danger" : "success"}>{b.isDeleted ? "Blocked" : "Active"}</AdminBadge>
     ),
   },
 ];
@@ -92,7 +79,7 @@ const columns: Column<Blog>[] = [
 /* ── component ────────────────────────────────────────────── */
 export default function BlogsPage() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // starts loading: shows placeholder rows, not "No records found"
   const [submitting, setSubmitting] = useState(false);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -159,20 +146,6 @@ export default function BlogsPage() {
     }
   };
 
-  const handleToggleBlock = async (b: Blog) => {
-    try {
-      if (b.isDeleted) {
-        await unblockBlog(b.id);
-        toast.success("Blog unblocked");
-      } else {
-        await blockBlog(b.id);
-        toast.success("Blog blocked");
-      }
-      fetchAll();
-    } catch (err: unknown) {
-      handleApiError(err);
-    }
-  };
 
   const handleSubmit = async (payload: BlogPayload) => {
     try {
@@ -194,6 +167,27 @@ export default function BlogsPage() {
     }
   };
 
+
+  /* status can be changed straight from the table */
+  const tableColumns: typeof columns = columns.map((col) =>
+    col.key === "status" ? { ...col, render: (b) => (
+        <AdminActiveStatus
+          active={!b.isDeleted}
+          inactiveLabel="Blocked"
+          confirmInactive={{ title: "Block this blog?", message: "It will be hidden from the website until unblocked.", confirmLabel: "Block" }}
+          confirmActive={{ title: "Unblock this blog?", message: "It will show on the website again.", confirmLabel: "Unblock" }}
+          onChange={async (on) => {
+            try {
+              await (on ? unblockBlog(b.id) : blockBlog(b.id));
+              toast.success(on ? "Blog unblocked" : "Blog blocked");
+              fetchAll();
+            } catch (err: unknown) {
+              handleApiError(err);
+            }
+          }}
+        />
+      ) } : col,
+  );
 
   return (
     <AdminPageContainer>
@@ -235,26 +229,16 @@ export default function BlogsPage() {
       </AdminFilterBar>
 
       {/* ── Table ── */}
-      {loading ? (
-        <TopLoader loading={loading} />
-      ) : (
-        <AdminTable
-          data={blogs}
-          columns={columns}
-          actions={[
-            { label: "Edit", onClick: handleEdit },
-            {
-              label: (b) => (b.isDeleted ? "Unblock" : "Block"),
-              onClick: handleToggleBlock,
-              className: (b) =>
-                b.isDeleted
-                  ? "text-sm font-medium cursor-pointer text-green-600 hover:opacity-80"
-                  : "text-sm font-medium cursor-pointer text-red-500 hover:opacity-80",
-            },
-          ]}
-          getRowId={(b) => b.id}
-        />
-      )}
+      {/* table stays on screen while loading, so it never jumps */}
+      <AdminTable
+        loading={loading}
+        data={blogs}
+        columns={tableColumns}
+        actions={[
+          { label: "Edit", onClick: handleEdit },
+        ]}
+        getRowId={(b) => b.id}
+      />
 
       {/* ── Pagination ── */}
       <Pagination

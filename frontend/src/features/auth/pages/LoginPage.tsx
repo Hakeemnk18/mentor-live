@@ -4,6 +4,7 @@ import { useLogin } from "../hooks/useLogin";
 // import { useForgotPassword } from "../hooks/useForgotPassword";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 import GoogleLogin from "../components/GoogleLogin";
+import BrandMark from "../../user/components/ui/BrandMark";
 //import ForgotPasswordModal from "../components/EmailModal";
 
 interface LoginPageProps {
@@ -77,11 +78,9 @@ const LoginPage = ({ role }: LoginPageProps) => {
       
       {/* Brand */}
       <div className="flex flex-col items-center mb-6">
-        <div className="h-12 w-12 rounded-xl bg-[#6D35D9] text-white flex items-center justify-center font-bold text-lg">
-          ML
-        </div>
-        <h1 className="mt-4 text-xl font-semibold text-gray-900">
-          Sign in to Mentor Live
+        <BrandMark className="h-10" />
+        <h1 className="mt-5 text-xl font-semibold text-[#2A1650]">
+          Sign in to Mentorlive
         </h1>
         <p className="text-sm text-gray-500 mt-1">
           {role === "admin" ? "Admin Panel Access" : "Continue learning"}
@@ -171,7 +170,7 @@ const LoginPage = ({ role }: LoginPageProps) => {
           </div>
 
           <p className="text-xs text-center mt-5 text-gray-600">
-            New to Mentor Live?{" "}
+            New to Mentorlive?{" "}
             <RouterLink
               to="/signup"
               state={{ from }}

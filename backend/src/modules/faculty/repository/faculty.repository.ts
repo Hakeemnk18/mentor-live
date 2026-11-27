@@ -115,7 +115,8 @@ export class FacultyRepository implements IFacultyRepository {
     const documents = await FacultyModel.aggregate([
       {
         $match: {
-          isDeleted: isDeleted,
+          // no status chosen = show all faculty (active + inactive)
+          ...(isDeleted !== undefined && { isDeleted }),
           ...(search && {
             name: { $regex: search, $options: "i" },
           }),
@@ -328,6 +329,16 @@ export class FacultyRepository implements IFacultyRepository {
         },
       },
       { $unwind: "$sv" },
+      // ignore subjects an admin made inactive
+      {
+        $lookup: {
+          from: "subjects",
+          localField: "sv.subject",
+          foreignField: "_id",
+          as: "svSubject",
+        },
+      },
+      { $match: { "svSubject.isDeleted": { $ne: true } } },
       {
         $match: {
           // subjectId here is the SubjectVariant _id sent by the listing page —
@@ -556,6 +567,14 @@ export class FacultyRepository implements IFacultyRepository {
         },
       },
       { $unwind: "$subjectDoc" },
+      // hide offerings whose subject, class or syllabus an admin made inactive
+      {
+        $match: {
+          "subjectDoc.isDeleted": { $ne: true },
+          "classDoc.isDeleted": { $ne: true },
+          "syllabusDoc.isDeleted": { $ne: true },
+        },
+      },
       {
         $group: {
           _id: "$_id",

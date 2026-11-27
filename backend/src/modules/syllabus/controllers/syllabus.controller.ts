@@ -17,6 +17,9 @@ import type { IEditSyllabusUseCase } from "../use-cases/interfaces/edit.syllabus
 import type { IGetSyllabusesForUserUseCase } from "../use-cases/interfaces/get.all.for.user.interface.js";
 import type { IGetSyllabusesForAdminUseCase } from "../use-cases/interfaces/get.all.for.admin.interface.js";
 
+import type { IBlockSyllabusUseCase } from "../use-cases/interfaces/block.syllabus.use-case.interface.js";
+import type { IUnblockSyllabusUseCase } from "../use-cases/interfaces/unblock.syllabus.use-case.interface.js";
+
 @injectable()
 export class SyllabusController implements ISyllabusController {
   constructor(
@@ -30,7 +33,13 @@ export class SyllabusController implements ISyllabusController {
     private readonly _getSyllabusesForUserUseCase: IGetSyllabusesForUserUseCase,
 
     @inject("IGetSyllabusesForAdminUseCase")
-    private readonly _getSyllabusesForAdminUseCase: IGetSyllabusesForAdminUseCase
+    private readonly _getSyllabusesForAdminUseCase: IGetSyllabusesForAdminUseCase,
+
+    @inject("IBlockSyllabusUseCase")
+    private readonly _blockSyllabusUseCase: IBlockSyllabusUseCase,
+
+    @inject("IUnblockSyllabusUseCase")
+    private readonly _unblockSyllabusUseCase: IUnblockSyllabusUseCase
   ) {}
 
   /** 🏗️ Create syllabus (Admin) */
@@ -102,6 +111,30 @@ export class SyllabusController implements ISyllabusController {
       });
     } catch (error) {
       console.log("Error in getSyllabusesForAdmin:", error);
+      handleError(res, error);
+    }
+  }
+
+  /** Make a syllabus inactive (admin) */
+  async blockSyllabus(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      validateObjectId(id);
+      await this._blockSyllabusUseCase.execute(id!);
+      res.status(HttpStatusCode.OK).json({ success: true, message: ResponseMessages.SYLLABUS_DELETED });
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  /** Make a syllabus active again (admin) */
+  async unblockSyllabus(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      validateObjectId(id);
+      await this._unblockSyllabusUseCase.execute(id!);
+      res.status(HttpStatusCode.OK).json({ success: true, message: ResponseMessages.SYLLABUS_RESTORED });
+    } catch (error) {
       handleError(res, error);
     }
   }

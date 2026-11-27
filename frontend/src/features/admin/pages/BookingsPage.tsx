@@ -5,7 +5,6 @@ import { AdminPageActions } from "../components/AdminPageActions";
 
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
-import TopLoader from "../../../shared/components/TopLoader";
 import type { Column } from "../components/AdminTable";
 import {
   getOneOnOneBookings,
@@ -18,7 +17,7 @@ import {
   markBookingContacted,
 } from "../../../api/booking.api";
 import toast from "react-hot-toast";
-import { AdminContactActions, AdminFilter, AdminFilterBar, AdminFilterSelect, AdminPageSize, AdminSearchInput, AdminStatusSelect, AdminTabs } from "../components/ui";
+import { AdminContactActions, AdminFilter, AdminFilterBar, AdminFilterSelect, AdminPageSize, AdminSearchInput, AdminStatusSelect, AdminTabs, AdminBadge } from "../components/ui";
 import type { StatusOption } from "../components/ui";
 import ExportButton from "../../../shared/components/ExportButton";
 import { downloadBlob } from "../../../shared/utils/download.util";
@@ -90,32 +89,14 @@ const oneOnOneColumns: Column<OneOnOneBooking>[] = [
     key: "status",
     label: "Status",
     render: (b) => (
-      <span
-        className={`px-2 py-1 rounded text-xs font-medium ${
-          b.status === "confirmed"
-            ? "bg-green-100 text-green-700"
-            : b.status === "interested"
-            ? "bg-blue-100 text-blue-700"
-            : "bg-gray-100 text-gray-600"
-        }`}
-      >
-        {b.status === "interested" ? "Pending" : b.status}
-      </span>
+      <AdminBadge tone={b.status === "confirmed" ? "success" : b.status === "interested" ? "info" : "neutral"}>{b.status === "interested" ? "Pending" : b.status}</AdminBadge>
     ),
   },
   {
     key: "isContacted",
     label: "Contacted",
     render: (b) => (
-      <span
-        className={`px-2 py-1 rounded text-xs font-medium ${
-          b.isContacted
-            ? "bg-green-100 text-green-700"
-            : "bg-yellow-100 text-yellow-700"
-        }`}
-      >
-        {b.isContacted ? "Yes" : "Pending"}
-      </span>
+      <AdminBadge tone={b.isContacted ? "success" : "warning"}>{b.isContacted ? "Yes" : "Pending"}</AdminBadge>
     ),
   },
   { key: "createdAt", label: "Date", render: (b) => fmtDate(b.createdAt) },
@@ -151,15 +132,7 @@ const poolColumns: Column<PoolBooking>[] = [
     key: "hasPendingContact",
     label: "Pending Contact",
     render: (b) => (
-      <span
-        className={`px-2 py-1 rounded text-xs font-medium ${
-          b.hasPendingContact
-            ? "bg-yellow-100 text-yellow-700"
-            : "bg-green-100 text-green-700"
-        }`}
-      >
-        {b.hasPendingContact ? "Yes" : "No"}
-      </span>
+      <AdminBadge tone={b.hasPendingContact ? "warning" : "success"}>{b.hasPendingContact ? "Yes" : "No"}</AdminBadge>
     ),
   },
   { key: "createdAt", label: "Date", render: (b) => fmtDate(b.createdAt) },
@@ -170,15 +143,7 @@ const allBookingColumns: Column<AllBooking>[] = [
     key: "type",
     label: "Type",
     render: (b) => (
-      <span
-        className={`px-2 py-1 rounded text-xs font-medium ${
-          b.type === "oneToOne"
-            ? "bg-purple-100 text-purple-700"
-            : "bg-indigo-100 text-indigo-700"
-        }`}
-      >
-        {b.type === "oneToOne" ? "One-to-One" : "Pooling"}
-      </span>
+      <AdminBadge tone={b.type === "oneToOne" ? "violet" : "info"}>{b.type === "oneToOne" ? "One-to-One" : "Pooling"}</AdminBadge>
     ),
   },
   {
@@ -213,32 +178,14 @@ const allBookingColumns: Column<AllBooking>[] = [
     key: "status",
     label: "Status",
     render: (b) => (
-      <span
-        className={`px-2 py-1 rounded text-xs font-medium ${
-          b.status === "confirmed"
-            ? "bg-green-100 text-green-700"
-            : b.status === "interested"
-            ? "bg-blue-100 text-blue-700"
-            : "bg-gray-100 text-gray-600"
-        }`}
-      >
-        {b.status === "interested" ? "Pending" : b.status}
-      </span>
+      <AdminBadge tone={b.status === "confirmed" ? "success" : b.status === "interested" ? "info" : "neutral"}>{b.status === "interested" ? "Pending" : b.status}</AdminBadge>
     ),
   },
   {
     key: "isContacted",
     label: "Contacted",
     render: (b) => (
-      <span
-        className={`px-2 py-1 rounded text-xs font-medium ${
-          b.isContacted
-            ? "bg-green-100 text-green-700"
-            : "bg-yellow-100 text-yellow-700"
-        }`}
-      >
-        {b.isContacted ? "Yes" : "Pending"}
-      </span>
+      <AdminBadge tone={b.isContacted ? "success" : "warning"}>{b.isContacted ? "Yes" : "Pending"}</AdminBadge>
     ),
   },
   { key: "createdAt", label: "Date", render: (b) => fmtDate(b.createdAt) },
@@ -388,7 +335,7 @@ export default function BookingsPage() {
   const [oneOnOneData, setOneOnOneData] = useState<OneOnOneBooking[]>([]);
   const [poolData, setPoolData] = useState<PoolBooking[]>([]);
   const [allBookingsData, setAllBookingsData] = useState<AllBooking[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // starts loading: shows placeholder rows, not "No records found"
   const [total, setTotal] = useState(0);
 
   /* filters */
@@ -578,10 +525,10 @@ export default function BookingsPage() {
       </AdminFilterBar>
 
       {/* ── Table ──────────────────────────────────────── */}
-      {loading ? (
-        <TopLoader loading />
-      ) : bookingType === "one-on-one" ? (
+      {/* the table stays on screen while loading, so it never jumps */}
+      {bookingType === "one-on-one" ? (
         <AdminTable
+          loading={loading}
           data={oneOnOneData}
           columns={oneOnOneCols}
           actions={[{ label: "View", onClick: (row) => setSelectedBooking(row) }]}
@@ -589,6 +536,7 @@ export default function BookingsPage() {
         />
       ) : bookingType === "pool" ? (
         <AdminTable
+          loading={loading}
           data={poolData}
           columns={poolColumns}
           actions={[{ label: "View", onClick: (row) => setSelectedPoolBooking(row) }]}
@@ -596,6 +544,7 @@ export default function BookingsPage() {
         />
       ) : (
         <AdminTable
+          loading={loading}
           data={allBookingsData}
           columns={allBookingCols}
           getRowId={(row) => row.id}

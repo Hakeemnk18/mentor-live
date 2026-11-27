@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import { AdminTable } from "../components/AdminTable";
 import { AdminPageActions } from "../components/AdminPageActions";
-import { AdminFilter, AdminFilterBar, AdminFilterSelect, AdminSearchInput } from "../components/ui";
+import { AdminFilter, AdminFilterBar, AdminFilterSelect, AdminSearchInput, AdminBadge } from "../components/ui";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
-import TopLoader from "../../../shared/components/TopLoader";
 import toast from "react-hot-toast";
 import type { Column } from "../components/AdminTable";
 import {
@@ -41,15 +40,7 @@ const columns: Column<Testimonial>[] = [
     key: "status",
     label: "Status",
     render: (t) => (
-      <span
-        className={`px-2 py-1 rounded text-xs font-medium ${
-          t.isDeleted
-            ? "bg-red-100 text-red-600"
-            : "bg-green-100 text-green-600"
-        }`}
-      >
-        {t.isDeleted ? "Deleted" : "Active"}
-      </span>
+      <AdminBadge tone={t.isDeleted ? "danger" : "success"}>{t.isDeleted ? "Deleted" : "Active"}</AdminBadge>
     ),
   },
 ];
@@ -57,7 +48,7 @@ const columns: Column<Testimonial>[] = [
 /* ── component ────────────────────────────────────────────── */
 export default function TestimonialsPage() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // starts loading: shows placeholder rows, not "No records found"
   const [submitting, setSubmitting] = useState(false);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -184,19 +175,17 @@ export default function TestimonialsPage() {
       </AdminFilterBar>
 
       {/* ── Table ── */}
-      {loading ? (
-        <TopLoader loading={loading} />
-      ) : (
-        <AdminTable
-          data={paginated}
-          columns={columns}
-          actions={[
-            { label: "Edit", onClick: handleEdit },
-            { label: "Delete", onClick: handleDelete },
-          ]}
-          getRowId={(t) => t.id}
-        />
-      )}
+      {/* table stays on screen while loading, so it never jumps */}
+      <AdminTable
+        loading={loading}
+        data={paginated}
+        columns={columns}
+        actions={[
+          { label: "Edit", onClick: handleEdit },
+          { label: "Delete", onClick: handleDelete },
+        ]}
+        getRowId={(t) => t.id}
+      />
 
       {/* ── Pagination ── */}
       <Pagination

@@ -9,6 +9,7 @@ import {
 import { getFacultyAvailableSlots } from "../../../api/faculty.api";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 import ConfirmModal from "./ConfirmModal";
+import { AdminBadge, AdminButton, AdminContactActions, AdminModal } from "./ui";
 
 import type { OneOnOneBooking } from "../../../shared/types/booking.types";
 /* ───── helpers ─────────────────────────────────────────── */
@@ -30,11 +31,9 @@ const fmtDate = (iso: string) =>
   });
 
 const Detail = ({ label, value }: { label: string; value: React.ReactNode }) => (
-  <div className="flex flex-col gap-0.5">
-    <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-      {label}
-    </span>
-    <span className="text-sm text-gray-800">{value}</span>
+  <div className="flex flex-col gap-0.5 min-w-0">
+    <span className="text-[11px] font-semibold uppercase tracking-wider text-[#8A80A3]">{label}</span>
+    <span className="text-sm text-[#2A1650] break-words">{value}</span>
   </div>
 );
 
@@ -130,192 +129,114 @@ export default function OneOnOneBookingModal({ booking, onClose, onConfirmed, re
     }
   };
 
-  /* contact via phone */
-  const handleContact = () => {
-    window.open(`tel:${booking.student.phone}`, "_self");
-  };
-
-  const copyPhone = () => {
-    navigator.clipboard.writeText(booking.student.phone).then(() =>
-      toast.success("Phone number copied")
-    );
+  const statusLabel =
+    booking.status === "interested" ? "Pending" : booking.status.charAt(0).toUpperCase() + booking.status.slice(1);
+  const statusTone = booking.status === "confirmed" ? "success" : booking.status === "interested" ? "info" : "neutral";
+  const busy = confirming || markingContacted;
+  const close = () => {
+    if (!busy) onClose();
   };
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-1000 flex items-center justify-center"
-        onClick={onClose}
-      >
-        <div className="absolute inset-0 bg-black/40" />
-      </div>
-
-      {/* Panel */}
-      <div className="fixed inset-0 z-1001 flex items-center justify-center pointer-events-none">
-        <div
-          className="pointer-events-auto relative w-full max-w-lg mx-4 bg-white rounded-xl shadow-xl flex flex-col max-h-[90vh]"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b px-6 py-4">
-            <div>
-              <h2 className="text-base font-semibold text-gray-900">
-                Booking Details
-              </h2>
-              <p className="text-xs text-gray-400 mt-0.5 capitalize">
-                {booking.mode} booking
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 text-xl leading-none"
-            >
-              ×
-            </button>
-          </div>
-
-          {/* Body */}
-          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
-
-            {/* Status badge */}
-            <div className="flex items-center gap-2">
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  booking.status === "confirmed"
-                    ? "bg-green-100 text-green-700"
-                    : booking.status === "interested"
-                    ? "bg-blue-100 text-blue-700"
-                    : "bg-gray-100 text-gray-500"
-                }`}
-              >
-                {booking.status === "interested"
-                  ? "Pending"
-                  : booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-              </span>
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  booking.isContacted
-                    ? "bg-green-100 text-green-700"
-                    : "bg-yellow-100 text-yellow-700"
-                }`}
-              >
-                {booking.isContacted ? "Contacted" : "Not Contacted"}
-              </span>
-            </div>
-
-            {/* Student section */}
-            <div className="rounded-lg border border-gray-200 p-4 space-y-3">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                Student
-              </p>
-              <div className="flex items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <Detail label="Name" value={booking.student.name} />
-                  <Detail label="Phone" value={booking.student.phone} />
-                </div>
-                {/* Contact buttons */}
-                <div className="flex flex-col gap-2 shrink-0">
-                  <button
-                    onClick={handleContact}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#6D35D9] text-white rounded-md hover:bg-[#5B2BC0] transition-colors"
-                  >
-                    📞 Call
-                  </button>
-                  <button
-                    onClick={copyPhone}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-gray-300 text-gray-600 rounded-md hover:bg-gray-50 transition-colors"
-                  >
-                    📋 Copy
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Booking info */}
-            <div className="grid grid-cols-2 gap-4">
-              <Detail label="Faculty" value={booking.faculty.name} />
-              <Detail label="Class" value={booking.class.name} />
-              <Detail label="Syllabus" value={booking.syllabus.name} />
-              <Detail label="Mode" value={booking.mode} />
-              {booking.chapter && (
-                <Detail label="Chapter" value={booking.chapter.name} />
-              )}
-              {booking.slot && (
-                <Detail label="Slot" value={formatTimeAMPM(booking.slot.time)} />
-              )}
-              <Detail label="Booked On" value={fmtDate(booking.createdAt)} />
-            </div>
-
-            {/* Slot picker — chapter mode only, hidden for read-only roles */}
-            {booking.mode === "chapter" && !isConfirmed && !readOnly && (
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                  Assign Time Slot(s)
-                </p>
-                {loadingSlots ? (
-                  <p className="text-sm text-gray-400">Loading slots…</p>
-                ) : availableSlots.length === 0 ? (
-                  <p className="text-sm text-gray-400">
-                    No available slots for this faculty.
-                  </p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {availableSlots.map((s) => {
-                      const selected = selectedTime === s.time;
-                      return (
-                        <button
-                          key={s.time}
-                          type="button"
-                          onClick={() => toggleSlot(s.time)}
-                          className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-                            selected
-                              ? "bg-[#6D35D9] border-[#6D35D9] text-white"
-                              : "border-gray-300 text-gray-700 hover:border-[#6D35D9] hover:text-[#6D35D9]"
-                          }`}
-                        >
-                          {s.time}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="border-t px-6 py-4 flex items-center justify-end gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-            >
+      <AdminModal
+        open
+        onClose={close}
+        size="md"
+        zIndex={1000}
+        closeOnEsc={!showContactConfirm}
+        closeOnBackdrop={!showContactConfirm}
+        title="Booking Details"
+        description={<span className="capitalize">{booking.mode} booking · One-on-One</span>}
+        footer={
+          <>
+            <AdminButton variant="outline" onClick={close} disabled={busy}>
               Close
-            </button>
+            </AdminButton>
             {!booking.isContacted && (
-              <button
-                onClick={() => setShowContactConfirm(true)}
-                disabled={markingContacted}
-                className="px-4 py-2 text-sm font-medium border border-[#6D35D9] text-[#6D35D9] rounded-md hover:bg-red-50 disabled:opacity-50 transition-colors"
-              >
+              <AdminButton variant="soft" onClick={() => setShowContactConfirm(true)} loading={markingContacted}>
                 {markingContacted ? "Marking…" : "Mark as Contacted"}
-              </button>
+              </AdminButton>
             )}
             {!isConfirmed && !readOnly && (
-              <button
+              <AdminButton
                 onClick={handleConfirm}
-                disabled={
-                  confirming ||
-                  (booking.mode === "chapter" && !selectedTime)
-                }
-                className="px-4 py-2 text-sm font-medium bg-[#6D35D9] text-white rounded-md hover:bg-[#5B2BC0] disabled:opacity-50 transition-colors"
+                loading={confirming}
+                disabled={booking.mode === "chapter" && !selectedTime}
               >
                 {confirming ? "Confirming…" : "Confirm Booking"}
-              </button>
+              </AdminButton>
             )}
+          </>
+        }
+      >
+        <div className="space-y-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <AdminBadge tone={statusTone}>{statusLabel}</AdminBadge>
+            <AdminBadge tone={booking.isContacted ? "success" : "warning"}>
+              {booking.isContacted ? "Contacted" : "Not contacted"}
+            </AdminBadge>
           </div>
+
+          {/* Student */}
+          <div className="rounded-2xl border border-[#E4DDF2] bg-[#FAF8FE] p-4">
+            <p className="m-0 mb-3 text-[11px] font-semibold uppercase tracking-wider text-[#8A80A3]">Student</p>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="min-w-0 space-y-2.5">
+                <Detail label="Name" value={booking.student.name} />
+                <Detail label="Phone" value={<span className="tabular-nums">{booking.student.phone}</span>} />
+              </div>
+              <AdminContactActions phone={booking.student.phone} name={booking.student.name} size="md" />
+            </div>
+          </div>
+
+          {/* Booking info */}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+            <Detail label="Faculty" value={booking.faculty.name} />
+            <Detail label="Class" value={booking.class.name} />
+            <Detail label="Syllabus" value={booking.syllabus.name} />
+            <Detail label="Mode" value={<span className="capitalize">{booking.mode}</span>} />
+            {booking.chapter && <Detail label="Chapter" value={booking.chapter.name} />}
+            {booking.slot && <Detail label="Slot" value={formatTimeAMPM(booking.slot.time)} />}
+            <Detail label="Booked On" value={fmtDate(booking.createdAt)} />
+          </div>
+
+          {/* Slot picker — chapter bookings, hidden for read-only roles */}
+          {booking.mode === "chapter" && !isConfirmed && !readOnly && (
+            <div>
+              <p className="m-0 mb-2 text-xs font-semibold text-[#2A1650]/80">
+                Assign a time slot <span className="text-[#FF6B5E]">*</span>
+              </p>
+              {loadingSlots ? (
+                <p className="m-0 text-sm text-[#8A80A3]">Loading slots…</p>
+              ) : availableSlots.length === 0 ? (
+                <p className="m-0 text-sm text-[#8A80A3]">No available slots for this faculty.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {availableSlots.map((s) => {
+                    const selected = selectedTime === s.time;
+                    return (
+                      <button
+                        key={s.time}
+                        type="button"
+                        onClick={() => toggleSlot(s.time)}
+                        aria-pressed={selected}
+                        className={`h-9 px-3.5 text-sm font-semibold rounded-full border cursor-pointer transition-colors tabular-nums ${
+                          selected
+                            ? "bg-[#6D35D9] border-[#6D35D9] text-white"
+                            : "bg-white border-[#E4DDF2] text-[#2A1650] hover:border-[#6D35D9] hover:text-[#6D35D9]"
+                        }`}
+                      >
+                        {s.time}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
-      </div>
+      </AdminModal>
 
       {/* Confirm mark-as-contacted */}
       <ConfirmModal

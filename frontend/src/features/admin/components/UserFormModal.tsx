@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
 import type { AdminUser, CreateUserPayload, EditUserPayload, UserRole } from "../../../shared/types/user.types";
+import AdminModal from "./ui/AdminModal";
+import AdminField from "./ui/AdminField";
+import AdminButton from "./ui/AdminButton";
+import AdminSelect from "./ui/AdminSelect";
+import { adminInputCls } from "./ui/styles";
 
 type Mode = "create" | "edit";
 
@@ -96,7 +101,7 @@ export default function UserFormModal({
 
   if (!open) return null;
 
-  const set = (field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const set = (field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
     setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
@@ -126,116 +131,102 @@ export default function UserFormModal({
     }
   };
 
+  const close = () => {
+    if (!loading) onClose();
+  };
   const inputCls = (field: keyof FormState) =>
-    `w-full rounded border px-3 py-2 text-sm focus:outline-none disabled:bg-gray-100 ${
-      errors[field]
-        ? "border-red-400 focus:border-red-400"
-        : "border-gray-300 focus:border-[#6D35D9]"
-    }`;
+    `${adminInputCls(errors[field])} h-11 sm:h-10 !py-0 disabled:bg-[#F4F1FA] disabled:text-[#8A80A3]`;
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/30"
-        onClick={!loading ? onClose : undefined}
-      />
-
-      <div className="relative w-full max-w-md mx-4 rounded-lg bg-white p-6 shadow-lg">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">
-          {mode === "create" ? "Create User" : "Edit User"}
-        </h2>
-
-        <div className="space-y-4">
-          {/* Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={set("name")}
-              placeholder="Enter full name"
-              maxLength={100}
-              disabled={loading}
-              className={inputCls("name")}
-            />
-            {errors.name && <p className="mt-0.5 text-xs text-red-500">{errors.name}</p>}
-          </div>
-
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={set("email")}
-              placeholder="Enter email address"
-              disabled={loading}
-              className={inputCls("email")}
-            />
-            {errors.email && <p className="mt-0.5 text-xs text-red-500">{errors.email}</p>}
-          </div>
-
-          {/* Password */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password {mode === "create" && <span className="text-red-500">*</span>}
-              {mode === "edit" && <span className="text-xs text-gray-400 font-normal ml-1">(leave blank to keep unchanged)</span>}
-            </label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={set("password")}
-              placeholder={mode === "create" ? "Enter password" : "New password (optional)"}
-              maxLength={50}
-              disabled={loading}
-              className={inputCls("password")}
-            />
-            {errors.password && <p className="mt-0.5 text-xs text-red-500">{errors.password}</p>}
-          </div>
-
-          {/* Role */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Role <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={form.role}
-              onChange={set("role")}
-              disabled={loading}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#6D35D9] disabled:bg-gray-100"
-            >
-              {ROLES.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            disabled={loading}
-            className="px-4 py-2 text-sm rounded border border-gray-300 text-gray-700 cursor-pointer hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+    <AdminModal
+      open={open}
+      onClose={close}
+      size="sm"
+      zIndex={1000}
+      title={mode === "create" ? "Create User" : "Edit User"}
+      description={mode === "create" ? "Give someone access to the admin panel." : "Update this user's details or role."}
+      footer={
+        <>
+          <AdminButton variant="outline" onClick={close} disabled={loading}>
             Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
+          </AdminButton>
+          <AdminButton onClick={handleSubmit} loading={loading}>
+            {loading ? (mode === "create" ? "Creating…" : "Saving…") : mode === "create" ? "Create User" : "Save changes"}
+          </AdminButton>
+        </>
+      }
+    >
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
+        }}
+        noValidate
+        className="space-y-4"
+      >
+        <AdminField label="Name" required htmlFor="u-name" error={errors.name}>
+          <input
+            id="u-name"
+            type="text"
+            value={form.name}
+            onChange={set("name")}
+            placeholder="Enter full name"
+            maxLength={100}
             disabled={loading}
-            className="px-4 py-2 text-sm rounded bg-[#6D35D9] text-white cursor-pointer hover:bg-[#5B2BC0] disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading
-              ? mode === "create" ? "Creating..." : "Updating..."
-              : mode === "create" ? "Create" : "Update"}
-          </button>
-        </div>
-      </div>
-    </div>
+            autoComplete="off"
+            className={inputCls("name")}
+          />
+        </AdminField>
+
+        <AdminField label="Email" required htmlFor="u-email" error={errors.email}>
+          <input
+            id="u-email"
+            type="email"
+            value={form.email}
+            onChange={set("email")}
+            placeholder="Enter email address"
+            disabled={loading}
+            autoComplete="off"
+            className={inputCls("email")}
+          />
+        </AdminField>
+
+        <AdminField
+          label="Password"
+          required={mode === "create"}
+          hint={mode === "edit" ? "(leave blank to keep it)" : undefined}
+          htmlFor="u-password"
+          error={errors.password}
+        >
+          <input
+            id="u-password"
+            type="password"
+            value={form.password}
+            onChange={set("password")}
+            placeholder={mode === "create" ? "At least 6 characters" : "New password (optional)"}
+            maxLength={50}
+            disabled={loading}
+            autoComplete="new-password"
+            className={inputCls("password")}
+          />
+        </AdminField>
+
+        <AdminField label="Role" required>
+          <AdminSelect<UserRole>
+            value={form.role}
+            onChange={(role) => {
+              setForm((prev) => ({ ...prev, role }));
+              setErrors((prev) => ({ ...prev, role: undefined }));
+            }}
+            options={ROLES}
+            label="Role"
+            disabled={loading}
+          />
+        </AdminField>
+
+        {/* lets Enter submit from any field */}
+        <button type="submit" className="hidden" aria-hidden tabIndex={-1} />
+      </form>
+    </AdminModal>
   );
 }

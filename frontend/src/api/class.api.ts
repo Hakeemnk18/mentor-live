@@ -47,3 +47,11 @@ export const getClasses = async (
     total: apiData.total,
   };
 };
+
+/** Make a class inactive / active again */
+export const blockClass = async (id: string): Promise<void> => {
+  await axiosInstance.patch(`/classes/${id}/block`);
+};
+export const unblockClass = async (id: string): Promise<void> => {
+  await axiosInstance.patch(`/classes/${id}/unblock`);
+};

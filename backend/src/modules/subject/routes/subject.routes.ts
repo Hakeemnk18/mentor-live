@@ -28,6 +28,21 @@ router.put(
   (req, res) => subjectController.editSubjectName(req, res)
 );
 
+// make a subject inactive / active again (admin)
+router.patch(
+  "/:id/block",
+  authenticate.authenticate,
+  authorizeRoles("admin"),
+  (req, res) => subjectController.blockSubject(req, res)
+);
+
+router.patch(
+  "/:id/unblock",
+  authenticate.authenticate,
+  authorizeRoles("admin"),
+  (req, res) => subjectController.unblockSubject(req, res)
+);
+
 router.get(
   '/list',
   (req,res) => subjectController.getAllSubjectForUser(req,res)

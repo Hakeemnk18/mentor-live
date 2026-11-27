@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { AdminTable } from "../components/AdminTable";
 import { AdminPageActions } from "../components/AdminPageActions";
-import { AdminFilter, AdminFilterBar, AdminFilterSelect, AdminPageSize, AdminSearchInput } from "../components/ui";
+import { AdminFilter, AdminFilterBar, AdminFilterSelect, AdminPageSize, AdminSearchInput, AdminActiveStatus, AdminBadge } from "../components/ui";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
-import TopLoader from "../../../shared/components/TopLoader";
 import type { Column } from "../components/AdminTable";
 import {
   createChapter,
   getChapters,
   updateChapter,
   getChapterById,
+  blockChapter,
+  unblockChapter,
 } from "../../../api/chapter.api";
 import { getClasses } from "../../../api/class.api";
 import { getSyllabus } from "../../../api/syllabus.api";
@@ -22,7 +24,7 @@ import type { ChapterRow, ChapterInitialData, CreateChapterPayload } from "../..
 import type { FacultyListItem } from "../../../shared/types/faculty.types";
 export default function ChapterPage() {
   const [chapters, setChapters] = useState<ChapterRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // starts loading: shows placeholder rows, not "No records found"
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(5);
@@ -66,15 +68,7 @@ export default function ChapterPage() {
       key: "status",
       label: "Status",
       render: (c) => (
-        <span
-          className={`px-2 py-1 rounded text-xs ${
-            c.isDeleted
-              ? "bg-red-100 text-red-600"
-              : "bg-green-100 text-green-600"
-          }`}
-        >
-          {c.isDeleted ? "Inactive" : "Active"}
-        </span>
+        <AdminBadge tone={c.isDeleted ? "danger" : "success"}>{c.isDeleted ? "Inactive" : "Active"}</AdminBadge>
       ),
     },
   ];
@@ -187,6 +181,26 @@ export default function ChapterPage() {
 
   /* ---------------- UI ---------------- */
 
+  /* status can be changed straight from the table */
+  const tableColumns: typeof columns = columns.map((col) =>
+    col.key === "status" ? { ...col, render: (c) => (
+        <AdminActiveStatus
+          active={!c.isDeleted}
+          confirmInactive={{ title: `Make "${c.name}" inactive?`, message: "This chapter will be hidden from the website until made active again.", confirmLabel: "Make inactive" }}
+          confirmActive={{ title: `Make "${c.name}" active?`, message: "This chapter will show on the website again.", confirmLabel: "Make active" }}
+          onChange={async (on) => {
+            try {
+              await (on ? unblockChapter(c._id) : blockChapter(c._id));
+              toast.success(`${c.name} is now ${on ? "active" : "inactive"}`);
+              fetchChapters();
+            } catch (err: unknown) {
+              handleApiError(err);
+            }
+          }}
+        />
+      ) } : col,
+  );
+
   return (
     <AdminPageContainer>
       <AdminPageActions
@@ -230,16 +244,14 @@ export default function ChapterPage() {
       </AdminFilterBar>
 
 
-      {loading ? (
-        <TopLoader loading />
-      ) : (
-        <AdminTable
-          data={chapters}
-          columns={columns}
-          actions={[{ label: "Edit", onClick: openEdit }]}
-          getRowId={(row) => row._id}
-        />
-      )}
+      {/* table stays on screen while loading, so it never jumps */}
+      <AdminTable
+        loading={loading}
+        data={chapters}
+        columns={tableColumns}
+        actions={[{ label: "Edit", onClick: openEdit }]}
+        getRowId={(row) => row._id}
+      />
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
       <ChapterFormModal

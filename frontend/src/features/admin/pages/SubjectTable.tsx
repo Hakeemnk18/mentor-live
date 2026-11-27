@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
 import { AdminTable } from "../components/AdminTable";
 import { AdminPageActions } from "../components/AdminPageActions";
-import { AdminBadge, AdminFilter, AdminFilterBar, AdminPageSize, AdminSearchInput } from "../components/ui";
+import { AdminActiveStatus, AdminFilter, AdminFilterBar, AdminPageSize, AdminSearchInput } from "../components/ui";
 import {
   createSubject,
   updateSubject,
   getSubjects,
   getSubjectById,
   addSubjectVariants,
+  blockSubject,
+  unblockSubject,
 } from "../../../api/subject.api";
 import toast from "react-hot-toast";
-import TopLoader from "../../../shared/components/TopLoader";
 import Pagination from "../../../shared/components/Pagination";
 import type { Column } from "../components/AdminTable";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
@@ -22,7 +23,7 @@ import type { CreateSubjectPayload, SubjectRow, SubjectVariantForm } from "../..
 
 export default function SubjectPage() {
   const [subjects, setSubjects] = useState<SubjectRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // starts loading: shows placeholder rows, not "No records found"
   const [modalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState<"create" | "edit">("create");
   const [editingSubject, setEditingSubject] = useState<
@@ -54,8 +55,30 @@ export default function SubjectPage() {
     {
       key: "status",
       label: "Status",
+      // changeable straight from the table
       render: (s) => (
-        <AdminBadge tone={s.isDeleted ? "danger" : "success"}>{s.isDeleted ? "Inactive" : "Active"}</AdminBadge>
+        <AdminActiveStatus
+          active={!s.isDeleted}
+          confirmInactive={{
+            title: `Make "${s.name}" inactive?`,
+            message: "It will be removed from the subject lists on the website until made active again.",
+            confirmLabel: "Make inactive",
+          }}
+          confirmActive={{
+            title: `Make "${s.name}" active?`,
+            message: "It will show in the subject lists on the website again.",
+            confirmLabel: "Make active",
+          }}
+          onChange={async (on) => {
+            try {
+              await (on ? unblockSubject(s._id) : blockSubject(s._id));
+              toast.success(`${s.name} is now ${on ? "active" : "inactive"}`);
+              fetchSubjects();
+            } catch (err: unknown) {
+              handleApiError(err);
+            }
+          }}
+        />
       ),
     },
   ];
@@ -258,21 +281,19 @@ export default function SubjectPage() {
       </AdminFilterBar>
 
       {/* Table */}
-      {loading ? (
-        <TopLoader loading={loading} />
-      ) : (
-        <AdminTable
-          data={subjects}
-          columns={columns}
-          actions={[
-            {
-              label: "Edit",
-              onClick: handleEdit,
-            },
-          ]}
-          getRowId={(row) => row._id}
-        />
-      )}
+      {/* table stays on screen while loading, so it never jumps */}
+      <AdminTable
+        loading={loading}
+        data={subjects}
+        columns={columns}
+        actions={[
+          {
+            label: "Edit",
+            onClick: handleEdit,
+          },
+        ]}
+        getRowId={(row) => row._id}
+      />
 
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 

@@ -40,4 +40,19 @@ router.get(
   (req,res) => classController.getClassesForUser(req,res)
 )
 
+// make a class inactive / active again (admin)
+router.patch(
+  "/:id/block",
+  authenticate.authenticate,
+  authorizeRoles("admin"),
+  (req, res) => classController.blockClass(req, res)
+);
+
+router.patch(
+  "/:id/unblock",
+  authenticate.authenticate,
+  authorizeRoles("admin"),
+  (req, res) => classController.unblockClass(req, res)
+);
+
 export default router;

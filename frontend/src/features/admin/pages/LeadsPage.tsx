@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
+import type { StatusTone } from "../components/ui";
 import { AdminTable } from "../components/AdminTable";
 import { AdminPageActions } from "../components/AdminPageActions";
-import { AdminFilter, AdminFilterBar, AdminFilterSelect, AdminPageSize, AdminSearchInput, AdminSelect } from "../components/ui";
+import { AdminFilter, AdminFilterBar, AdminFilterSelect, AdminPageSize, AdminSearchInput, AdminSelect, AdminStatusSelect, AdminBadge } from "../components/ui";
+import type { StatusOption } from "../components/ui";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
-import TopLoader from "../../../shared/components/TopLoader";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 import toast from "react-hot-toast";
 import type { Column } from "../components/AdminTable";
@@ -13,15 +14,22 @@ import type { Lead, LeadStatus, LeadType } from "../../../shared/types/lead.type
 import Tooltip from "../../../shared/components/Tooltip";
 
 /* ── helpers ─────────────────────────────────────────────── */
-const TYPE_COLORS: Record<LeadType, string> = {
-  inquiry: "bg-blue-100 text-blue-700",
-  request: "bg-purple-100 text-purple-700",
+const TYPE_TONES: Record<LeadType, StatusTone> = {
+  inquiry: "info",
+  request: "violet",
 };
 
-const STATUS_COLORS: Record<LeadStatus, string> = {
-  new: "bg-amber-100 text-amber-700",
-  contacted: "bg-blue-100 text-blue-700",
-  resolved: "bg-green-100 text-green-700",
+/** status choices shown in the table (New → Contacted → Resolved, can be changed back) */
+const LEAD_STATUS_OPTIONS: StatusOption<LeadStatus>[] = [
+  { value: "new", label: "New", tone: "info" },
+  { value: "contacted", label: "Contacted", tone: "warning" },
+  { value: "resolved", label: "Resolved", tone: "success" },
+];
+
+const LEAD_STATUS_TONES: Record<LeadStatus, StatusTone> = {
+  new: "warning",
+  contacted: "info",
+  resolved: "success",
 };
 
 /* ── columns ─────────────────────────────────────────────── */
@@ -41,9 +49,7 @@ const columns: Column<Lead>[] = [
     key: "type",
     label: "Type",
     render: (l) => (
-      <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${TYPE_COLORS[l.type]}`}>
-        {l.type}
-      </span>
+      <AdminBadge tone={TYPE_TONES[l.type]} className="capitalize">{l.type}</AdminBadge>
     ),
   },
   {
@@ -85,9 +91,7 @@ const columns: Column<Lead>[] = [
     key: "status",
     label: "Status",
     render: (l) => (
-      <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${STATUS_COLORS[l.status]}`}>
-        {l.status}
-      </span>
+      <AdminBadge tone={LEAD_STATUS_TONES[l.status]} className="capitalize">{l.status}</AdminBadge>
     ),
   },
   {
@@ -108,8 +112,7 @@ const columns: Column<Lead>[] = [
 /* ── component ────────────────────────────────────────────── */
 export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true); // starts loading: shows placeholder rows, not "No records found"
 
   /* filters */
   const [search, setSearch] = useState("");
@@ -151,17 +154,31 @@ export default function LeadsPage() {
   /* ── status update ── */
   const handleStatusChange = async (lead: Lead, status: LeadStatus) => {
     try {
-      setUpdatingId(lead.id);
       await updateLeadStatus(lead.id, status);
       toast.success(`Marked as ${status}`);
       fetchAll();
     } catch (err: unknown) {
       handleApiError(err);
-    } finally {
-      setUpdatingId(null);
     }
   };
 
+
+  /* status can be changed straight from the table */
+  const tableColumns: typeof columns = columns.map((col) =>
+    col.key === "status"
+      ? {
+          ...col,
+          render: (l: Lead) => (
+            <AdminStatusSelect<LeadStatus>
+              label="Lead status"
+              value={l.status}
+              options={LEAD_STATUS_OPTIONS}
+              onChange={(next) => handleStatusChange(l, next)}
+            />
+          ),
+        }
+      : col,
+  );
 
   return (
     <AdminPageContainer>
@@ -201,40 +218,13 @@ export default function LeadsPage() {
       </AdminFilterBar>
 
       {/* ── Table ── */}
-      {loading ? (
-        <TopLoader loading={loading} />
-      ) : (
-        <AdminTable
-          data={leads}
-          columns={columns}
-          actions={[
-            {
-              label: (l) =>
-                l.status === "new"
-                  ? "Mark Contacted"
-                  : l.status === "contacted"
-                  ? "Mark Resolved"
-                  : "Reopen",
-              onClick: (l) => {
-                const next: LeadStatus =
-                  l.status === "new"
-                    ? "contacted"
-                    : l.status === "contacted"
-                    ? "resolved"
-                    : "new";
-                handleStatusChange(l, next);
-              },
-              className: (l) => {
-                if (updatingId === l.id) return "text-sm font-medium text-gray-400 cursor-not-allowed";
-                if (l.status === "resolved") return "text-sm font-medium cursor-pointer text-gray-500 hover:opacity-80";
-                if (l.status === "contacted") return "text-sm font-medium cursor-pointer text-green-600 hover:opacity-80";
-                return "text-sm font-medium cursor-pointer text-blue-600 hover:opacity-80";
-              },
-            },
-          ]}
-          getRowId={(l) => l.id}
-        />
-      )}
+      {/* table stays on screen while loading, so it never jumps */}
+      <AdminTable
+        loading={loading}
+        data={leads}
+        columns={tableColumns}
+        getRowId={(l) => l.id}
+      />
 
       {/* ── Pagination ── */}
       <Pagination

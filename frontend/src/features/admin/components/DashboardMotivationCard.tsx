@@ -36,7 +36,8 @@ export default function DashboardMotivationCard({ data }: Props) {
         {data.cta && (
           <button 
             onClick={() => navigate(data.cta!.path)}
-            className="mt-6 bg-[#6D35D9] hover:bg-[#5B2BC0] text-white text-sm font-bold py-2.5 px-6 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5"
+            type="button"
+            className="mt-6 bg-[#6D35D9] hover:bg-[#5B2BC0] text-white text-sm font-semibold h-11 px-6 rounded-full cursor-pointer transition-colors duration-200 shadow-[0_8px_18px_-10px_rgba(109,53,217,0.8)]"
           >
             {data.cta.label}
           </button>

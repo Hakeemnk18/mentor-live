@@ -17,7 +17,7 @@ import { getSyllabus } from "../../../api/syllabus.api";
 import FacultyModal from "../components/FacultyModal";
 import type { FacultySubmitPayload } from "../components/FacultyModal";
 import PoolBookingModal from "../components/PoolBookingModal";
-import { AdminAsyncMultiSelect, AdminButton } from "../components/ui";
+import { AdminAsyncMultiSelect, AdminButton, AdminBadge } from "../components/ui";
 import type { AsyncOption } from "../components/ui";
 import { CHAPTER_SEARCH_LIMIT, searchChapters } from "../components/chapterSearch";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
@@ -252,8 +252,8 @@ export default function FacultyDetailPage() {
         </div>
 
         {/* Basic Info skeleton */}
-        <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+        <section className="bg-white rounded-2xl border border-[#E4DDF2] shadow-[0_12px_32px_-22px_rgba(42,22,80,0.35)] overflow-hidden mb-6">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-[#EFE9FA] bg-[#FAF8FE]">
             <div className={`${pulse} h-5 w-36`} />
             <div className={`${pulse} h-9 w-20 rounded-lg`} />
           </div>
@@ -277,8 +277,8 @@ export default function FacultyDetailPage() {
         </section>
 
         {/* Time Slots skeleton */}
-        <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+        <section className="bg-white rounded-2xl border border-[#E4DDF2] shadow-[0_12px_32px_-22px_rgba(42,22,80,0.35)] overflow-hidden mb-6">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-[#EFE9FA] bg-[#FAF8FE]">
             <div className={`${pulse} h-5 w-28`} />
           </div>
           <div className="p-4 sm:p-6 space-y-3">
@@ -287,7 +287,7 @@ export default function FacultyDetailPage() {
               <div className={`${pulse} h-10 w-28 rounded-lg`} />
             </div>
             {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-100">
+              <div key={i} className="flex items-center justify-between px-4 py-3 rounded-xl border border-[#EFE9FA]">
                 <div className="flex items-center gap-4">
                   <div className={`${pulse} h-5 w-14`} />
                   <div className={`${pulse} h-5 w-16 rounded`} />
@@ -299,8 +299,8 @@ export default function FacultyDetailPage() {
         </section>
 
         {/* Chapter Slots skeleton */}
-        <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-8">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+        <section className="bg-white rounded-2xl border border-[#E4DDF2] shadow-[0_12px_32px_-22px_rgba(42,22,80,0.35)] overflow-hidden mb-8">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-[#EFE9FA] bg-[#FAF8FE]">
             <div className={`${pulse} h-5 w-32`} />
           </div>
           <div className="p-4 sm:p-6 space-y-3">
@@ -316,7 +316,7 @@ export default function FacultyDetailPage() {
               </div>
             </div>
             {[1, 2].map((i) => (
-              <div key={i} className="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-100">
+              <div key={i} className="flex items-center justify-between px-4 py-3 rounded-xl border border-[#EFE9FA]">
                 <div className="flex items-center gap-4">
                   <div className={`${pulse} h-5 w-28`} />
                   <div className={`${pulse} h-5 w-16 rounded`} />
@@ -353,7 +353,7 @@ export default function FacultyDetailPage() {
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate("/admin/faculty")}
-            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
+            className="flex items-center gap-1 text-sm font-semibold text-[#655B7E] hover:text-[#6D35D9] transition-colors cursor-pointer"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -361,7 +361,7 @@ export default function FacultyDetailPage() {
             Back
           </button>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{faculty.name}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-[-0.02em] text-[#2A1650]">{faculty.name}</h1>
             <p className="text-sm text-gray-500 mt-0.5">Faculty Details</p>
           </div>
         </div>
@@ -377,12 +377,12 @@ export default function FacultyDetailPage() {
       </div>
 
       {/* â"€â"€ BASIC INFO CARD â"€â"€ */}
-      <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-          <h2 className="text-base font-semibold text-gray-800">Basic Information</h2>
+      <section className="bg-white rounded-2xl border border-[#E4DDF2] shadow-[0_12px_32px_-22px_rgba(42,22,80,0.35)] overflow-hidden mb-6">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#EFE9FA] bg-[#FAF8FE]">
+          <h2 className="text-base font-semibold text-[#2A1650]">Basic Information</h2>
           <button
             onClick={() => setEditOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#6D35D9] rounded-lg hover:bg-[#5B2BC0] transition-colors shadow-sm cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#6D35D9] rounded-full hover:bg-[#5B2BC0] transition-colors shadow-sm cursor-pointer"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -414,7 +414,7 @@ export default function FacultyDetailPage() {
           {faculty.demoClass && (() => {
             const videoId = getYoutubeId(faculty.demoClass);
             return (
-              <div className="mt-5 pt-5 border-t border-gray-100">
+              <div className="mt-5 pt-5 border-t border-[#EFE9FA]">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
                   Demo Class
                 </p>
@@ -423,7 +423,7 @@ export default function FacultyDetailPage() {
                     href={faculty.demoClass}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group relative inline-block rounded-xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
+                    className="group relative inline-block rounded-xl overflow-hidden border border-[#E4DDF2] shadow-sm hover:shadow-md transition-shadow"
                   >
                     <img
                       src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
@@ -455,7 +455,7 @@ export default function FacultyDetailPage() {
 
           {/* Subjects */}
           {faculty.subjectOffering.length > 0 && (
-            <div className="mt-6 pt-5 border-t border-gray-100">
+            <div className="mt-6 pt-5 border-t border-[#EFE9FA]">
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Subjects &amp; fees
               </p>
@@ -483,9 +483,9 @@ export default function FacultyDetailPage() {
       </section>
 
       {/* â"€â"€ TIME SLOTS CARD â"€â"€ */}
-      <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-          <h2 className="text-base font-semibold text-gray-800">
+      <section className="bg-white rounded-2xl border border-[#E4DDF2] shadow-[0_12px_32px_-22px_rgba(42,22,80,0.35)] overflow-hidden mb-6">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#EFE9FA] bg-[#FAF8FE]">
+          <h2 className="text-base font-semibold text-[#2A1650]">
             Class times
             <span className="ml-2 text-xs font-normal text-gray-400">
               ({faculty.slots.length} total)
@@ -515,7 +515,7 @@ export default function FacultyDetailPage() {
                       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
                         isSelected
                           ? "bg-[#6D35D9] text-white border-[#6D35D9]"
-                          : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                          : "bg-white text-[#655B7E] border-[#E4DDF2] hover:border-[#CBB9F0]"
                       }`}
                     >
                       {so.subject.name} · {so.class.name} · {so.syllabus.name}
@@ -545,7 +545,7 @@ export default function FacultyDetailPage() {
                   <button
                     onClick={handleAddTimeSlot}
                     disabled={!newTime || !selectedSlotVariantId || slotWorking}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#6D35D9] rounded-lg hover:bg-[#5B2BC0] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#6D35D9] rounded-full hover:bg-[#5B2BC0] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {slotWorking ? "Adding…" : "+ Add Slot"}
                   </button>
@@ -577,25 +577,17 @@ export default function FacultyDetailPage() {
                     {filteredSlots.map((slot) => (
                       <div
                         key={slot.id}
-                        className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4 py-3 rounded-lg border transition-colors ${
+                        className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4 py-3 rounded-xl border transition-colors ${
                           slot.isAvailable
-                            ? "bg-white border-gray-200 hover:border-gray-300"
-                            : "bg-gray-50 border-gray-200 opacity-70"
+                            ? "bg-white border-[#E4DDF2] hover:border-[#CBB9F0]"
+                            : "bg-[#FAF8FE] border-[#EFE9FA] opacity-70"
                         }`}
                       >
                         <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                           <span className="text-sm font-mono font-semibold text-gray-800">
                             {formatTimeAMPM(slot.time)}
                           </span>
-                          <span
-                            className={`px-2 py-0.5 rounded text-xs font-medium ${
-                              slot.isAvailable
-                                ? "bg-green-100 text-green-700"
-                                : "bg-red-100 text-red-600"
-                            }`}
-                          >
-                            {slot.isAvailable ? "Available" : "Blocked"}
-                          </span>
+                          <AdminBadge tone={slot.isAvailable ? "success" : "danger"}>{slot.isAvailable ? "Available" : "Blocked"}</AdminBadge>
                           {slot.pool.length > 0 && (
                             <span className="text-xs text-gray-400">
                               {slot.pool.length}/{slot.poolLimit} booked
@@ -618,7 +610,7 @@ export default function FacultyDetailPage() {
                                   createdAt: "",
                                 })
                               }
-                              className="px-3 py-1.5 text-xs font-medium rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors"
+                              className="h-8 px-3.5 text-xs font-semibold rounded-full text-[#6D35D9] bg-[#F4F1FA] hover:bg-[#EDE6FB] border border-[#E4DDF2] cursor-pointer transition-colors"
                             >
                               View Pool
                             </button>
@@ -632,10 +624,10 @@ export default function FacultyDetailPage() {
                                 ? "Cannot block — has active bookings"
                                 : ""
                             }
-                            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                            className={`h-8 px-3.5 text-xs font-semibold rounded-full border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                               slot.isAvailable
-                                ? "text-red-600 bg-red-50 hover:bg-red-100 border border-red-200"
-                                : "text-green-600 bg-green-50 hover:bg-green-100 border border-green-200"
+                                ? "text-[#C8372D] bg-white border-[#FFCBC4] hover:bg-[#FFE3DF]"
+                                : "text-[#1E7A4B] bg-white border-[#C3EAD3] hover:bg-[#DDF3E6]"
                             }`}
                           >
                             {slot.isAvailable ? "Block" : "Unblock"}
@@ -652,9 +644,9 @@ export default function FacultyDetailPage() {
       </section>
 
       {/* â"€â"€ CHAPTER SLOTS CARD â"€â"€ */}
-      <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-8">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-          <h2 className="text-base font-semibold text-gray-800">
+      <section className="bg-white rounded-2xl border border-[#E4DDF2] shadow-[0_12px_32px_-22px_rgba(42,22,80,0.35)] overflow-hidden mb-8">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#EFE9FA] bg-[#FAF8FE]">
+          <h2 className="text-base font-semibold text-[#2A1650]">
             Chapter-wise classes
             <span className="ml-2 text-xs font-normal text-gray-400">
               ({faculty.chapterSlots.length} total)
@@ -708,23 +700,15 @@ export default function FacultyDetailPage() {
                 return (
                   <div
                     key={chapterKey}
-                    className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4 py-3 rounded-lg border transition-colors ${
+                    className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4 py-3 rounded-xl border transition-colors ${
                       cs.isAvailable
-                        ? "bg-white border-gray-200 hover:border-gray-300"
-                        : "bg-gray-50 border-gray-200 opacity-70"
+                        ? "bg-white border-[#E4DDF2] hover:border-[#CBB9F0]"
+                        : "bg-[#FAF8FE] border-[#EFE9FA] opacity-70"
                     }`}
                   >
                     <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                       <span className="text-sm font-medium text-gray-800">{chapterName}</span>
-                      <span
-                        className={`px-2 py-0.5 rounded text-xs font-medium ${
-                          cs.isAvailable
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-600"
-                        }`}
-                      >
-                        {cs.isAvailable ? "Available" : "Blocked"}
-                      </span>
+                      <AdminBadge tone={cs.isAvailable ? "success" : "danger"}>{cs.isAvailable ? "Available" : "Blocked"}</AdminBadge>
                       {cs.pool?.length > 0 && (
                         <span className="text-xs text-gray-400">
                           {cs.pool.length} booked
@@ -751,7 +735,7 @@ export default function FacultyDetailPage() {
                               createdAt: "",
                             });
                           }}
-                          className="px-3 py-1.5 text-xs font-medium rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors"
+                          className="h-8 px-3.5 text-xs font-semibold rounded-full text-[#6D35D9] bg-[#F4F1FA] hover:bg-[#EDE6FB] border border-[#E4DDF2] cursor-pointer transition-colors"
                         >
                           View Pool
                         </button>
@@ -765,10 +749,10 @@ export default function FacultyDetailPage() {
                           ? "Cannot block has active bookings"
                           : ""
                       }
-                      className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                      className={`h-8 px-3.5 text-xs font-semibold rounded-full border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                         cs.isAvailable
-                          ? "text-red-600 bg-red-50 hover:bg-red-100 border border-red-200"
-                          : "text-green-600 bg-green-50 hover:bg-green-100 border border-green-200"
+                          ? "text-[#C8372D] bg-white border-[#FFCBC4] hover:bg-[#FFE3DF]"
+                          : "text-[#1E7A4B] bg-white border-[#C3EAD3] hover:bg-[#DDF3E6]"
                       }`}
                     >
                       {cs.isAvailable ? "Block" : "Unblock"}

@@ -214,3 +214,11 @@ export const removeFacultyChapterSlot = (
   facultyId: string,
   slotId: string
 ) => setFacultyChapterSlotAvailability(facultyId, slotId, false);
+
+/** Make a faculty inactive (hidden from the website) / active again */
+export const blockFaculty = async (id: string): Promise<void> => {
+  await axiosInstance.patch(`/faculties/${id}/block`);
+};
+export const unblockFaculty = async (id: string): Promise<void> => {
+  await axiosInstance.patch(`/faculties/${id}/unblock`);
+};

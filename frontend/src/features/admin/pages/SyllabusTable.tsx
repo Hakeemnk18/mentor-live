@@ -1,24 +1,22 @@
 import { useEffect, useState } from "react";
 import { AdminTable } from "../components/AdminTable";
 import { AdminPageActions } from "../components/AdminPageActions";
-import { AdminBadge, AdminFilter, AdminFilterBar, AdminPageSize, AdminSearchInput } from "../components/ui";
+import { AdminActiveStatus, AdminFilter, AdminFilterBar, AdminPageSize, AdminSearchInput } from "../components/ui";
 import NameFormModal from "../components/NameFormModal/NameFormModal";
 import {
   getSyllabus,
   createSyllabus,
-  updateSyllabus,
-} from "../../../api/syllabus.api";
+  updateSyllabus, blockSyllabus, unblockSyllabus } from "../../../api/syllabus.api";
 import toast from "react-hot-toast";
 import type { Column } from "../components/AdminTable";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
-import TopLoader from "../../../shared/components/TopLoader";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
 
 import type { SyllabusRow } from "../../../shared/types/syllabus.types";
 export default function SyllabusPage() {
   const [syllabus, setSyllabus] = useState<SyllabusRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // starts loading: shows placeholder rows, not "No records found"
   const [modalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState<"create" | "edit">("create");
   const [editing, setEditing] = useState<SyllabusRow | undefined>();
@@ -39,7 +37,20 @@ export default function SyllabusPage() {
       key: "status",
       label: "Status",
       render: (s) => (
-        <AdminBadge tone={s.isDeleted ? "danger" : "success"}>{s.isDeleted ? "Inactive" : "Active"}</AdminBadge>
+        <AdminActiveStatus
+          active={!s.isDeleted}
+          confirmInactive={{ title: `Make "${s.name}" inactive?`, message: "It will be removed from the website lists, so students won't be able to pick this syllabus until made active again.", confirmLabel: "Make inactive" }}
+          confirmActive={{ title: `Make "${s.name}" active?`, message: "It will show in the website lists again.", confirmLabel: "Make active" }}
+          onChange={async (on) => {
+            try {
+              await (on ? unblockSyllabus(s._id) : blockSyllabus(s._id));
+              toast.success(`${s.name} is now ${on ? "active" : "inactive"}`);
+              fetchSyllabus();
+            } catch (err: unknown) {
+              handleApiError(err);
+            }
+          }}
+        />
       ),
     },
   ];
@@ -165,21 +176,19 @@ export default function SyllabusPage() {
           />
         </AdminFilter>
       </AdminFilterBar>
-      {loading ? (
-        <TopLoader loading={loading} />
-      ) : (
-        <AdminTable
-          data={syllabus}
-          columns={columns}
-          actions={[
-            {
-              label: "Edit",
-              onClick: handleEdit,
-            },
-          ]}
-          getRowId={(row) => row._id}
-        />
-      )}
+      {/* table stays on screen while loading, so it never jumps */}
+      <AdminTable
+        loading={loading}
+        data={syllabus}
+        columns={columns}
+        actions={[
+          {
+            label: "Edit",
+            onClick: handleEdit,
+          },
+        ]}
+        getRowId={(row) => row._id}
+      />
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       <NameFormModal
         open={modalOpen}

@@ -3,7 +3,6 @@ import { AdminTable } from "../components/AdminTable";
 import { AdminPageActions } from "../components/AdminPageActions";
 import AdminPageContainer from "../../../shared/components/AdminPageContainer";
 import Pagination from "../../../shared/components/Pagination";
-import TopLoader from "../../../shared/components/TopLoader";
 import ConfirmModal from "../components/ConfirmModal";
 import toast from "react-hot-toast";
 import type { Column } from "../components/AdminTable";
@@ -15,7 +14,7 @@ import {
   toggleBannerShow,
 } from "../../../api/banner.api";
 import BannerModal from "../components/BannerModal";
-import { AdminBadge, AdminButton, AdminField, AdminFilter, AdminFilterBar, AdminModal, AdminSearchInput, AdminSelect } from "../components/ui";
+import { AdminBadge, AdminButton, AdminField, AdminFilter, AdminFilterBar, AdminModal, AdminSearchInput, AdminSelect, AdminActiveStatus } from "../components/ui";
 import type { SelectOption } from "../components/ui";
 import { priorityOptions } from "../components/bannerPriority";
 import { handleApiError } from "../../../shared/utils/handle.api.error";
@@ -94,7 +93,7 @@ type ToggleTarget = { banner: Banner; nextShow: boolean; priority?: number };
 /* ── component ────────────────────────────────────────────── */
 export default function BannersPage() {
   const [banners, setBanners] = useState<Banner[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // starts loading: shows placeholder rows, not "No records found"
   const [submitting, setSubmitting] = useState(false);
 
   /* form modal */
@@ -255,6 +254,25 @@ export default function BannersPage() {
   );
   const availableForPrompt = [1, 2, 3, 4, 5].filter((p) => !takenPriorities.has(p));
 
+  /* visibility can be changed straight from the table (same confirm / priority steps as the Show/Hide button) */
+  const tableColumns: typeof columns = columns.map((col) =>
+    col.key === "isShow"
+      ? {
+          ...col,
+          render: (b: Banner) => (
+            <AdminActiveStatus
+              label="Visibility"
+              active={b.isShow}
+              activeLabel="Visible"
+              inactiveLabel="Hidden"
+              inactiveTone="neutral"
+              onChange={async () => handleToggleShow(b)}
+            />
+          ),
+        }
+      : col,
+  );
+
   return (
     <AdminPageContainer>
       <AdminPageActions
@@ -281,31 +299,21 @@ export default function BannersPage() {
       </AdminFilterBar>
 
       {/* ── Table ── */}
-      {loading ? (
-        <TopLoader loading={loading} />
-      ) : (
-        <AdminTable
-          data={banners}
-          columns={columns}
-          actions={[
-            { label: "Edit", onClick: handleEdit },
-            {
-              label: (b) => (b.isShow ? "Hide" : "Show"),
-              onClick: handleToggleShow,
-              className: (b) =>
-                b.isShow
-                  ? "text-sm font-medium cursor-pointer text-amber-600 hover:opacity-80"
-                  : "text-sm font-medium cursor-pointer text-green-600 hover:opacity-80",
-            },
-            {
-              label: "Delete",
-              onClick: handleDeleteClick,
-              variant: "danger",
-            },
-          ]}
-          getRowId={(b) => b.id}
-        />
-      )}
+      {/* table stays on screen while loading, so it never jumps */}
+      <AdminTable
+        loading={loading}
+        data={banners}
+        columns={tableColumns}
+        actions={[
+          { label: "Edit", onClick: handleEdit },
+          {
+            label: "Delete",
+            onClick: handleDeleteClick,
+            variant: "danger",
+          },
+        ]}
+        getRowId={(b) => b.id}
+      />
 
       {/* ── Pagination ── */}
       <Pagination

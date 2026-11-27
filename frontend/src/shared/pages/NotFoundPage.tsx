@@ -88,7 +88,7 @@ export default function NotFoundPage() {
 
         {/* Footer hint */}
         <p className="mt-10 text-xs text-gray-400">
-          Mentor Live · Admin Panel
+          Mentorlive · Admin Panel
         </p>
       </div>
     </div>

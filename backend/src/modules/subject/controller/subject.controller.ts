@@ -21,6 +21,8 @@ import type { IGetSubjectsForAdminUseCase } from "../use-cases/interfaces/get.al
 import type { IGetSubjectDetailsUseCase } from "../use-cases/interfaces/get.subject.details.use-case.interface.js";
 import type { IGetAllSubjectForUserUseCase } from "../use-cases/interfaces/get.all.subject.for.user.use-case.interface.js";
 import { GetSubjectForUserQuerySchema } from "../dtos/get.subject.for.user.dto.js";
+import type { IBlockSubjectUseCase } from "../use-cases/interfaces/block.subject.use-case.interface.js";
+import type { IUnblockSubjectUseCase } from "../use-cases/interfaces/unblock.subject.use-case.interface.js";
 
 @injectable()
 export class SubjectController implements ISubjectController {
@@ -38,7 +40,13 @@ export class SubjectController implements ISubjectController {
     private readonly _getSubjectDetailsUseCase: IGetSubjectDetailsUseCase,
 
     @inject("IGetAllSubjectForUserUseCase")
-    private readonly _getAllSubjectForUserUseCase: IGetAllSubjectForUserUseCase
+    private readonly _getAllSubjectForUserUseCase: IGetAllSubjectForUserUseCase,
+
+    @inject("IBlockSubjectUseCase")
+    private readonly _blockSubjectUseCase: IBlockSubjectUseCase,
+
+    @inject("IUnblockSubjectUseCase")
+    private readonly _unblockSubjectUseCase: IUnblockSubjectUseCase
   ) {}
 
   async createSubject(req: Request, res: Response): Promise<void> {
@@ -125,6 +133,30 @@ export class SubjectController implements ISubjectController {
       });
     } catch (error) {
       console.log("Error in get subject for user", error);
+      handleError(res, error);
+    }
+  }
+
+  /** Make a subject inactive (admin) */
+  async blockSubject(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      validateObjectId(id);
+      await this._blockSubjectUseCase.execute(id!);
+      res.status(HttpStatusCode.OK).json({ success: true, message: ResponseMessages.SUBJECT_DELETED });
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  /** Make a subject active again (admin) */
+  async unblockSubject(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      validateObjectId(id);
+      await this._unblockSubjectUseCase.execute(id!);
+      res.status(HttpStatusCode.OK).json({ success: true, message: ResponseMessages.SUBJECT_RESTORED });
+    } catch (error) {
       handleError(res, error);
     }
   }

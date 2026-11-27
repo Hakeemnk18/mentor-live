@@ -5,4 +5,6 @@ export interface IClassController {
   editClass(req: Request, res: Response): Promise<void>;
   getClassesForUser(req: Request, res: Response): Promise<void>;
   getClassesForAdmin(req: Request, res: Response): Promise<void>;
+  blockClass(req: Request, res: Response): Promise<void>;
+  unblockClass(req: Request, res: Response): Promise<void>;
 }

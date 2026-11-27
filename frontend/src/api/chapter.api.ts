@@ -101,3 +101,11 @@ export const getChaptersList = async (
     icon: c.icon,
   }));
 };
+
+/** Make a chapter inactive / active again */
+export const blockChapter = async (id: string): Promise<void> => {
+  await axiosInstance.patch(`/chapters/${id}/block`);
+};
+export const unblockChapter = async (id: string): Promise<void> => {
+  await axiosInstance.patch(`/chapters/${id}/unblock`);
+};
